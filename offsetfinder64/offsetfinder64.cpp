@@ -174,14 +174,14 @@ loc_t offsetfinder64::memmem(const void *little, size_t little_len){
 }
 
 
-offset_t offsetfinder64::find_sym(const char *sym){
+loc_t offsetfinder64::find_sym(const char *sym){
     uint8_t *psymtab = _kdata + _symtab->symoff;
     uint8_t *pstrtab = _kdata + _symtab->stroff;
 
     struct nlist_64 *entry = (struct nlist_64 *)psymtab;
     for (uint32_t i = 0; i < _symtab->nsyms; i++, entry++)
         if (!strcmp(sym, (char*)(pstrtab + entry->n_un.n_strx)))
-            return entry->n_value;
+            return (loc_t)entry->n_value;
 
     reterror("Failed to find symbol "+string(sym));
     return 0;
@@ -219,11 +219,22 @@ namespace tihmstar{
                 reterror("initializing insn with out of range location");
             }
             
-            insn(const insn &cpy){
+            insn(const insn &cpy, loc_t p=0){
                 _segments = cpy._segments;
                 _kslide = cpy._kslide;
-                _p = cpy._p;
                 _textOnly = cpy._textOnly;
+                if (p==0) {
+                    _p = cpy._p;
+                }else{
+                    for (int i=0; i<_segments.size(); i++){
+                        auto seg = _segments[i];
+                        if ((loc_t)seg.base <= p && p < (loc_t)seg.base+seg.size){
+                            _p = {p,i};
+                            return;
+                        }
+                    }
+                    reterror("initializing insn with out of range location");
+                }
             }
             
             insn &operator++(){
@@ -299,6 +310,9 @@ namespace tihmstar{
             static bool is_tbnz(uint32_t i){
                 return ((i>>24) % (1<<7)) == 0b0110111;
             }
+            static bool is_br(uint32_t i){
+                return ((0b11111 << 5) | i) == 0b11010110000111110000001111100000;
+            }
             
         public: //type
             enum type{
@@ -308,7 +322,8 @@ namespace tihmstar{
                 cbz,
                 ret,
                 tbnz,
-                add
+                add,
+                br
             };
             enum subtype{
                 st_general,
@@ -318,21 +333,24 @@ namespace tihmstar{
             };
             enum supertype{
                 sut_general,
-                sut_branch
+                sut_branch_imm
             };
             type type(){
-                if (is_adrp(value()))
+                uint32_t val = value();
+                if (is_adrp(val))
                     return adrp;
-                else if (is_add(value()))
+                else if (is_add(val))
                     return add;
-                else if (is_bl(value()))
+                else if (is_bl(val))
                     return bl;
-                else if (is_cbz(value()))
+                else if (is_cbz(val))
                     return cbz;
-                else if (is_ret(value()))
+                else if (is_ret(val))
                     return ret;
-                else if (is_tbnz(value()))
+                else if (is_tbnz(val))
                     return tbnz;
+                else if (is_br(val))
+                    return br;
                 return unknown;
             }
             subtype subtype(){
@@ -347,7 +365,7 @@ namespace tihmstar{
                     case bl:
                     case cbz:
                     case tbnz:
-                        return sut_branch;
+                        return sut_branch_imm;
                         
                     default:
                         return sut_general;
@@ -382,7 +400,6 @@ namespace tihmstar{
                         break;
                     case adrp:
                         return (value() % (1<<5));
-                        
                     case add:
                         return (value() % (1<<5));
                         
@@ -399,6 +416,8 @@ namespace tihmstar{
                     case add:
                         return ((value() >>5) % (1<<5));
                     case ret:
+                        return ((value() >>5) % (1<<5));
+                    case br:
                         return ((value() >>5) % (1<<5));
                         
                     default:
@@ -458,11 +477,11 @@ namespace tihmstar{
             
             while (true) {
                 if (searchUp)
-                    while ((--bsrc).supertype() != insn::sut_branch);
+                    while ((--bsrc).supertype() != insn::sut_branch_imm);
                 else
-                    while ((++bsrc).supertype() != insn::sut_branch);
+                    while ((++bsrc).supertype() != insn::sut_branch_imm);
                 
-                if (bsrc.imm()*4 + bsrc.pc()  == bdst.pc()) {
+                if (bsrc.imm()*4 + bsrc.pc() == bdst.pc()) {
                     return (loc_t)bsrc.pc();
                 }
             }
@@ -471,6 +490,36 @@ namespace tihmstar{
 
     };
 };
+
+namespace tihmstar{
+    namespace patchfinder64{
+        
+        
+        loc_t jump_stub_call_loc(insn bl_insn){
+            assure(bl_insn == insn::bl);
+            insn fdst(bl_insn,(loc_t)(bl_insn.imm()*4+bl_insn.pc()));
+            retassure((fdst == insn::adrp && /*(fdst+1) == insn::ldr &&*/ (fdst+2) == insn::br), "branch destination not jump_stub_call");
+            
+            loc_t adrpimm = (loc_t)fdst.imm();
+            
+#warning TODO
+            printf("");
+            return 0;
+        }
+        
+        bool is_call_to_jump_stub(insn bl_insn){
+            try {
+                jump_stub_call_loc(bl_insn);
+                return true;
+            } catch (tihmstar::exception &e) {
+                return false;
+            }
+        }
+        
+    }
+}
+
+
 
 patch offsetfinder64::find_sandbox_patch(){
     loc_t str = memmem("process-exec denied while updating label", sizeof("process-exec denied while updating label")-1);
@@ -555,18 +604,28 @@ patch offsetfinder64::find_amfi_patch_offsets(){
     
     while (1) {
         while (++bl_amfi_memcp != insn::bl);
-        printf("%p %p\n",bl_amfi_memcp.pc(),bl_amfi_memcp.imm()*4+bl_amfi_memcp.pc());
-        insn fdst(_segments, _kslide, (loc_t)(bl_amfi_memcp.imm()*4+bl_amfi_memcp.pc()));
-        if (fdst == insn::adrp) {
-            printf("maybe");
-        }
         
-        printf("");
+        try {
+            if (jump_stub_call_loc(bl_amfi_memcp) == find_sym("_memcmp"))
+                break;
+        } catch (tihmstar::exception &e) {
+            continue;
+        }
     }
     
+    /* find*/
+    //movz w0, #0x0
+    //ret
+    insn ret0(_segments, _kslide, find_sym("_memcmp"));
+    for (;; --ret0) {
+        if (ret0.value() == *(uint32_t*)"\x00\x00\x80\x52" //movz       w0, #0x0
+            && (ret0+1) == insn::ret) {
+            break;
+        }
+    }
     
-    
-    return {0,0,0};
+    uint32_t gadget = ret0.pc();
+    return {0,&gadget,sizeof(gadget)};
 }
 
 
