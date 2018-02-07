@@ -311,7 +311,8 @@ namespace tihmstar{
                 cbz,
                 ret,
                 tbnz,
-                add
+                add,
+                ldr
             };
             enum subtype{
                 st_general,
@@ -336,6 +337,8 @@ namespace tihmstar{
                     return ret;
                 else if (is_tbnz(value()))
                     return tbnz;
+                else if (is_ldr(value()))
+                    return ldr;
                 return unknown;
             }
             subtype subtype(){
@@ -343,7 +346,7 @@ namespace tihmstar{
                 if (is_ldr(i)) {
                     if (((i>>22) == 0b1011100001) && ((i>>10) % 4) == 0b10)
                         return st_register;
-                    else if (((i>>22) == 0b1011100101) || ((i>>21) == 0b10111000010))
+                    else if (i>>31)
                         return st_immediate;
                     else
                         return st_literal;
@@ -362,7 +365,7 @@ namespace tihmstar{
                         return sut_general;
                 }
             }
-            uint64_t imm(){
+            int64_t imm(){
                 switch (type()) {
                     case unknown:
                         reterror("can't get imm value of unknown instruction");
@@ -377,7 +380,18 @@ namespace tihmstar{
                         return signExtend64((value() >> 5) % (1<<19), 19); //untested
                     case tbnz:
                         return signExtend64((value() >> 5) % (1<<19), 19); //untested
-                        
+                    case ldr:
+                        if(subtype() != st_immediate){
+                            reterror("can't get imm value of ldr that has non immediate subtype");
+                            break;
+                        }
+                        if((value()>>24) % 2){
+                            // Unsigned Offset
+                            return ((value()>>10) % 4096) * 4; //untested
+                        }else{
+                            // Signed Offset
+                            return signExtend64((value()>>12) % 1024, 9); //untested
+                        }
                     default:
                         reterror("failed to get imm value");
                         break;
