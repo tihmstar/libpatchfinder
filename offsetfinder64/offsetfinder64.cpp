@@ -428,7 +428,7 @@ namespace tihmstar{
         loc_t find_rel_branch_source(insn bdst, bool searchUp){
             insn bsrc(bdst);
             
-            while (true) {
+            while (true) {//TODO honor searchup
                 while (--bsrc != insn::cbz);
                 if (bsrc.imm()*4 + bsrc.pc()  == bdst.pc()) {
                     return (loc_t)bsrc.pc();
