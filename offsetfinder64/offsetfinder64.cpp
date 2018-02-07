@@ -310,6 +310,12 @@ namespace tihmstar{
                 tbnz,
                 add
             };
+            enum subtype{
+                st_general,
+                st_register,
+                st_immediate,
+                st_literal
+            };
             type type(){
                 if (is_adrp(value()))
                     return adrp;
@@ -324,6 +330,13 @@ namespace tihmstar{
                 else if (is_tbnz(value()))
                     return tbnz;
                 return unknown;
+            }
+            subtype subtype(){
+//                if (is_ldr(value)) {
+//                    
+//                }
+                
+                return st_general;
             }
             uint64_t imm(){
                 switch (type()) {
