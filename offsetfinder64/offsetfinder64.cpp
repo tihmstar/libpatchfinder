@@ -316,6 +316,10 @@ namespace tihmstar{
                 st_immediate,
                 st_literal
             };
+            enum supertype{
+                sut_general,
+                sut_branch
+            };
             type type(){
                 if (is_adrp(value()))
                     return adrp;
@@ -337,6 +341,17 @@ namespace tihmstar{
 //                }
                 
                 return st_general;
+            }
+            supertype supertype(){
+                switch (type()) {
+                    case bl:
+                    case cbz:
+                    case tbnz:
+                        return sut_branch;
+                        
+                    default:
+                        return sut_general;
+                }
             }
             uint64_t imm(){
                 switch (type()) {
@@ -442,7 +457,11 @@ namespace tihmstar{
             insn bsrc(bdst);
             
             while (true) {
-                while (--bsrc != insn::cbz);
+                if (searchUp)
+                    while ((--bsrc).supertype() != insn::sut_branch);
+                else
+                    while ((++bsrc).supertype() != insn::sut_branch);
+
                 if (bsrc.imm()*4 + bsrc.pc()  == bdst.pc()) {
                     return (loc_t)bsrc.pc();
                 }
