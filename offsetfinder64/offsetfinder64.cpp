@@ -299,6 +299,9 @@ namespace tihmstar{
             static bool is_tbnz(uint32_t i){
                 return ((i>>24) % (1<<7)) == 0b0110111;
             }
+            static bool is_ldr(uint32_t i){
+                return ((i>>21) | 0b010000000000) == 0b11111000011;
+            }
             
         public: //type
             enum type{
