@@ -313,6 +313,9 @@ namespace tihmstar{
             static bool is_br(uint32_t i){
                 return ((0b11111 << 5) | i) == 0b11010110000111110000001111100000;
             }
+            static bool is_ldr(uint32_t i){
+                return (((i>>22) == 0b1011100001) && (i>>10) % 4) || ((i>>22) == 0b1011100101) || ((i>>23) == 0b00011000);
+            }
             
         public: //type
             enum type{
@@ -323,7 +326,8 @@ namespace tihmstar{
                 ret,
                 tbnz,
                 add,
-                br
+                br,
+                ldr
             };
             enum subtype{
                 st_general,
@@ -351,13 +355,22 @@ namespace tihmstar{
                     return tbnz;
                 else if (is_br(val))
                     return br;
+                else if (is_ldr(val))
+                    return ldr;
+
                 return unknown;
             }
             subtype subtype(){
-//                if (is_ldr(value)) {
-//                    
-//                }
-                
+                uint32_t i = value();
+                if (is_ldr(i)) {
+                    if (((i>>22) == 0b1011100001) && ((i>>10) % 4) == 0b10)
+                        return st_register;
+                    else if (i>>31)
+                        return st_immediate;
+                    else
+                        return st_literal;
+                    
+                }
                 return st_general;
             }
             supertype supertype(){
@@ -371,7 +384,7 @@ namespace tihmstar{
                         return sut_general;
                 }
             }
-            uint64_t imm(){
+            int64_t imm(){
                 switch (type()) {
                     case unknown:
                         reterror("can't get imm value of unknown instruction");
@@ -386,7 +399,18 @@ namespace tihmstar{
                         return signExtend64((value() >> 5) % (1<<19), 19); //untested
                     case tbnz:
                         return signExtend64((value() >> 5) % (1<<19), 19); //untested
-                        
+                    case ldr:
+                        if(subtype() != st_immediate){
+                            reterror("can't get imm value of ldr that has non immediate subtype");
+                            break;
+                        }
+                        if((value()>>24) % 2){
+                            // Unsigned Offset
+                            return ((value()>>10) % 4096) * 4; //untested
+                        }else{
+                            // Signed Offset
+                            return signExtend64((value()>>12) % 1024, 9); //untested
+                        }
                     default:
                         reterror("failed to get imm value");
                         break;
@@ -501,6 +525,8 @@ namespace tihmstar{
             retassure((fdst == insn::adrp && /*(fdst+1) == insn::ldr &&*/ (fdst+2) == insn::br), "branch destination not jump_stub_call");
             
             loc_t adrpimm = (loc_t)fdst.imm();
+            
+            insn ldr((fdst+1));
             
 #warning TODO
             printf("");
