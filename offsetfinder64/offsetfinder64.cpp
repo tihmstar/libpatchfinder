@@ -461,7 +461,7 @@ namespace tihmstar{
                     while ((--bsrc).supertype() != insn::sut_branch);
                 else
                     while ((++bsrc).supertype() != insn::sut_branch);
-
+                
                 if (bsrc.imm()*4 + bsrc.pc()  == bdst.pc()) {
                     return (loc_t)bsrc.pc();
                 }
