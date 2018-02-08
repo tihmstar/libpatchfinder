@@ -300,7 +300,7 @@ namespace tihmstar{
                 return ((i>>24) % (1<<7)) == 0b0110111;
             }
             static bool is_ldr(uint32_t i){
-                return (((i>>22) == 0b1011100001) && (i>>10) % 4) || ((i>>22) == 0b1011100101) || ((i>>23) == 0b00011000);
+                return (((i>>22) | 0b0100000000) == 0b1111100001 && ((i>>10) % 4)) || ((i>>22 | 0b0100000000) == 0b1111100101) || ((i>>23) == 0b00011000);
             }
             
         public: //type
@@ -344,7 +344,7 @@ namespace tihmstar{
             subtype subtype(){
                 uint32_t i = value();
                 if (is_ldr(i)) {
-                    if (((i>>22) == 0b1011100001) && ((i>>10) % 4) == 0b10)
+                    if ((((i>>22) | 0b0100000000) == 0b1111100001) && ((i>>10) % 4) == 0b10)
                         return st_register;
                     else if (i>>31)
                         return st_immediate;
