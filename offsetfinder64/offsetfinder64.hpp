@@ -77,7 +77,7 @@ namespace tihmstar {
         
         patchfinder64::loc_t memmem(const void *little, size_t little_len);
         
-        offset_t find_sym(const char *sym);
+        patchfinder64::loc_t find_sym(const char *sym);
         
         patchfinder64::patch find_sandbox_patch();
         patchfinder64::patch find_amfi_substrate_patch();
