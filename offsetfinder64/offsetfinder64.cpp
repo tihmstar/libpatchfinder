@@ -32,10 +32,11 @@ extern "C"{
 #define retassure(cond, err) if ((cond) == 0) throw tihmstar::exception(__LINE__,err)
 #define assureclean(cond) do {if (!(cond)){clean();assure(cond);}} while(0)
 
+#define BIT_RANGE(v,begin,end) ( ((v)>>(begin)) % (1 << ((end)-(begin)+1)) )
 
 #ifdef DEBUG
-#define OFFSETFINDER64_VERSION_COMMIT_COUNT "debug"
-#define OFFSETFINDER64_VERSION_COMMIT_SHA "debug build"
+#define OFFSETFINDER64_VERSION_COMMIT_COUNT "Debug"
+#define OFFSETFINDER64_VERSION_COMMIT_SHA "Build: " __DATE__ " " __TIME__
 #endif
 
 using namespace std;
@@ -134,7 +135,6 @@ offsetfinder64::offsetfinder64(const char* filename) : _freeKernel(true),__symta
 }
 
 void offsetfinder64::loadSegments(uint64_t slide){
-    printf("getting kernelbase: ");
     _kslide = slide;
     struct mach_header_64 *mh = (struct mach_header_64*)_kdata;
     struct load_command *lcmd = (struct load_command *)(mh + 1);
@@ -296,33 +296,33 @@ namespace tihmstar{
                 return *(uint64_t*)(loc_t)insn(segments, kslide, p,0);
             }
             static bool is_adrp(uint32_t i){
-                return ((i>>24) % (1<<5)) == 0b10000 && (i>>31);
+                return BIT_RANGE(i, 24, 28) == 0b10000 && (i>>31);
             }
             static bool is_add(uint32_t i){
-                return ((i>>24) % (1<<5)) == 0b10001;
+                return BIT_RANGE(i, 24, 28) == 0b10001;
             }
             static bool is_bl(uint32_t i){
                 return (i>>26) == 0b100101;
             }
             static bool is_cbz(uint32_t i){
-                return ((i>>24) % (1<<7)) == 0b0110100;
+                return BIT_RANGE(i, 24, 30) == 0b0110100;
             }
             static bool is_ret(uint32_t i){
                 return ((0b11111 << 5) | i) == 0b11010110010111110000001111100000;
             }
             static bool is_tbnz(uint32_t i){
-                return ((i>>24) % (1<<7)) == 0b0110111;
+                return BIT_RANGE(i, 24, 30) == 0b0110111;
             }
             static bool is_br(uint32_t i){
                 return ((0b11111 << 5) | i) == 0b11010110000111110000001111100000;
             }
             static bool is_ldr(uint32_t i){
+#warning TODO recheck this mask
                 return (((i>>22) | 0b0100000000) == 0b1111100001 && ((i>>10) % 4)) || ((i>>22 | 0b0100000000) == 0b1111100101) || ((i>>23) == 0b00011000);
             }
             static bool is_cbnz(uint32_t i){
-                return ((i>>24) % (1<<7)) == 0b0110101;
+                return BIT_RANGE(i, 24, 30) == 0b0110101;
             }
-            
             
         public: //type
             enum type{
@@ -373,7 +373,7 @@ namespace tihmstar{
             subtype subtype(){
                 uint32_t i = value();
                 if (is_ldr(i)) {
-                    if ((((i>>22) | 0b0100000000) == 0b1111100001) && ((i>>10) % 4) == 0b10)
+                    if ((((i>>22) | 0b0100000000) == 0b1111100001) && BIT_RANGE(i, 10, 11) == 0b10)
                         return st_register;
                     else if (i>>31)
                         return st_immediate;
@@ -401,26 +401,26 @@ namespace tihmstar{
                         reterror("can't get imm value of unknown instruction");
                         break;
                     case adrp:
-                        return ((pc()>>12)<<12) + signExtend64(((((value() % (1<<24))>>5)<<2) | ((value()>>29) % (1<<2)))<<12,32);
+                        return ((pc()>>12)<<12) + signExtend64(((((value() % (1<<24))>>5)<<2) | BIT_RANGE(value(), 29, 30))<<12,32);
                     case add:
-                        return ((value()>>10) % (1<<12)) << (((value()>>22)&1) * 12);
+                        return BIT_RANGE(value(), 10, 21) << (((value()>>22)&1) * 12);
                     case bl:
                         return signExtend64(value() % (1<<26), 25); //untested
                     case cbz:
                     case cbnz:
                     case tbnz:
-                        return signExtend64((value() >> 5) % (1<<19), 19); //untested
+                        return signExtend64(BIT_RANGE(value(), 5, 23), 19); //untested
                     case ldr:
                         if(subtype() != st_immediate){
                             reterror("can't get imm value of ldr that has non immediate subtype");
                             break;
                         }
-                        if((value()>>24) % (1<<2)){
+                        if(BIT_RANGE(value(), 24, 25)){
                             // Unsigned Offset
-                            return ((value()>>10) % (1<<12)) << (value()>>30);
+                            return BIT_RANGE(value(), 10, 21) << (value()>>30);
                         }else{
                             // Signed Offset
-                            return signExtend64((value()>>12) % 1024, 9); //untested
+                            return signExtend64(BIT_RANGE(value(), 12, 21), 9); //untested
                         }
                     default:
                         reterror("failed to get imm value");
@@ -450,7 +450,7 @@ namespace tihmstar{
                     case add:
                     case ret:
                     case br:
-                        return ((value() >>5) % (1<<5));
+                        return BIT_RANGE(value(), 5, 9);
                         
                     default:
                         reterror("failed to get rn");
