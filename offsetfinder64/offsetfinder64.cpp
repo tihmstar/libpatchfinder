@@ -292,6 +292,9 @@ namespace tihmstar{
             }
             
         public: //static type determinition
+            static uint64_t deref(segment_t segments, offset_t kslide, loc_t p){
+                return *(uint64_t*)(loc_t)insn(segments, kslide, p,0);
+            }
             static bool is_adrp(uint32_t i){
                 return ((i>>24) % (1<<5)) == 0b10000 && (i>>31);
             }
@@ -316,6 +319,10 @@ namespace tihmstar{
             static bool is_ldr(uint32_t i){
                 return (((i>>22) | 0b0100000000) == 0b1111100001 && ((i>>10) % 4)) || ((i>>22 | 0b0100000000) == 0b1111100101) || ((i>>23) == 0b00011000);
             }
+            static bool is_cbnz(uint32_t i){
+                return ((i>>24) % (1<<7)) == 0b0110101;
+            }
+            
             
         public: //type
             enum type{
@@ -327,7 +334,8 @@ namespace tihmstar{
                 tbnz,
                 add,
                 br,
-                ldr
+                ldr,
+                cbnz
             };
             enum subtype{
                 st_general,
@@ -357,7 +365,9 @@ namespace tihmstar{
                     return br;
                 else if (is_ldr(val))
                     return ldr;
-
+                else if (is_cbnz(val))
+                    return cbnz;
+                
                 return unknown;
             }
             subtype subtype(){
@@ -377,6 +387,7 @@ namespace tihmstar{
                 switch (type()) {
                     case bl:
                     case cbz:
+                    case cbnz:
                     case tbnz:
                         return sut_branch_imm;
                         
@@ -396,7 +407,7 @@ namespace tihmstar{
                     case bl:
                         return signExtend64(value() % (1<<26), 25); //untested
                     case cbz:
-                        return signExtend64((value() >> 5) % (1<<19), 19); //untested
+                    case cbnz:
                     case tbnz:
                         return signExtend64((value() >> 5) % (1<<19), 19); //untested
                     case ldr:
@@ -404,9 +415,9 @@ namespace tihmstar{
                             reterror("can't get imm value of ldr that has non immediate subtype");
                             break;
                         }
-                        if((value()>>24) % 2){
+                        if((value()>>24) % (1<<2)){
                             // Unsigned Offset
-                            return ((value()>>10) % 4096) * 4; //untested
+                            return ((value()>>10) % (1<<12)) << (value()>>30);
                         }else{
                             // Signed Offset
                             return signExtend64((value()>>12) % 1024, 9); //untested
@@ -423,7 +434,6 @@ namespace tihmstar{
                         reterror("can't get rd of unknown instruction");
                         break;
                     case adrp:
-                        return (value() % (1<<5));
                     case add:
                         return (value() % (1<<5));
                         
@@ -438,9 +448,7 @@ namespace tihmstar{
                         reterror("can't get rn of unknown instruction");
                         break;
                     case add:
-                        return ((value() >>5) % (1<<5));
                     case ret:
-                        return ((value() >>5) % (1<<5));
                     case br:
                         return ((value() >>5) % (1<<5));
                         
@@ -455,7 +463,7 @@ namespace tihmstar{
                         reterror("can't get rt of unknown instruction");
                         break;
                     case cbz:
-                        return (value() % (1<<5));
+                    case cbnz:
                     case tbnz:
                         return (value() % (1<<5));
                         
@@ -519,23 +527,17 @@ namespace tihmstar{
     namespace patchfinder64{
         
         
-        loc_t jump_stub_call_loc(insn bl_insn){
+        loc_t jump_stub_call_ptr_loc(insn bl_insn){
             assure(bl_insn == insn::bl);
             insn fdst(bl_insn,(loc_t)(bl_insn.imm()*4+bl_insn.pc()));
-            retassure((fdst == insn::adrp && /*(fdst+1) == insn::ldr &&*/ (fdst+2) == insn::br), "branch destination not jump_stub_call");
-            
-            loc_t adrpimm = (loc_t)fdst.imm();
-            
             insn ldr((fdst+1));
-            
-#warning TODO
-            printf("");
-            return 0;
+            retassure((fdst == insn::adrp && ldr == insn::ldr && (fdst+2) == insn::br), "branch destination not jump_stub_call");
+            return (loc_t)fdst.imm() + ldr.imm();
         }
         
         bool is_call_to_jump_stub(insn bl_insn){
             try {
-                jump_stub_call_loc(bl_insn);
+                jump_stub_call_ptr_loc(bl_insn);
                 return true;
             } catch (tihmstar::exception &e) {
                 return false;
@@ -627,16 +629,17 @@ patch offsetfinder64::find_amfi_patch_offsets(){
 
     insn bl_amfi_memcp(_segments, _kslide, ref);
 
-    
+    loc_t jscpl = 0;
     while (1) {
         while (++bl_amfi_memcp != insn::bl);
         
         try {
-            if (jump_stub_call_loc(bl_amfi_memcp) == find_sym("_memcmp"))
-                break;
+            jscpl = jump_stub_call_ptr_loc(bl_amfi_memcp);
         } catch (tihmstar::exception &e) {
             continue;
         }
+        if (insn::deref(_segments, _kslide, jscpl) == (uint64_t)find_sym("_memcmp"))
+            break;
     }
     
     /* find*/
@@ -650,9 +653,48 @@ patch offsetfinder64::find_amfi_patch_offsets(){
         }
     }
     
-    uint32_t gadget = ret0.pc();
-    return {0,&gadget,sizeof(gadget)};
+    uint64_t gadget = ret0.pc();
+    return {jscpl,&gadget,sizeof(gadget)};
 }
+
+patch offsetfinder64::find_proc_enforce(){
+    loc_t str = memmem("Enforce MAC policy on process operations", sizeof("Enforce MAC policy on process operations")-1);
+    retassure(str, "Failed to find str");
+    
+    loc_t valref = memmem(&str, sizeof(str));
+    retassure(valref, "Failed to find val ref");
+    
+    loc_t proc_enforce_ptr = valref - (5 * sizeof(uint64_t));
+    
+    loc_t proc_enforce_val_loc = (loc_t)insn::deref(_segments, _kslide, proc_enforce_ptr);
+    
+    uint8_t mypatch = 1;
+    return {proc_enforce_val_loc,&mypatch,1};
+}
+
+vector<patch> offsetfinder64::find_nosuid_off(){
+    loc_t str = memmem("\"mount_common(): mount of %s filesystem failed with %d, but vnode list is not empty.\"", sizeof("\"mount_common(): mount of %s filesystem failed with %d, but vnode list is not empty.\"")-1);
+    retassure(str, "Failed to find str");
+    
+    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    retassure(ref, "literal ref to str");
+
+    insn ldr(_segments, _kslide,ref);
+    
+    while (--ldr != insn::ldr);
+    
+    loc_t cbnz = find_rel_branch_source(ldr, 1);
+    
+    insn bl_vfs_context_is64bit(ldr,cbnz);
+    while (--bl_vfs_context_is64bit != insn::bl || bl_vfs_context_is64bit.imm()*4+bl_vfs_context_is64bit.pc() != (uint64_t)find_sym("_vfs_context_is64bit"));
+        
+
+    
+    
+    printf("");
+    return {};
+}
+
 
 
 

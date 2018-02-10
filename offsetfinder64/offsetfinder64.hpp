@@ -84,6 +84,8 @@ namespace tihmstar {
         patchfinder64::patch find_cs_enforcement_disable_amfi();
         patchfinder64::patch find_i_can_has_debugger_patch_off();
         patchfinder64::patch find_amfi_patch_offsets();
+        patchfinder64::patch find_proc_enforce();
+        std::vector<patchfinder64::patch> find_nosuid_off();
         
         ~offsetfinder64();
     };
