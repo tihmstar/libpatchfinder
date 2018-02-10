@@ -323,6 +323,9 @@ namespace tihmstar{
             static bool is_cbnz(uint32_t i){
                 return BIT_RANGE(i, 24, 30) == 0b0110101;
             }
+            static bool is_movk(uint32_t i){
+                return BIT_RANGE(i, 23, 30) == 0b11100101;
+            }
             
         public: //type
             enum type{
@@ -335,7 +338,8 @@ namespace tihmstar{
                 add,
                 br,
                 ldr,
-                cbnz
+                cbnz,
+                movk
             };
             enum subtype{
                 st_general,
@@ -367,13 +371,15 @@ namespace tihmstar{
                     return ldr;
                 else if (is_cbnz(val))
                     return cbnz;
+                else if (is_movk(val))
+                    return movk;
                 
                 return unknown;
             }
             subtype subtype(){
                 uint32_t i = value();
                 if (is_ldr(i)) {
-                    if ((((i>>22) | 0b0100000000) == 0b1111100001) && BIT_RANGE(i, 10, 11) == 0b10)
+                    if ((((i>>22) | (1 << 8)) == 0b1111100001) && BIT_RANGE(i, 10, 11) == 0b10)
                         return st_register;
                     else if (i>>31)
                         return st_immediate;
@@ -410,6 +416,8 @@ namespace tihmstar{
                     case cbnz:
                     case tbnz:
                         return signExtend64(BIT_RANGE(value(), 5, 23), 19); //untested
+                    case movk:
+                        return BIT_RANGE(value(), 5, 20);
                     case ldr:
                         if(subtype() != st_immediate){
                             reterror("can't get imm value of ldr that has non immediate subtype");
@@ -435,6 +443,7 @@ namespace tihmstar{
                         break;
                     case adrp:
                     case add:
+                    case movk:
                         return (value() % (1<<5));
                         
                     default:
@@ -547,8 +556,12 @@ namespace tihmstar{
     }
 }
 
+#pragma mark common patchs
+constexpr char patch_nop[] = "\x1F\x20\x03\xD5";
+constexpr size_t patch_nop_size = sizeof(patch_nop)-1;
 
 
+#pragma mark patch_finders
 patch offsetfinder64::find_sandbox_patch(){
     loc_t str = memmem("process-exec denied while updating label", sizeof("process-exec denied while updating label")-1);
     retassure(str, "Failed to find str");
@@ -565,8 +578,7 @@ patch offsetfinder64::find_sandbox_patch(){
     
     loc_t cbz = find_rel_branch_source(bdst, true);
     
-    constexpr char nop[] = "\x1F\x20\x03\xD5";
-    return patch(cbz, nop, sizeof(nop)-1);
+    return patch(cbz, patch_nop, patch_nop_size);
 }
 
 
@@ -602,10 +614,9 @@ patch offsetfinder64::find_cs_enforcement_disable_amfi(){
 
     int anz = static_cast<int>((ret.pc()-cbz.pc())/4 +1);
     
-    constexpr char nop[] = "\x1F\x20\x03\xD5";
     char mypatch[anz*4];
     for (int i=0; i<anz; i++) {
-        ((uint32_t*)mypatch)[i] = *(uint32_t*)nop;
+        ((uint32_t*)mypatch)[i] = *(uint32_t*)patch_nop;
     }
 
     return {(loc_t)cbz.pc(),mypatch,static_cast<size_t>(anz*4)};
@@ -647,6 +658,7 @@ patch offsetfinder64::find_amfi_patch_offsets(){
     //ret
     insn ret0(_segments, _kslide, find_sym("_memcmp"));
     for (;; --ret0) {
+#warning TODO change this to proper instruction parsing
         if (ret0.value() == *(uint32_t*)"\x00\x00\x80\x52" //movz       w0, #0x0
             && (ret0+1) == insn::ret) {
             break;
@@ -687,12 +699,18 @@ vector<patch> offsetfinder64::find_nosuid_off(){
     
     insn bl_vfs_context_is64bit(ldr,cbnz);
     while (--bl_vfs_context_is64bit != insn::bl || bl_vfs_context_is64bit.imm()*4+bl_vfs_context_is64bit.pc() != (uint64_t)find_sym("_vfs_context_is64bit"));
-        
-
+    
+    //patch1
+    insn movk(bl_vfs_context_is64bit);
+    while (--movk != insn::movk || movk.imm() != 8);
+    
+    //patch2
+    insn orr(bl_vfs_context_is64bit);
+#warning TODO implement finding orr here!
     
     
     printf("");
-    return {};
+    return {{(loc_t)movk.pc(),patch_nop,patch_nop_size}};
 }
 
 
