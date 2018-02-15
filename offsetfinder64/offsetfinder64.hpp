@@ -38,12 +38,16 @@ namespace tihmstar {
         
         class patch{
         public:
-            loc_t _location;
+            const loc_t _location;
             const void *_patch;
-            size_t _patchSize;
-            patch(loc_t location, const void *patch, size_t patchSize) : _location(location){
-                _patch = malloc(patchSize);
-                memcpy((void*)_patch, patch, _patchSize=patchSize);
+            const size_t _patchSize;
+            patch(loc_t location, const void *patch, size_t patchSize) : _location(location), _patchSize(patchSize){
+                _patch = malloc(_patchSize);
+                memcpy((void*)_patch, patch, _patchSize);
+            }
+            patch(const patch& cpy) : _location(cpy._location), _patchSize(cpy._patchSize){
+                _patch = malloc(_patchSize);
+                memcpy((void*)_patch, cpy._patch, _patchSize);
             }
             ~patch(){
                 free((void*)_patch);
@@ -78,6 +82,7 @@ namespace tihmstar {
         patchfinder64::loc_t memmem(const void *little, size_t little_len);
         
         patchfinder64::loc_t find_sym(const char *sym);
+        patchfinder64::loc_t find_syscall0();
         
         patchfinder64::patch find_sandbox_patch();
         patchfinder64::patch find_amfi_substrate_patch();
@@ -86,6 +91,8 @@ namespace tihmstar {
         patchfinder64::patch find_amfi_patch_offsets();
         patchfinder64::patch find_proc_enforce();
         std::vector<patchfinder64::patch> find_nosuid_off();
+        patchfinder64::patch find_remount_patch_offset();
+        patchfinder64::patch find_lwvm_patch_offsets();
         
         ~offsetfinder64();
     };

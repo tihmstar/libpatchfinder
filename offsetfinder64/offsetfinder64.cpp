@@ -33,6 +33,7 @@ extern "C"{
 #define assureclean(cond) do {if (!(cond)){clean();assure(cond);}} while(0)
 
 #define BIT_RANGE(v,begin,end) ( ((v)>>(begin)) % (1 << ((end)-(begin)+1)) )
+#define BIT_AT(v,pos) ( (v >> pos) % 2 )
 
 #ifdef DEBUG
 #define OFFSETFINDER64_VERSION_COMMIT_COUNT "Debug"
@@ -187,23 +188,37 @@ loc_t offsetfinder64::find_sym(const char *sym){
     return 0;
 }
 
+loc_t offsetfinder64::find_syscall0(){
+#define SIG_SYSCALL_3 "\x06\x00\x00\x00\x03\x00\x0c\x00"
+    loc_t sys3 = memmem(SIG_SYSCALL_3, sizeof(SIG_SYSCALL_3)-1);
+    return sys3 - (3 * 0x18) + 0x8;
+}
+
+
 #pragma mark patchfinder64
 namespace tihmstar{
     namespace patchfinder64{
         
         class insn{
+        public:
+            enum segtype{
+                kText_only,
+                kData_only,
+                kText_and_Data
+            };
+        private:
             std::pair <loc_t,int> _p;
             std::vector<offsetfinder64::text_t> _segments;
             offset_t _kslide;
-            bool _textOnly;
+            segtype _segtype;
         public:
-            insn(segment_t segments, offset_t kslide, loc_t p = 0, bool textOnly = 1) : _segments(segments), _kslide(kslide), _textOnly(textOnly){
+            insn(segment_t segments, offset_t kslide, loc_t p = 0, segtype segType = kText_only) : _segments(segments), _kslide(kslide), _segtype(segType){
                 std::sort(_segments.begin(),_segments.end(),[ ]( const offsetfinder64::text_t& lhs, const offsetfinder64::text_t& rhs){
                     return lhs.base < rhs.base;
                 });
-                if (_textOnly) {
-                    _segments.erase(std::remove_if(_segments.begin(), _segments.end(), [](const offsetfinder64::text_t obj){
-                        return !obj.isExec;
+                if (_segtype != kText_and_Data) {
+                    _segments.erase(std::remove_if(_segments.begin(), _segments.end(), [&](const offsetfinder64::text_t obj){
+                        return (!obj.isExec) == (_segtype == kText_only);
                     }));
                 }
                 if (p == 0) {
@@ -222,7 +237,7 @@ namespace tihmstar{
             insn(const insn &cpy, loc_t p=0){
                 _segments = cpy._segments;
                 _kslide = cpy._kslide;
-                _textOnly = cpy._textOnly;
+                _segtype = cpy._segtype;
                 if (p==0) {
                     _p = cpy._p;
                 }else{
@@ -278,11 +293,69 @@ namespace tihmstar{
             }
             
         public: //helpers
-            int64_t signExtend64(uint64_t v, int vSize){
+            __attribute__((always_inline)) static int64_t signExtend64(uint64_t v, int vSize){
                 uint64_t e = (v & 1 << (vSize-1))>>(vSize-1);
                 for (int i=vSize; i<64; i++)
                     v |= e << i;
                 return v;
+            }
+            __attribute__((always_inline)) static int highestSetBit(uint64_t x){
+                for (int i=63; i>=0; i--) {
+                    if (x & ((uint64_t)1<<i))
+                        return i;
+                }
+                return -1;
+            }
+            __attribute__((always_inline)) static int lowestSetBit(uint64_t x){
+                for (int i=0; i<=63; i++) {
+                    if (x & (1<<i))
+                        return i;
+                }
+                return 64;
+            }
+            __attribute__((always_inline)) static uint64_t replicate(uint8_t val, int bits){
+                uint64_t ret = val;
+                unsigned shift;
+                for (shift = bits; shift < 64; shift += bits) {    // XXX actually, it is either 32 or 64
+                    ret |= (val << shift);
+                }
+                return ret;
+            }
+            
+            __attribute__((always_inline)) static uint64_t ones(uint64_t n){
+                uint64_t ret = 0;
+                while (n--) {
+                    ret <<=1;
+                    ret |= 1;
+                }
+                return ret;
+            }
+            __attribute__((always_inline)) static uint64_t ROR(uint64_t x, int shift, int len){
+                while (shift--) {
+                    x |= (x & 1) << len;
+                    x >>=1;
+                }
+                return x;
+            }
+            __attribute__((always_inline)) static pair<int64_t, int64_t> DecodeBitMasks(uint64_t immN, uint8_t imms, uint8_t immr, bool immediate){
+                int64_t tmask = 0, wmask = 0;
+                int8_t levels = 0;
+                
+                int len = highestSetBit( (uint64_t)((immN<<6) | ((~imms) & 0b111111)) );
+                assure(len != -1); //reserved value
+                levels = ones(len);
+                
+                assure(immediate && (imms & levels) != levels); //reserved value
+                
+                uint8_t S = imms & levels;
+                uint8_t R = immr & levels;
+                
+                uint8_t esize = 1 << len;
+                
+                uint8_t welem = ones(S + 1);
+                wmask = replicate(ROR(welem, R, 32),esize);
+#warning TODO incomplete function implementation!
+                return {wmask,0};
             }
             uint64_t pc(){
                 return (uint64_t)_p.first + (uint64_t)_kslide;
@@ -293,7 +366,7 @@ namespace tihmstar{
             
         public: //static type determinition
             static uint64_t deref(segment_t segments, offset_t kslide, loc_t p){
-                return *(uint64_t*)(loc_t)insn(segments, kslide, p,0);
+                return *(uint64_t*)(loc_t)insn(segments, kslide, p,kText_and_Data);
             }
             static bool is_adrp(uint32_t i){
                 return BIT_RANGE(i, 24, 28) == 0b10000 && (i>>31);
@@ -326,6 +399,13 @@ namespace tihmstar{
             static bool is_movk(uint32_t i){
                 return BIT_RANGE(i, 23, 30) == 0b11100101;
             }
+            static bool is_orr(uint32_t i){
+                return BIT_RANGE(i, 23, 30) == 0b01100100;
+            }
+            static bool is_tbz(uint32_t i){
+                return BIT_RANGE(i, 24, 30) == 0b0110110;
+            }
+            
             
         public: //type
             enum type{
@@ -339,7 +419,9 @@ namespace tihmstar{
                 br,
                 ldr,
                 cbnz,
-                movk
+                movk,
+                orr,
+                tbz
             };
             enum subtype{
                 st_general,
@@ -373,6 +455,10 @@ namespace tihmstar{
                     return cbnz;
                 else if (is_movk(val))
                     return movk;
+                else if (is_orr(val))
+                    return orr;
+                else if (is_tbz(val))
+                    return tbz;
                 
                 return unknown;
             }
@@ -430,6 +516,10 @@ namespace tihmstar{
                             // Signed Offset
                             return signExtend64(BIT_RANGE(value(), 12, 21), 9); //untested
                         }
+                    case orr:
+                        return DecodeBitMasks(BIT_AT(value(), 22),BIT_RANGE(value(), 10, 15),BIT_RANGE(value(), 16,21), true).first;
+                    case tbz:
+                        return BIT_RANGE(value(), 5, 18);
                     default:
                         reterror("failed to get imm value");
                         break;
@@ -444,6 +534,7 @@ namespace tihmstar{
                     case adrp:
                     case add:
                     case movk:
+                    case orr:
                         return (value() % (1<<5));
                         
                     default:
@@ -459,6 +550,7 @@ namespace tihmstar{
                     case add:
                     case ret:
                     case br:
+                    case orr:
                         return BIT_RANGE(value(), 5, 9);
                         
                     default:
@@ -474,10 +566,23 @@ namespace tihmstar{
                     case cbz:
                     case cbnz:
                     case tbnz:
+                    case tbz:
                         return (value() % (1<<5));
                         
                     default:
                         reterror("failed to get rt");
+                        break;
+                }
+            }
+            uint8_t other(){
+                switch (type()) {
+                    case unknown:
+                        reterror("can't get other of unknown instruction");
+                        break;
+                    case tbz:
+                        return ((value() >>31) << 5) | BIT_RANGE(value(), 19, 23);
+                    default:
+                        reterror("failed to get other");
                         break;
                 }
             }
@@ -706,13 +811,41 @@ vector<patch> offsetfinder64::find_nosuid_off(){
     
     //patch2
     insn orr(bl_vfs_context_is64bit);
-#warning TODO implement finding orr here!
+    while (--orr != insn::orr || movk.imm() != 8);
     
-    
-    printf("");
-    return {{(loc_t)movk.pc(),patch_nop,patch_nop_size}};
+    return {{(loc_t)movk.pc(),patch_nop,patch_nop_size},{(loc_t)orr.pc(),patch_nop,patch_nop_size}};
 }
 
+patch offsetfinder64::find_remount_patch_offset(){
+    loc_t off = find_syscall0();
+    
+    loc_t syscall_mac_mount = (off + 3*(424-1)*sizeof(uint64_t));
+
+    loc_t __mac_mount = (loc_t)insn::deref(_segments, _kslide, syscall_mac_mount);
+    
+    insn patchloc(_segments, _kslide, __mac_mount);
+    
+    while (++patchloc != insn::tbz || patchloc.rt() != 8 || patchloc.other() != 6);
+    
+    --patchloc;
+    
+    constexpr char mypatch[] = "\xC8\x00\x80\x52"; //movz w8, #0x6
+    return {(loc_t)patchloc.pc(),mypatch,sizeof(mypatch)-1};
+}
+
+patch offsetfinder64::find_lwvm_patch_offsets(){
+    loc_t str = memmem("_mapForIO", sizeof("_mapForIO")-1);
+    retassure(str, "Failed to find str");
+    
+    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    retassure(ref, "literal ref to str");
+
+    
+    reterror("not implemented yet")
+    
+    
+    return {0,0,0};
+}
 
 
 

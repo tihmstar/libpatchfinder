@@ -17,8 +17,16 @@ int main(int argc, const char * argv[]) {
     offsetfinder64 fi(argv[1]);
     
     {
+        patchfinder64::patch asd = fi.find_lwvm_patch_offsets();
+        cout << hex << (void*)asd._location << endl;
+    }
+    {
+        patchfinder64::patch asd = fi.find_remount_patch_offset();
+        cout << hex << (void*)asd._location << endl;
+    }
+    {
         auto dsa = fi.find_nosuid_off();
-        for (auto asd :dsa) {
+        for (const auto &asd :dsa) {
             cout << hex << (void*)asd._location << endl;
         }
     }
