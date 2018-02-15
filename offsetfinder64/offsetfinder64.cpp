@@ -841,7 +841,7 @@ patch offsetfinder64::find_lwvm_patch_offsets(){
     retassure(ref, "literal ref to str");
 
     
-    reterror("not implemented yet")
+    reterror("not implemented yet");
     
     
     return {0,0,0};
