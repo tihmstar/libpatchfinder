@@ -12,7 +12,7 @@
 		870E9666200779B00043690C /* libplist.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 870E9665200779B00043690C /* libplist.3.dylib */; };
 		870E967020077AC70043690C /* libcrypto.1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 870E966F20077AC70043690C /* libcrypto.1.0.0.dylib */; };
 		8719283120067C84005144BB /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8719283020067C84005144BB /* main.cpp */; };
-		8719283920067C9A005144BB /* offsetfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8719283720067C9A005144BB /* offsetfinder64.cpp */; };
+		8719283920067C9A005144BB /* liboffsetfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8719283720067C9A005144BB /* liboffsetfinder64.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -37,10 +37,10 @@
 		870E9669200779F80043690C /* libcommonCrypto.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libcommonCrypto.tbd; path = usr/lib/system/libcommonCrypto.tbd; sourceTree = SDKROOT; };
 		870E966B20077A220043690C /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		870E966F20077AC70043690C /* libcrypto.1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcrypto.1.0.0.dylib; path = ../../../../usr/local/Cellar/openssl/1.0.2n/lib/libcrypto.1.0.0.dylib; sourceTree = "<group>"; };
-		8719282D20067C84005144BB /* offsetfinder64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = offsetfinder64; sourceTree = BUILT_PRODUCTS_DIR; };
+		8719282D20067C84005144BB /* liboffsetfinder64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = liboffsetfinder64; sourceTree = BUILT_PRODUCTS_DIR; };
 		8719283020067C84005144BB /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		8719283720067C9A005144BB /* offsetfinder64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = offsetfinder64.cpp; sourceTree = "<group>"; };
-		8719283820067C9A005144BB /* offsetfinder64.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = offsetfinder64.hpp; sourceTree = "<group>"; };
+		8719283720067C9A005144BB /* liboffsetfinder64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = liboffsetfinder64.cpp; sourceTree = "<group>"; };
+		8719283820067C9A005144BB /* liboffsetfinder64.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = liboffsetfinder64.hpp; path = ../include/liboffsetfinder64/liboffsetfinder64.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,7 +82,7 @@
 		8719282420067C84005144BB = {
 			isa = PBXGroup;
 			children = (
-				8719282F20067C84005144BB /* offsetfinder64 */,
+				8719282F20067C84005144BB /* liboffsetfinder64 */,
 				8719282E20067C84005144BB /* Products */,
 				870E9664200779AF0043690C /* Frameworks */,
 			);
@@ -91,28 +91,28 @@
 		8719282E20067C84005144BB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8719282D20067C84005144BB /* offsetfinder64 */,
+				8719282D20067C84005144BB /* liboffsetfinder64 */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		8719282F20067C84005144BB /* offsetfinder64 */ = {
+		8719282F20067C84005144BB /* liboffsetfinder64 */ = {
 			isa = PBXGroup;
 			children = (
 				870E965C200778F60043690C /* external */,
-				8719283820067C9A005144BB /* offsetfinder64.hpp */,
-				8719283720067C9A005144BB /* offsetfinder64.cpp */,
+				8719283820067C9A005144BB /* liboffsetfinder64.hpp */,
+				8719283720067C9A005144BB /* liboffsetfinder64.cpp */,
 				8719283020067C84005144BB /* main.cpp */,
 			);
-			path = offsetfinder64;
+			path = liboffsetfinder64;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		8719282C20067C84005144BB /* offsetfinder64 */ = {
+		8719282C20067C84005144BB /* liboffsetfinder64 */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 8719283420067C84005144BB /* Build configuration list for PBXNativeTarget "offsetfinder64" */;
+			buildConfigurationList = 8719283420067C84005144BB /* Build configuration list for PBXNativeTarget "liboffsetfinder64" */;
 			buildPhases = (
 				8719282920067C84005144BB /* Sources */,
 				8719282A20067C84005144BB /* Frameworks */,
@@ -122,9 +122,9 @@
 			);
 			dependencies = (
 			);
-			name = offsetfinder64;
-			productName = offsetfinder64;
-			productReference = 8719282D20067C84005144BB /* offsetfinder64 */;
+			name = liboffsetfinder64;
+			productName = liboffsetfinder64;
+			productReference = 8719282D20067C84005144BB /* liboffsetfinder64 */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -142,7 +142,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 8719282820067C84005144BB /* Build configuration list for PBXProject "offsetfinder64" */;
+			buildConfigurationList = 8719282820067C84005144BB /* Build configuration list for PBXProject "liboffsetfinder64" */;
 			compatibilityVersion = "Xcode 8.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -154,7 +154,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8719282C20067C84005144BB /* offsetfinder64 */,
+				8719282C20067C84005144BB /* liboffsetfinder64 */,
 			);
 		};
 /* End PBXProject section */
@@ -165,7 +165,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				870E9662200779140043690C /* img4.c in Sources */,
-				8719283920067C9A005144BB /* offsetfinder64.cpp in Sources */,
+				8719283920067C9A005144BB /* liboffsetfinder64.cpp in Sources */,
 				870E9663200779140043690C /* lzssdec.c in Sources */,
 				8719283120067C84005144BB /* main.cpp in Sources */,
 			);
@@ -316,7 +316,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		8719282820067C84005144BB /* Build configuration list for PBXProject "offsetfinder64" */ = {
+		8719282820067C84005144BB /* Build configuration list for PBXProject "liboffsetfinder64" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8719283220067C84005144BB /* Debug */,
@@ -325,7 +325,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		8719283420067C84005144BB /* Build configuration list for PBXNativeTarget "offsetfinder64" */ = {
+		8719283420067C84005144BB /* Build configuration list for PBXNativeTarget "liboffsetfinder64" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8719283520067C84005144BB /* Debug */,

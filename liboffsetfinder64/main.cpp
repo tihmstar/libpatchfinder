@@ -7,7 +7,7 @@
 //
 
 #include <iostream>
-#include "offsetfinder64.hpp"
+#include "liboffsetfinder64.hpp"
 
 using namespace std;
 using namespace tihmstar;

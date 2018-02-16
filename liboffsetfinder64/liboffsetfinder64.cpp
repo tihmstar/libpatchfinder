@@ -6,7 +6,7 @@
 //  Copyright © 2018 tihmstar. All rights reserved.
 //
 
-#include "offsetfinder64.hpp"
+#include "liboffsetfinder64.hpp"
 
 
 extern "C"{
