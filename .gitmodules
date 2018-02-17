@@ -1,3 +1,6 @@
 [submodule "external/img4tool"]
 	path = external/img4tool
 	url = https://github.com/tihmstar/img4tool.git
+[submodule "external/libplist"]
+	path = external/libplist
+	url = https://github.com/libimobiledevice/libplist/

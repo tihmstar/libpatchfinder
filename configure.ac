@@ -18,7 +18,7 @@ AC_CONFIG_MACRO_DIRS([m4])
 AM_PROG_LIBTOOL
 AM_INIT_AUTOMAKE
 
-CPPFLAGS+=" -std=c++11 -O3 -arch arm64 -isysroot $(xcrun --show-sdk-path --sdk iphoneos)"
+CPPFLAGS+=" -std=c++11 -O3"
 
 CPPFLAGS+=" -D OFFSETFINDER64_VERSION_COMMIT_COUNT=\\\"$(git rev-list --count HEAD | tr -d '\n')\\\""
 CPPFLAGS+=" -D OFFSETFINDER64_VERSION_COMMIT_SHA=\\\"$(git rev-parse HEAD | tr -d '\n')\\\""
