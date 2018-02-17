@@ -1,27 +1,31 @@
 AC_PREREQ([2.69])
-AC_INIT([liboffsetfinder64], [m4_esyscmd([git rev-list --count HEAD])], [tihmstar@gmail.com])
-AC_CONFIG_SRCDIR([liboffsetfinder64/liboffsetfinder64.hpp])
-AC_CONFIG_HEADERS([config.h])
-AM_PROG_LIBTOOL
+AC_INIT([liboffsetfinder64], m4_esyscmd([git rev-list --count HEAD | tr -d '\n']), [tihmstar@gmail.com])
 
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE(liboffsetfinder64, [m4_esyscmd([git rev-list --count HEAD])])
 
-# Checks for programs.
-AC_PROG_CXX
-CPPFLAGS+=" -std=c++11 -O3"
-CFLAGS+=" -std=c11 -O3"
-AC_PROG_CC
-
+AC_CANONICAL_HOST
 # Check for operating system
 AC_MSG_CHECKING([whether we need platform-specific build settings])
 case $host_os in
   darwin* )
-        CXXFLAGS+=" -stdlib=libc++"
+        CXXFLAGS+=" -stdlib=libc++ "
         ;;
 esac
 
+AC_CONFIG_SRCDIR([config.h.in])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIRS([m4])
+AM_PROG_LIBTOOL
+AM_INIT_AUTOMAKE
+
+CPPFLAGS+=" -std=c++11 -O3 -arch arm64 -isysroot $(xcrun --show-sdk-path --sdk iphoneos)"
+
+CPPFLAGS+=" -D OFFSETFINDER64_VERSION_COMMIT_COUNT=\\\"$(git rev-list --count HEAD | tr -d '\n')\\\""
+CPPFLAGS+=" -D OFFSETFINDER64_VERSION_COMMIT_SHA=\\\"$(git rev-parse HEAD | tr -d '\n')\\\""
+
+# Checks for programs.
+AC_PROG_CXX
+AC_PROG_CC
 
 # Checks for libraries.
 
@@ -41,10 +45,11 @@ AC_TYPE_UINT8_T
 AC_FUNC_ERROR_AT_LINE
 AC_FUNC_MALLOC
 
-AC_CONFIG_SUBDIRS([external/img4tool])
+LT_INIT
+
 AC_CONFIG_FILES([Makefile
                  include/Makefile
                  liboffsetfinder64/Makefile
 		 liboffsetfinder64.pc])
-
+AC_CONFIG_SUBDIRS([external/img4tool])
 AC_OUTPUT

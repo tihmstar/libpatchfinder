@@ -284,6 +284,7 @@
 				HEADER_SEARCH_PATHS = (
 					/usr/local/include,
 					/usr/local/opt/openssl/include,
+					"$(SRCROOT)/include",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/lib,
@@ -302,6 +303,7 @@
 				HEADER_SEARCH_PATHS = (
 					/usr/local/include,
 					/usr/local/opt/openssl/include,
+					"$(SRCROOT)/include",
 				);
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/lib,
