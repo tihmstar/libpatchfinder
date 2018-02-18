@@ -32,12 +32,16 @@ extern "C"{
 #define retassure(cond, err) if ((cond) == 0) throw tihmstar::exception(__LINE__,err)
 #define assureclean(cond) do {if (!(cond)){clean();assure(cond);}} while(0)
 
-#define BIT_RANGE(v,begin,end) ( ((v)>>(begin)) % (1 << ((end)-(begin)+1)) )
-#define BIT_AT(v,pos) ( (v >> pos) % 2 )
-
 #ifdef DEBUG
 #define OFFSETFINDER64_VERSION_COMMIT_COUNT "Debug"
 #define OFFSETFINDER64_VERSION_COMMIT_SHA "Build: " __DATE__ " " __TIME__
+
+uint64_t BIT_RANGE(uint64_t v, int begin, int end) { return ((v)>>(begin)) % (1 << ((end)-(begin)+1)); }
+uint64_t BIT_AT(uint64_t v, int pos){ return (v >> pos) % 2; }
+
+#else
+#define BIT_RANGE(v,begin,end) ( ((v)>>(begin)) % (1 << ((end)-(begin)+1)) )
+#define BIT_AT(v,pos) ( (v >> pos) % 2 )
 #endif
 
 using namespace std;
@@ -371,6 +375,9 @@ namespace tihmstar{
             static bool is_adrp(uint32_t i){
                 return BIT_RANGE(i, 24, 28) == 0b10000 && (i>>31);
             }
+            static bool is_adr(uint32_t i){
+                return BIT_RANGE(i, 24, 28) == 0b10000 && !(i>>31);
+            }
             static bool is_add(uint32_t i){
                 return BIT_RANGE(i, 24, 28) == 0b10001;
             }
@@ -411,6 +418,7 @@ namespace tihmstar{
             enum type{
                 unknown,
                 adrp,
+                adr,
                 bl,
                 cbz,
                 ret,
@@ -437,6 +445,8 @@ namespace tihmstar{
                 uint32_t val = value();
                 if (is_adrp(val))
                     return adrp;
+                else if (is_adr(val))
+                    return adr;
                 else if (is_add(val))
                     return add;
                 else if (is_bl(val))
@@ -494,6 +504,8 @@ namespace tihmstar{
                         break;
                     case adrp:
                         return ((pc()>>12)<<12) + signExtend64(((((value() % (1<<24))>>5)<<2) | BIT_RANGE(value(), 29, 30))<<12,32);
+                    case adr:
+                        return pc() + signExtend64((BIT_RANGE(value(), 5, 23)<<2) | (BIT_RANGE(value(), 29, 30)), 21);
                     case add:
                         return BIT_RANGE(value(), 10, 21) << (((value()>>22)&1) * 12);
                     case bl:
@@ -532,6 +544,7 @@ namespace tihmstar{
                         reterror("can't get rd of unknown instruction");
                         break;
                     case adrp:
+                    case adr:
                     case add:
                     case movk:
                     case orr:
@@ -602,11 +615,14 @@ namespace tihmstar{
             uint64_t imm = 0;
             try {
                 while (1){
-                    if (adrp.type() == insn::adrp) {
+                    if (adrp == insn::adr) {
+                        if (adrp.imm() == (uint64_t)pos)
+                            return (loc_t)adrp.pc();
+                    }else if (adrp == insn::adrp) {
                         rd = adrp.rd();
                         imm = adrp.imm();
-                    }else if (adrp.type() == insn::add && rd == adrp.rd()){
-                        if (imm + adrp.imm() == (uint64_t)pos)
+                    }else if (adrp == insn::add && rd == adrp.rd()){
+                        if (imm + adrp.imm() == (int64_t)pos)
                             return (loc_t)adrp.pc();
                     }
                     ++adrp;
@@ -664,6 +680,18 @@ namespace tihmstar{
 #pragma mark common patchs
 constexpr char patch_nop[] = "\x1F\x20\x03\xD5";
 constexpr size_t patch_nop_size = sizeof(patch_nop)-1;
+
+#pragma mark v0rtex
+loc_t offsetfinder64::find_zone_map(){
+    loc_t str = memmem("zone_init", sizeof("zone_init"));
+    retassure(str, "Failed to find str");
+    
+    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    retassure(ref, "literal ref to str");
+
+    
+    return 0;
+}
 
 
 #pragma mark patch_finders

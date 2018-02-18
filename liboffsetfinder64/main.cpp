@@ -17,6 +17,16 @@ int main(int argc, const char * argv[]) {
     offsetfinder64 fi(argv[1]);
     
     {
+        patchfinder64::loc_t asd = fi.find_zone_map();
+        cout << hex << asd << endl;
+    }
+    
+    
+    
+    
+    
+    
+    {
         patchfinder64::patch asd = fi.find_lwvm_patch_offsets();
         cout << hex << (void*)asd._location << endl;
     }

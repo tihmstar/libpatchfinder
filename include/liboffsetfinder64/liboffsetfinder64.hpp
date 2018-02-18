@@ -84,6 +84,11 @@ namespace tihmstar {
         patchfinder64::loc_t find_sym(const char *sym);
         patchfinder64::loc_t find_syscall0();
         
+        /*------------------------ v0rtex -------------------------- */
+        patchfinder64::loc_t find_zone_map();
+
+        
+        /*------------------------ kernelpatches -------------------------- */
         patchfinder64::patch find_sandbox_patch();
         patchfinder64::patch find_amfi_substrate_patch();
         patchfinder64::patch find_cs_enforcement_disable_amfi();
