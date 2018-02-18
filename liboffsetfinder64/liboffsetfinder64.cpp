@@ -689,10 +689,125 @@ loc_t offsetfinder64::find_zone_map(){
     loc_t ref = find_literal_ref(_segments, _kslide, str);
     retassure(ref, "literal ref to str");
 
+    insn ptr(_segments,_kslide,ref);
     
+    loc_t ret = 0;
+    
+    while (++ptr != insn::adrp);
+    ret = (loc_t)ptr.imm();
+    
+    while (++ptr != insn::add);
+    ret += ptr.imm();
+    
+    return ret;
+}
+
+loc_t offsetfinder64::find_kernel_map(){
+    return find_sym("_kernel_map");
+}
+
+loc_t offsetfinder64::find_kernel_task(){
+    return find_sym("_kernel_task");
+}
+
+loc_t offsetfinder64::find_realhost(){
+    loc_t sym = find_sym("_KUNCExecute");
+    
+    insn ptr(_segments,_kslide,sym);
+    
+    loc_t ret = 0;
+    
+    while (++ptr != insn::adrp);
+    ret = (loc_t)ptr.imm();
+    
+    while (++ptr != insn::add);
+    ret += ptr.imm();
+    
+    return ret;
+}
+
+loc_t offsetfinder64::find_bzero(){
+    return find_sym("___bzero");
+}
+
+loc_t offsetfinder64::find_bcopy(){
+    return find_sym("_bcopy");
+}
+
+loc_t offsetfinder64::find_copyout(){
+    return find_sym("_copyout");
+}
+
+loc_t offsetfinder64::find_ipc_port_alloc_special(){
+    loc_t sym = find_sym("_KUNCGetNotificationID");
+    insn ptr(_segments,_kslide,sym);
+    
+    while (++ptr != insn::bl);
+    while (++ptr != insn::bl);
+    
+    return (loc_t)ptr.pc() + 4*ptr.imm();
+}
+
+loc_t offsetfinder64::find_ipc_kobject_set(){
+    loc_t sym = find_sym("_KUNCGetNotificationID");
+    insn ptr(_segments,_kslide,sym);
+    
+    while (++ptr != insn::bl);
+    while (++ptr != insn::bl);
+    while (++ptr != insn::bl);
+    
+    return (loc_t)ptr.pc() + 4*ptr.imm();
+}
+
+loc_t offsetfinder64::find_ipc_port_make_send(){
+    loc_t sym = find_sym("_convert_task_to_port");
+    insn ptr(_segments,_kslide,sym);
+    while (++ptr != insn::bl);
+    while (++ptr != insn::bl);
+    
+    return (loc_t)ptr.pc() + 4*ptr.imm();
+}
+
+loc_t offsetfinder64::find_chgproccnt(){
+    loc_t str = memmem("\"chgproccnt: lost user\"", sizeof("\"chgproccnt: lost user\""));
+    retassure(str, "Failed to find str");
+    
+    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    retassure(ref, "literal ref to str");
+
+    reterror("not implemented yet");
     return 0;
 }
 
+loc_t offsetfinder64::find_rop_add_x0_x0_0x10(){
+    constexpr char ropbytes[] = "\x00\x40\x00\x91\xC0\x03\x5F\xD6";
+    return [](const void *little, size_t little_len, vector<text_t>segments, offset_t kslide)->loc_t{
+        for (auto seg : segments) {
+            if (!seg.isExec)
+                continue;
+            
+            if (loc_t rt = (loc_t)::memmem(seg.map, seg.size, little, little_len)) {
+                return rt-seg.map+seg.base+kslide;
+            }
+        }
+        return 0;
+    }(ropbytes,sizeof(ropbytes)-1,_segments,_kslide);
+}
+
+loc_t offsetfinder64::find_rop_ldr_x0_x0_0x10(){
+    constexpr char ropbytes[] = "\x00\x08\x40\xF9\xC0\x03\x5F\xD6";
+    return [](const void *little, size_t little_len, vector<text_t>segments, offset_t kslide)->loc_t{
+        for (auto seg : segments) {
+            if (!seg.isExec)
+                continue;
+            
+            if (loc_t rt = (loc_t)::memmem(seg.map, seg.size, little, little_len)) {
+                return rt-seg.map+seg.base+kslide;
+            }
+        }
+        return 0;
+    }(ropbytes,sizeof(ropbytes)-1,_segments,_kslide);
+}
 
 #pragma mark patch_finders
 patch offsetfinder64::find_sandbox_patch(){

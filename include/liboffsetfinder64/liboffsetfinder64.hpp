@@ -86,7 +86,21 @@ namespace tihmstar {
         
         /*------------------------ v0rtex -------------------------- */
         patchfinder64::loc_t find_zone_map();
-
+        patchfinder64::loc_t find_kernel_map();
+        patchfinder64::loc_t find_kernel_task();
+        patchfinder64::loc_t find_realhost();
+        patchfinder64::loc_t find_bzero();
+        patchfinder64::loc_t find_bcopy();
+        patchfinder64::loc_t find_copyout();
+        patchfinder64::loc_t find_ipc_port_alloc_special();
+        patchfinder64::loc_t find_ipc_kobject_set();
+        patchfinder64::loc_t find_ipc_port_make_send();
+        patchfinder64::loc_t find_chgproccnt();
+        
+        
+        patchfinder64::loc_t find_rop_add_x0_x0_0x10();
+        patchfinder64::loc_t find_rop_ldr_x0_x0_0x10();
+        
         
         /*------------------------ kernelpatches -------------------------- */
         patchfinder64::patch find_sandbox_patch();

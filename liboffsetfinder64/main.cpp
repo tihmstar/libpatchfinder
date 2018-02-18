@@ -17,8 +17,56 @@ int main(int argc, const char * argv[]) {
     offsetfinder64 fi(argv[1]);
     
     {
+        patchfinder64::loc_t asd = fi.find_chgproccnt();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_rop_add_x0_x0_0x10();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_rop_ldr_x0_x0_0x10();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_ipc_port_make_send();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_ipc_kobject_set();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_ipc_port_alloc_special();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_copyout();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_bcopy();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_bzero();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_realhost();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_kernel_task();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_kernel_map();
+        cout << hex << (void*)asd << endl;
+    }
+    {
         patchfinder64::loc_t asd = fi.find_zone_map();
-        cout << hex << asd << endl;
+        cout << hex << (void*)asd << endl;
     }
     
     
