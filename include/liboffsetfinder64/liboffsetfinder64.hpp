@@ -92,11 +92,15 @@ namespace tihmstar {
         patchfinder64::loc_t find_bzero();
         patchfinder64::loc_t find_bcopy();
         patchfinder64::loc_t find_copyout();
+        patchfinder64::loc_t find_copyin();
         patchfinder64::loc_t find_ipc_port_alloc_special();
         patchfinder64::loc_t find_ipc_kobject_set();
         patchfinder64::loc_t find_ipc_port_make_send();
         patchfinder64::loc_t find_chgproccnt();
-        
+        patchfinder64::loc_t find_kauth_cred_ref();
+        patchfinder64::loc_t find_osserializer_serialize();
+        uint32_t             find_vtab_get_external_trap_for_index();
+
         
         patchfinder64::loc_t find_rop_add_x0_x0_0x10();
         patchfinder64::loc_t find_rop_ldr_x0_x0_0x10();

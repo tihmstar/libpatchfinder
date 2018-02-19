@@ -17,6 +17,18 @@ int main(int argc, const char * argv[]) {
     offsetfinder64 fi(argv[1]);
     
     {
+        uint32_t asd = fi.find_vtab_get_external_trap_for_index();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_osserializer_serialize();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_kauth_cred_ref();
+        cout << hex << (void*)asd << endl;
+    }
+    {
         patchfinder64::loc_t asd = fi.find_chgproccnt();
         cout << hex << (void*)asd << endl;
     }
@@ -38,6 +50,10 @@ int main(int argc, const char * argv[]) {
     }
     {
         patchfinder64::loc_t asd = fi.find_ipc_port_alloc_special();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_copyin();
         cout << hex << (void*)asd << endl;
     }
     {

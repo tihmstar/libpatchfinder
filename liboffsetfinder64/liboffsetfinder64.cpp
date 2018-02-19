@@ -367,6 +367,9 @@ namespace tihmstar{
             uint32_t value(){
                 return (*(uint32_t*)(loc_t)(*this));
             }
+            uint64_t doublevalue(){
+                return (*(uint64_t*)(loc_t)(*this));
+            }
             
         public: //static type determinition
             static uint64_t deref(segment_t segments, offset_t kslide, loc_t p){
@@ -738,6 +741,10 @@ loc_t offsetfinder64::find_copyout(){
     return find_sym("_copyout");
 }
 
+loc_t offsetfinder64::find_copyin(){
+    return find_sym("_copyin");
+}
+
 loc_t offsetfinder64::find_ipc_port_alloc_special(){
     loc_t sym = find_sym("_KUNCGetNotificationID");
     insn ptr(_segments,_kslide,sym);
@@ -774,8 +781,32 @@ loc_t offsetfinder64::find_chgproccnt(){
     
     loc_t ref = find_literal_ref(_segments, _kslide, str);
     retassure(ref, "literal ref to str");
-
+    
     reterror("not implemented yet");
+    return 0;
+}
+
+loc_t offsetfinder64::find_kauth_cred_ref(){
+    return find_sym("_kauth_cred_ref");
+}
+
+loc_t offsetfinder64::find_osserializer_serialize(){
+    return find_sym("__ZNK12OSSerializer9serializeEP11OSSerialize");
+}
+
+uint32_t offsetfinder64::find_vtab_get_external_trap_for_index(){
+    loc_t sym = find_sym("__ZTV12IOUserClient");
+    sym += 2*sizeof(uint64_t);
+    
+    loc_t nn = find_sym("__ZN12IOUserClient23getExternalTrapForIndexEj");
+    
+    insn data(_segments,_kslide,sym,insn::kText_and_Data);
+    --data;
+    for (int i=0; i<0x200; i++) {
+        if ((++data).doublevalue() == (uint64_t)nn)
+            return i;
+        ++data;
+    }
     return 0;
 }
 
