@@ -442,6 +442,9 @@ namespace tihmstar{
             static bool is_movz(uint32_t i){
                 return (BIT_RANGE(i, 23, 30) == 0b10100101);
             }
+            static bool is_bcond(uint32_t i){
+                return (BIT_RANGE(i, 24, 31) == 0b01010100) && !BIT_AT(i, 4);
+            }
             
             
         public: //type
@@ -463,7 +466,8 @@ namespace tihmstar{
                 ldxr,
                 str,
                 stp,
-                movz
+                movz,
+                bcond
             };
             enum subtype{
                 st_general,
@@ -474,6 +478,23 @@ namespace tihmstar{
             enum supertype{
                 sut_general,
                 sut_branch_imm
+            };
+            enum cond{
+                NE = 000,
+                EG = 000,
+                CS = 001,
+                CC = 001,
+                MI = 010,
+                PL = 010,
+                VS = 011,
+                VC = 011,
+                HI = 100,
+                LS = 100,
+                GE = 101,
+                LT = 101,
+                GT = 110,
+                LE = 110,
+                AL = 111
             };
             type type(){
                 uint32_t val = value();
@@ -511,7 +532,8 @@ namespace tihmstar{
                     return stp;
                 else if (is_movz(val))
                     return movz;
-                
+                else if (is_bcond(val))
+                    return bcond;
                 
                 return unknown;
             }
@@ -534,6 +556,7 @@ namespace tihmstar{
                     case cbz:
                     case cbnz:
                     case tbnz:
+                    case bcond:
                         return sut_branch_imm;
                         
                     default:
@@ -556,6 +579,7 @@ namespace tihmstar{
                     case cbz:
                     case cbnz:
                     case tbnz:
+                    case bcond:
                         return signExtend64(BIT_RANGE(value(), 5, 23), 19); //untested
                     case movk:
                     case movz:
@@ -653,6 +677,8 @@ namespace tihmstar{
                         return ((value() >>31) << 5) | BIT_RANGE(value(), 19, 23);
                     case stp:
                         return BIT_RANGE(value(), 10, 14); //Rt2
+                    case bcond:
+                        return 0; //condition
                     default:
                         reterror("failed to get other");
                         break;
@@ -1232,11 +1258,29 @@ patch offsetfinder64::find_lwvm_patch_offsets(){
     loc_t ref = find_literal_ref(_segments, _kslide, str);
     retassure(ref, "literal ref to str");
 
+    insn functop(_segments,_kslide,ref);
     
-    reterror("not implemented yet");
+    while (--functop != insn::stp || (functop+1) != insn::stp || (functop+2) != insn::stp || (functop-2) != insn::ret);
     
+    insn dstfunc(functop);
+    loc_t destination = 0;
+    while (1) {
+        while (++dstfunc != insn::bl);
+        
+        try {
+            destination = jump_stub_call_ptr_loc(dstfunc);
+        } catch (tihmstar::exception &e) {
+            continue;
+        }
+        if (insn::deref(_segments, _kslide, destination) == (uint64_t)find_sym("_PE_i_can_has_kernel_configuration"))
+            break;
+    }
     
-    return {0,0,0};
+    while (++dstfunc != insn::bcond || dstfunc.other() != insn::cond::NE);
+    
+    loc_t target = (loc_t)( dstfunc.pc() + 4*dstfunc.imm());
+    
+    return {destination,&target,sizeof(target)};
 }
 
 

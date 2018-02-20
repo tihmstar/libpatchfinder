@@ -16,115 +16,115 @@ int main(int argc, const char * argv[]) {
     
     offsetfinder64 fi(argv[1]);
     
-    {
-        uint32_t asd = fi.find_sizeof_task();
-        cout << hex << asd << endl;
-    }
-    {
-        uint32_t asd = fi.find_task_itk_self();
-        cout << hex << asd << endl;
-    }
-    {
-        uint32_t asd = fi.find_task_itk_registered();
-        cout << hex << asd << endl;
-    }
-    {
-        uint32_t asd = fi.find_vm_map_hdr();
-        cout << hex << asd << endl;
-    }
-    {
-        uint32_t asd = fi.find_proc_ucred();
-        cout << hex << asd << endl;
-    }
-    {
-        uint32_t asd = fi.find_task_bsd_info();
-        cout << hex << asd << endl;
-    }
-    {
-        uint32_t asd = fi.find_ipc_space_is_task();
-        cout << hex << asd << endl;
-    }
-    {
-        uint32_t asd = fi.find_iouserclient_ipc();
-        cout << hex << asd << endl;
-    }
-    {
-        uint32_t asd = fi.find_vtab_get_retain_count();
-        cout << hex << asd << endl;
-    }
-    {
-        uint32_t asd = fi.find_vtab_get_external_trap_for_index();
-        cout << hex << asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_osserializer_serialize();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_kauth_cred_ref();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_chgproccnt();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_rop_add_x0_x0_0x10();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_rop_ldr_x0_x0_0x10();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_ipc_port_make_send();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_ipc_kobject_set();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_ipc_port_alloc_special();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_copyin();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_copyout();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_bcopy();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_bzero();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_realhost();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_kernel_task();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_kernel_map();
-        cout << hex << (void*)asd << endl;
-    }
-    {
-        patchfinder64::loc_t asd = fi.find_zone_map();
-        cout << hex << (void*)asd << endl;
-    }
-    
-    
-    
-    
-    
+//    {
+//        uint32_t asd = fi.find_sizeof_task();
+//        cout << hex << asd << endl;
+//    }
+//    {
+//        uint32_t asd = fi.find_task_itk_self();
+//        cout << hex << asd << endl;
+//    }
+//    {
+//        uint32_t asd = fi.find_task_itk_registered();
+//        cout << hex << asd << endl;
+//    }
+//    {
+//        uint32_t asd = fi.find_vm_map_hdr();
+//        cout << hex << asd << endl;
+//    }
+//    {
+//        uint32_t asd = fi.find_proc_ucred();
+//        cout << hex << asd << endl;
+//    }
+//    {
+//        uint32_t asd = fi.find_task_bsd_info();
+//        cout << hex << asd << endl;
+//    }
+//    {
+//        uint32_t asd = fi.find_ipc_space_is_task();
+//        cout << hex << asd << endl;
+//    }
+//    {
+//        uint32_t asd = fi.find_iouserclient_ipc();
+//        cout << hex << asd << endl;
+//    }
+//    {
+//        uint32_t asd = fi.find_vtab_get_retain_count();
+//        cout << hex << asd << endl;
+//    }
+//    {
+//        uint32_t asd = fi.find_vtab_get_external_trap_for_index();
+//        cout << hex << asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_osserializer_serialize();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_kauth_cred_ref();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_chgproccnt();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_rop_add_x0_x0_0x10();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_rop_ldr_x0_x0_0x10();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_ipc_port_make_send();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_ipc_kobject_set();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_ipc_port_alloc_special();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_copyin();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_copyout();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_bcopy();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_bzero();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_realhost();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_kernel_task();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_kernel_map();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    {
+//        patchfinder64::loc_t asd = fi.find_zone_map();
+//        cout << hex << (void*)asd << endl;
+//    }
+//    
+//    
+//    
+//    
+//    
     
     {
         patchfinder64::patch asd = fi.find_lwvm_patch_offsets();
