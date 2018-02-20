@@ -102,6 +102,13 @@ namespace tihmstar {
         uint32_t             find_vtab_get_external_trap_for_index();
         uint32_t             find_vtab_get_retain_count();
         uint32_t             find_iouserclient_ipc();
+        uint32_t             find_ipc_space_is_task();
+        uint32_t             find_proc_ucred();
+        uint32_t             find_task_bsd_info();
+        uint32_t             find_vm_map_hdr();
+        uint32_t             find_task_itk_self();
+        uint32_t             find_task_itk_registered();
+        uint32_t             find_sizeof_task();
         
         patchfinder64::loc_t find_rop_add_x0_x0_0x10();
         patchfinder64::loc_t find_rop_ldr_x0_x0_0x10();

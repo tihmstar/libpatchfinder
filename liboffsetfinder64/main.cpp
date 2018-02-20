@@ -17,6 +17,34 @@ int main(int argc, const char * argv[]) {
     offsetfinder64 fi(argv[1]);
     
     {
+        uint32_t asd = fi.find_sizeof_task();
+        cout << hex << asd << endl;
+    }
+    {
+        uint32_t asd = fi.find_task_itk_self();
+        cout << hex << asd << endl;
+    }
+    {
+        uint32_t asd = fi.find_task_itk_registered();
+        cout << hex << asd << endl;
+    }
+    {
+        uint32_t asd = fi.find_vm_map_hdr();
+        cout << hex << asd << endl;
+    }
+    {
+        uint32_t asd = fi.find_proc_ucred();
+        cout << hex << asd << endl;
+    }
+    {
+        uint32_t asd = fi.find_task_bsd_info();
+        cout << hex << asd << endl;
+    }
+    {
+        uint32_t asd = fi.find_ipc_space_is_task();
+        cout << hex << asd << endl;
+    }
+    {
         uint32_t asd = fi.find_iouserclient_ipc();
         cout << hex << asd << endl;
     }

@@ -295,6 +295,19 @@ namespace tihmstar{
             insn operator-(int i){
                 return this->operator+(-i);
             }
+            insn &operator+=(int i){
+                if (i>0) {
+                    while (i-->0)
+                        this->operator++();
+                }else{
+                    while (i++>0)
+                        this->operator--();
+                }
+                return *this;
+            }
+            insn &operator-=(int i){
+                return this->operator+=(-i);
+            }
             
         public: //helpers
             __attribute__((always_inline)) static int64_t signExtend64(uint64_t v, int vSize){
@@ -418,6 +431,17 @@ namespace tihmstar{
             static bool is_ldxr(uint32_t i){
                 return (BIT_RANGE(i, 24, 29) == 0b001000) && (i >> 31) && BIT_AT(i, 22);
             }
+            static bool is_str(uint32_t i){
+#warning TODO redo this! currently only recognises STR (immediate)
+                return (BIT_RANGE(i, 22, 29) == 0b11100100) && (i >> 31);
+            }
+            static bool is_stp(uint32_t i){
+#warning TODO redo this! currently only recognises STR (immediate)
+                return (BIT_RANGE(i, 25, 30) == 0b010100) && !BIT_AT(i, 22);
+            }
+            static bool is_movz(uint32_t i){
+                return (BIT_RANGE(i, 23, 30) == 0b10100101);
+            }
             
             
         public: //type
@@ -436,7 +460,10 @@ namespace tihmstar{
                 movk,
                 orr,
                 tbz,
-                ldxr
+                ldxr,
+                str,
+                stp,
+                movz
             };
             enum subtype{
                 st_general,
@@ -478,6 +505,13 @@ namespace tihmstar{
                     return tbz;
                 else if (is_ldxr(val))
                     return ldxr;
+                else if (is_str(val))
+                    return str;
+                else if (is_stp(val))
+                    return stp;
+                else if (is_movz(val))
+                    return movz;
+                
                 
                 return unknown;
             }
@@ -524,6 +558,7 @@ namespace tihmstar{
                     case tbnz:
                         return signExtend64(BIT_RANGE(value(), 5, 23), 19); //untested
                     case movk:
+                    case movz:
                         return BIT_RANGE(value(), 5, 20);
                     case ldr:
                         if(subtype() != st_immediate){
@@ -537,10 +572,16 @@ namespace tihmstar{
                             // Signed Offset
                             return signExtend64(BIT_RANGE(value(), 12, 21), 9); //untested
                         }
+                    case str:
+#warning TODO rewrite this! currently only unsigned offset supported
+                        // Unsigned Offset
+                        return BIT_RANGE(value(), 10, 21) << (value()>>30);
                     case orr:
                         return DecodeBitMasks(BIT_AT(value(), 22),BIT_RANGE(value(), 10, 15),BIT_RANGE(value(), 16,21), true).first;
                     case tbz:
                         return BIT_RANGE(value(), 5, 18);
+                    case stp:
+                        return signExtend64(BIT_RANGE(value(), 15, 21),7) << (2+(value()>>31));
                     default:
                         reterror("failed to get imm value");
                         break;
@@ -557,6 +598,7 @@ namespace tihmstar{
                     case add:
                     case movk:
                     case orr:
+                    case movz:
                         return (value() % (1<<5));
                         
                     default:
@@ -574,6 +616,8 @@ namespace tihmstar{
                     case br:
                     case orr:
                     case ldxr:
+                    case str:
+                    case stp:
                         return BIT_RANGE(value(), 5, 9);
                         
                     default:
@@ -591,6 +635,8 @@ namespace tihmstar{
                     case tbnz:
                     case tbz:
                     case ldxr:
+                    case str:
+                    case stp:
                         return (value() % (1<<5));
                         
                     default:
@@ -605,6 +651,8 @@ namespace tihmstar{
                         break;
                     case tbz:
                         return ((value() >>31) << 5) | BIT_RANGE(value(), 19, 23);
+                    case stp:
+                        return BIT_RANGE(value(), 10, 14); //Rt2
                     default:
                         reterror("failed to get other");
                         break;
@@ -645,7 +693,7 @@ namespace tihmstar{
             }
             return 0;
         }
-        loc_t find_rel_branch_source(insn bdst, bool searchUp){
+        loc_t find_rel_branch_source(insn bdst, bool searchUp, int ignoreTimes=0){
             insn bsrc(bdst);
             
             while (true) {
@@ -655,6 +703,10 @@ namespace tihmstar{
                     while ((++bsrc).supertype() != insn::sut_branch_imm);
                 
                 if (bsrc.imm()*4 + bsrc.pc() == bdst.pc()) {
+                    if (ignoreTimes) {
+                        ignoreTimes--;
+                        continue;
+                    }
                     return (loc_t)bsrc.pc();
                 }
             }
@@ -790,8 +842,13 @@ loc_t offsetfinder64::find_chgproccnt(){
     loc_t ref = find_literal_ref(_segments, _kslide, str);
     retassure(ref, "literal ref to str");
     
-    reterror("not implemented yet");
-    return 0;
+    insn functop(_segments,_kslide,ref);
+    
+    while (--functop != insn::stp);
+    while (--functop == insn::stp);
+    ++functop;
+    
+    return (loc_t)functop.pc();
 }
 
 loc_t offsetfinder64::find_kauth_cred_ref(){
@@ -834,12 +891,70 @@ uint32_t offsetfinder64::find_vtab_get_retain_count(){
     return 0;
 }
 
+uint32_t offsetfinder64::find_proc_ucred(){
+    loc_t sym = find_sym("_proc_ucred");
+    return (uint32_t)insn(_segments,_kslide,sym).imm();
+}
+
+uint32_t offsetfinder64::find_task_bsd_info(){
+    loc_t sym = find_sym("_get_bsdtask_info");
+    return (uint32_t)insn(_segments,_kslide,sym).imm();
+}
+
+uint32_t offsetfinder64::find_vm_map_hdr(){
+    loc_t sym = find_sym("_vm_map_create");
+    
+    insn stp(_segments, _kslide, sym);
+    
+    while (++stp != insn::bl);
+
+    while (++stp != insn::cbz);
+    
+    while (++stp != insn::stp);
+    
+    return (uint32_t)stp.imm();
+}
 
 typedef struct mig_subsystem_struct {
     uint32_t min;
     uint32_t max;
     char *names;
 } mig_subsys;
+
+mig_subsys task_subsys ={ 0xd48, 0xd7a , NULL};
+uint32_t offsetfinder64::find_task_itk_self(){
+    loc_t task_subsystem=memmem(&task_subsys, 4);
+    assure(task_subsystem);
+    task_subsystem += 4*sizeof(uint64_t); //index0 now
+    
+    insn mach_ports_register(_segments,_kslide, (loc_t)insn::deref(_segments, _kslide, task_subsystem+3*5*8));
+    
+    while (++mach_ports_register != insn::bl || mach_ports_register.imm()*4+mach_ports_register.pc() != (uint64_t)find_sym("_lck_mtx_lock"));
+    
+    insn ldr(mach_ports_register);
+    
+    while (++ldr != insn::ldr || (ldr+2) != insn::ldr);
+    
+    return (uint32_t)ldr.imm();
+}
+
+uint32_t offsetfinder64::find_task_itk_registered(){
+    loc_t task_subsystem=memmem(&task_subsys, 4);
+    assure(task_subsystem);
+    task_subsystem += 4*sizeof(uint64_t); //index0 now
+    
+    insn mach_ports_register(_segments,_kslide, (loc_t)insn::deref(_segments, _kslide, task_subsystem+3*5*8));
+    
+    while (++mach_ports_register != insn::bl || mach_ports_register.imm()*4+mach_ports_register.pc() != (uint64_t)find_sym("_lck_mtx_lock"));
+    
+    insn ldr(mach_ports_register);
+    
+    while (++ldr != insn::ldr || (ldr+2) != insn::ldr);
+    ldr +=2;
+    
+    return (uint32_t)ldr.imm();
+}
+
 
 //IOUSERCLIENT_IPC
 mig_subsys host_priv_subsys = { 400, 426 } ;
@@ -879,6 +994,38 @@ uint32_t offsetfinder64::find_iouserclient_ipc(){
     while (++iokit_add_connect_reference != insn::add || iokit_add_connect_reference.rd() != 8 || ++iokit_add_connect_reference != insn::ldxr || iokit_add_connect_reference.rn() != 8);
 
     return (uint32_t)((--iokit_add_connect_reference).imm());
+}
+
+uint32_t offsetfinder64::find_ipc_space_is_task(){
+    loc_t str = memmem("\"ipc_task_init\"", sizeof("\"ipc_task_init\""));
+    retassure(str, "Failed to find str");
+    
+    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    retassure(ref, "literal ref to str");
+    
+    loc_t bref = find_rel_branch_source(insn(_segments,_kslide,ref), true, 2);
+    
+    insn istr(_segments,_kslide,bref);
+    
+    while (++istr != insn::str);
+    
+    return (uint32_t)istr.imm();
+}
+
+uint32_t offsetfinder64::find_sizeof_task(){
+    loc_t str = memmem("tasks", sizeof("tasks"));
+    retassure(str, "Failed to find str");
+    
+    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    retassure(ref, "literal ref to str");
+    
+    insn thebl(_segments, _kslide, ref);
+    
+    while (++thebl != insn::bl || (loc_t)(thebl.pc() + 4*thebl.imm()) != find_sym("_zinit"));
+    
+    --thebl;
+    
+    return (uint32_t)thebl.imm();
 }
 
 loc_t offsetfinder64::find_rop_add_x0_x0_0x10(){
