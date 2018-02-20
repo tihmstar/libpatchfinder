@@ -17,8 +17,16 @@ int main(int argc, const char * argv[]) {
     offsetfinder64 fi(argv[1]);
     
     {
+        uint32_t asd = fi.find_iouserclient_ipc();
+        cout << hex << asd << endl;
+    }
+    {
+        uint32_t asd = fi.find_vtab_get_retain_count();
+        cout << hex << asd << endl;
+    }
+    {
         uint32_t asd = fi.find_vtab_get_external_trap_for_index();
-        cout << hex << (void*)asd << endl;
+        cout << hex << asd << endl;
     }
     {
         patchfinder64::loc_t asd = fi.find_osserializer_serialize();

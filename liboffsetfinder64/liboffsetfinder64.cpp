@@ -415,6 +415,9 @@ namespace tihmstar{
             static bool is_tbz(uint32_t i){
                 return BIT_RANGE(i, 24, 30) == 0b0110110;
             }
+            static bool is_ldxr(uint32_t i){
+                return (BIT_RANGE(i, 24, 29) == 0b001000) && (i >> 31) && BIT_AT(i, 22);
+            }
             
             
         public: //type
@@ -432,7 +435,8 @@ namespace tihmstar{
                 cbnz,
                 movk,
                 orr,
-                tbz
+                tbz,
+                ldxr
             };
             enum subtype{
                 st_general,
@@ -472,6 +476,8 @@ namespace tihmstar{
                     return orr;
                 else if (is_tbz(val))
                     return tbz;
+                else if (is_ldxr(val))
+                    return ldxr;
                 
                 return unknown;
             }
@@ -567,6 +573,7 @@ namespace tihmstar{
                     case ret:
                     case br:
                     case orr:
+                    case ldxr:
                         return BIT_RANGE(value(), 5, 9);
                         
                     default:
@@ -583,6 +590,7 @@ namespace tihmstar{
                     case cbnz:
                     case tbnz:
                     case tbz:
+                    case ldxr:
                         return (value() % (1<<5));
                         
                     default:
@@ -808,6 +816,69 @@ uint32_t offsetfinder64::find_vtab_get_external_trap_for_index(){
         ++data;
     }
     return 0;
+}
+
+uint32_t offsetfinder64::find_vtab_get_retain_count(){
+    loc_t sym = find_sym("__ZTV12IOUserClient");
+    sym += 2*sizeof(uint64_t);
+    
+    loc_t nn = find_sym("__ZNK8OSObject14getRetainCountEv");
+    
+    insn data(_segments,_kslide,sym,insn::kText_and_Data);
+    --data;
+    for (int i=0; i<0x200; i++) {
+        if ((++data).doublevalue() == (uint64_t)nn)
+            return i;
+        ++data;
+    }
+    return 0;
+}
+
+
+typedef struct mig_subsystem_struct {
+    uint32_t min;
+    uint32_t max;
+    char *names;
+} mig_subsys;
+
+//IOUSERCLIENT_IPC
+mig_subsys host_priv_subsys = { 400, 426 } ;
+uint32_t offsetfinder64::find_iouserclient_ipc(){
+    loc_t host_priv_subsystem=memmem(&host_priv_subsys, 8);
+    assure(host_priv_subsystem);
+
+    insn memiterator(_segments,_kslide,host_priv_subsystem,insn::kData_only);
+    loc_t thetable = 0;
+    while (1){
+        --memiterator;--memiterator; //dec 8 byte
+        struct _anon{
+            uint64_t ptr;
+            uint64_t z0;
+            uint64_t z1;
+            uint64_t z2;
+        } *obj = (struct _anon*)(loc_t)memiterator;
+        
+        if (!obj->z0 && !obj->z1 &&
+            !memcmp(&obj[0], &obj[1], sizeof(struct _anon)) &&
+            !memcmp(&obj[0], &obj[2], sizeof(struct _anon)) &&
+            !memcmp(&obj[0], &obj[3], sizeof(struct _anon)) &&
+            !memcmp(&obj[0], &obj[4], sizeof(struct _anon)) &&
+            !obj[-1].ptr && obj[-1].z0 == 1 && !obj[-1].z1) {
+            thetable = (loc_t)memiterator.pc();
+            break;
+        }
+    }
+    
+    loc_t iokit_user_client_trap_func = (loc_t)insn::deref(_segments, _kslide, thetable + 100*4*8 - 8);
+    
+    insn bl_to_iokit_add_connect_reference(_segments,_kslide,iokit_user_client_trap_func);
+    while (++bl_to_iokit_add_connect_reference != insn::bl);
+    
+    insn iokit_add_connect_reference(bl_to_iokit_add_connect_reference,(loc_t)(bl_to_iokit_add_connect_reference.imm()*4 + bl_to_iokit_add_connect_reference.pc()));
+    
+    while (++iokit_add_connect_reference != insn::add || iokit_add_connect_reference.rd() != 8 || ++iokit_add_connect_reference != insn::ldxr || iokit_add_connect_reference.rn() != 8);
+
+    return (uint32_t)((--iokit_add_connect_reference).imm());
 }
 
 loc_t offsetfinder64::find_rop_add_x0_x0_0x10(){

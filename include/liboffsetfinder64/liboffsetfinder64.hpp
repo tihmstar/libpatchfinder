@@ -100,7 +100,8 @@ namespace tihmstar {
         patchfinder64::loc_t find_kauth_cred_ref();
         patchfinder64::loc_t find_osserializer_serialize();
         uint32_t             find_vtab_get_external_trap_for_index();
-
+        uint32_t             find_vtab_get_retain_count();
+        uint32_t             find_iouserclient_ipc();
         
         patchfinder64::loc_t find_rop_add_x0_x0_0x10();
         patchfinder64::loc_t find_rop_ldr_x0_x0_0x10();
