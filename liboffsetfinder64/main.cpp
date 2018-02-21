@@ -16,6 +16,13 @@ int main(int argc, const char * argv[]) {
     
     offsetfinder64 fi(argv[1]);
     
+    {
+        patchfinder64::loc_t asd = fi.find_gPhysBase();
+        cout << hex << (void*)asd << endl;
+    }
+
+    
+    
 //    {
 //        uint32_t asd = fi.find_sizeof_task();
 //        cout << hex << asd << endl;
@@ -126,6 +133,10 @@ int main(int argc, const char * argv[]) {
 //    
 //    
     
+    {
+        patchfinder64::loc_t asd = fi.find_sbops();
+        cout << hex << (void*)asd << endl;
+    }
     {
         patchfinder64::patch asd = fi.find_lwvm_patch_offsets();
         cout << hex << (void*)asd._location << endl;

@@ -115,15 +115,21 @@ namespace tihmstar {
         
         
         /*------------------------ kernelpatches -------------------------- */
-        patchfinder64::patch find_sandbox_patch();
-        patchfinder64::patch find_amfi_substrate_patch();
-        patchfinder64::patch find_cs_enforcement_disable_amfi();
         patchfinder64::patch find_i_can_has_debugger_patch_off();
-        patchfinder64::patch find_amfi_patch_offsets();
-        patchfinder64::patch find_proc_enforce();
-        std::vector<patchfinder64::patch> find_nosuid_off();
-        patchfinder64::patch find_remount_patch_offset();
         patchfinder64::patch find_lwvm_patch_offsets();
+        patchfinder64::patch find_remount_patch_offset();
+        std::vector<patchfinder64::patch> find_nosuid_off();
+        patchfinder64::patch find_proc_enforce();
+        patchfinder64::patch find_amfi_patch_offsets();
+        patchfinder64::patch find_cs_enforcement_disable_amfi();
+        patchfinder64::patch find_amfi_substrate_patch();
+        patchfinder64::patch find_sandbox_patch();
+        patchfinder64::loc_t find_sbops();
+        
+        /*------------------------ KPP bypass -------------------------- */
+        patchfinder64::loc_t find_gPhysBase();
+        patchfinder64::loc_t find_kernel_pmap();
+        
         
         ~offsetfinder64();
     };

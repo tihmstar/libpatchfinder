@@ -1257,7 +1257,7 @@ patch offsetfinder64::find_lwvm_patch_offsets(){
     
     loc_t ref = find_literal_ref(_segments, _kslide, str);
     retassure(ref, "literal ref to str");
-
+    
     insn functop(_segments,_kslide,ref);
     
     while (--functop != insn::stp || (functop+1) != insn::stp || (functop+2) != insn::stp || (functop-2) != insn::ret);
@@ -1283,6 +1283,40 @@ patch offsetfinder64::find_lwvm_patch_offsets(){
     return {destination,&target,sizeof(target)};
 }
 
+loc_t offsetfinder64::find_sbops(){
+    loc_t str = memmem("Seatbelt sandbox policy", sizeof("Seatbelt sandbox policy")-1);
+    retassure(str, "Failed to find str");
+    
+    loc_t ref = memmem(&str, sizeof(str));
+    retassure(ref, "Failed to find ref");
+    
+    return ref+0x18;
+}
+
+#pragma mark KPP bypass
+loc_t offsetfinder64::find_gPhysBase(){
+    loc_t str = memmem("\"pmap_map_high_window_bd: area too large", sizeof("\"pmap_map_high_window_bd: area too large")-1);
+    retassure(str, "Failed to find str");
+    
+    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    retassure(ref, "literal ref to str");
+    
+    insn tgtref(_segments, _kslide, ref);
+
+    loc_t gPhysBase = 0;
+    
+    while (++tgtref != insn::adrp);
+    gPhysBase = (loc_t)tgtref.imm();
+    
+    while (++tgtref != insn::ldr);
+    gPhysBase += tgtref.imm();
+    
+    return gPhysBase;
+}
+
+loc_t offsetfinder64::find_kernel_pmap(){
+    return find_sym("_kernel_pmap");
+}
 
 
 offsetfinder64::~offsetfinder64(){
