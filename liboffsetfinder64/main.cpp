@@ -17,6 +17,10 @@ int main(int argc, const char * argv[]) {
     offsetfinder64 fi(argv[1]);
     
     {
+        patchfinder64::loc_t asd = fi.find_entry();
+        cout << hex << (void*)asd << endl;
+    }
+    {
         uint64_t asd = fi.find_register_value((patchfinder64::loc_t)0xfffffff007085050, 20);
         cout << hex << (void*)asd << endl;
     }

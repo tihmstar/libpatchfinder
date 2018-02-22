@@ -148,6 +148,22 @@ void offsetfinder64::loadSegments(uint64_t slide){
             struct segment_command_64* seg = (struct segment_command_64*)lcmd;
             _segments.push_back({_kdata+seg->fileoff,seg->filesize, (loc_t)seg->vmaddr, (seg->maxprot & VM_PROT_EXECUTE) !=0});
         }
+        if (lcmd->cmd == LC_UNIXTHREAD) {
+            uint32_t *ptr = (uint32_t *)(lcmd + 1);
+            uint32_t flavor = ptr[0];
+            struct _tread{
+                uint64_t x[29];    /* General purpose registers x0-x28 */
+                uint64_t fp;    /* Frame pointer x29 */
+                uint64_t lr;    /* Link register x30 */
+                uint64_t sp;    /* Stack pointer x31 */
+                uint64_t pc;     /* Program counter */
+                uint32_t cpsr;    /* Current program status register */
+            } *thread = (struct _tread*)(ptr + 2);
+            if (flavor == 6) {
+                _kernel_entry = (patchfinder64::loc_t)(thread->pc);
+                _kernel_entry+=8; // i have no clue why i have to add 8 here
+            }
+        }
     }
     
     info("Inited offsetfinder64 %s %s\n",OFFSETFINDER64_VERSION_COMMIT_COUNT, OFFSETFINDER64_VERSION_COMMIT_SHA);
@@ -160,6 +176,10 @@ offsetfinder64::offsetfinder64(void* buf, size_t size, uint64_t slide) : _freeKe
 
 const void *offsetfinder64::kdata(){
     return _kdata;
+}
+
+loc_t offsetfinder64::find_entry(){
+    return _kernel_entry;
 }
 
 

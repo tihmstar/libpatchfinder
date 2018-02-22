@@ -69,6 +69,7 @@ namespace tihmstar {
         uint8_t *_kdata;
         size_t _ksize;
         offset_t _kslide;
+        patchfinder64::loc_t _kernel_entry;
         std::vector<text_t> _segments;
         
         struct symtab_command *__symtab;
@@ -79,6 +80,7 @@ namespace tihmstar {
         offsetfinder64(const char *filename);
         offsetfinder64(void* buf, size_t size, uint64_t base);
         const void *kdata();
+        patchfinder64::loc_t find_entry();
         
         patchfinder64::loc_t memmem(const void *little, size_t little_len);
         
