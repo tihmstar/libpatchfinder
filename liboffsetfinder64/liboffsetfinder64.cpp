@@ -1295,7 +1295,7 @@ vector<patch> offsetfinder64::find_nosuid_off(){
     insn orr(bl_vfs_context_is64bit);
     while (--orr != insn::orr || movk.imm() != 8);
     
-    return {{(loc_t)movk.pc(),patch_nop,patch_nop_size},{(loc_t)orr.pc(),patch_nop,patch_nop_size}};
+    return {{(loc_t)movk.pc(),patch_nop,patch_nop_size},{(loc_t)orr.pc(),"\xE9\x03\x08\x2A",4}}; // mov w9, w8
 }
 
 patch offsetfinder64::find_remount_patch_offset(){
@@ -1354,7 +1354,7 @@ loc_t offsetfinder64::find_sbops(){
     loc_t ref = memmem(&str, sizeof(str));
     retassure(ref, "Failed to find ref");
     
-    return ref+0x18;
+    return (loc_t)insn::deref(_segments, _kslide, ref+0x18);
 }
 
 #pragma mark KPP bypass

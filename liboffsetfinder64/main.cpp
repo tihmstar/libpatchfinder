@@ -15,6 +15,8 @@ using namespace tihmstar;
 int main(int argc, const char * argv[]) {
     
     offsetfinder64 fi(argv[1]);
+    
+    
     {
         patchfinder64::loc_t asd = fi.find_sbops();
         cout << hex << (void*)asd << endl;
