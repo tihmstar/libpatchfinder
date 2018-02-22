@@ -1144,6 +1144,11 @@ loc_t offsetfinder64::find_rop_ldr_x0_x0_0x10(){
 }
 
 #pragma mark patch_finders
+void slide_ptr(class patch *p,uint64_t slide){
+    slide += (uint64_t)p->_patch;
+    memcpy((void*)p->_patch, &slide, 4);
+}
+
 patch offsetfinder64::find_sandbox_patch(){
     loc_t str = memmem("process-exec denied while updating label", sizeof("process-exec denied while updating label")-1);
     retassure(str, "Failed to find str");
@@ -1248,10 +1253,7 @@ patch offsetfinder64::find_amfi_patch_offsets(){
     }
     
     uint64_t gadget = ret0.pc();
-    return {jscpl,&gadget,sizeof(gadget),[](class patch *p,uint64_t slide){
-        slide += (uint64_t)p->_patch;
-        memcpy((void*)p->_patch, &slide, 4);
-    }};
+    return {jscpl,&gadget,sizeof(gadget),slide_ptr};
 }
 
 patch offsetfinder64::find_proc_enforce(){
@@ -1342,10 +1344,7 @@ patch offsetfinder64::find_lwvm_patch_offsets(){
     
     loc_t target = (loc_t)( dstfunc.pc() + 4*dstfunc.imm());
     
-    return {destination,&target,sizeof(target),[](class patch *p,uint64_t slide){
-        slide += (uint64_t)p->_patch;
-        memcpy((void*)p->_patch, &slide, 4);
-    }};
+    return {destination,&target,sizeof(target),slide_ptr};
 }
 
 loc_t offsetfinder64::find_sbops(){
