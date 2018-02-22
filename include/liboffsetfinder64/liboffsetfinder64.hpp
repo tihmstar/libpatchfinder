@@ -51,10 +51,13 @@ namespace tihmstar {
             patch(const patch& cpy) : _location(cpy._location), _patchSize(cpy._patchSize){
                 _patch = malloc(_patchSize);
                 memcpy((void*)_patch, cpy._patch, _patchSize);
+                _slidefunc = cpy._slidefunc;
+                _slideme = cpy._slideme;
             }
             void slide(uint64_t slide){
                 if (!_slideme)
                     return;
+                printf("sliding with %p\n",(void*)slide);
                 _slidefunc(this,slide);
                 _slideme = false; //only slide once
             }
