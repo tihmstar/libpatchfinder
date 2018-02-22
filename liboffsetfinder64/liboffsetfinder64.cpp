@@ -1196,16 +1196,17 @@ patch offsetfinder64::find_cs_enforcement_disable_amfi(){
     insn cbz(_segments, _kslide, ref);
     while (--cbz != insn::cbz);
     
-    insn ret(cbz);
-    while (++ret != insn::ret);
+    insn movz(cbz);
+    while (++movz != insn::movz);
+    --movz;
 
-    int anz = static_cast<int>((ret.pc()-cbz.pc())/4 +1);
+    int anz = static_cast<int>((movz.pc()-cbz.pc())/4 +1);
     
     char mypatch[anz*4];
     for (int i=0; i<anz; i++) {
         ((uint32_t*)mypatch)[i] = *(uint32_t*)patch_nop;
     }
-
+    
     return {(loc_t)cbz.pc(),mypatch,static_cast<size_t>(anz*4)};
 }
 
