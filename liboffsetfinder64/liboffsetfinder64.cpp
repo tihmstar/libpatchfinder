@@ -1321,6 +1321,10 @@ loc_t offsetfinder64::find_kernel_pmap(){
     return find_sym("_kernel_pmap");
 }
 
+loc_t offsetfinder64::find_cpacr_write(){
+    return memmem("\x40\x10\x18\xD5", 4);
+}
+
 
 offsetfinder64::~offsetfinder64(){
     if (_freeKernel) safeFree(_kdata);
