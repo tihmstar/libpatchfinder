@@ -1248,7 +1248,10 @@ patch offsetfinder64::find_amfi_patch_offsets(){
     }
     
     uint64_t gadget = ret0.pc();
-    return {jscpl,&gadget,sizeof(gadget)};
+    return {jscpl,&gadget,sizeof(gadget),[](class patch *p,uint64_t slide){
+        slide += (uint64_t)p->_patch;
+        memcpy((void*)p->_patch, &slide, 4);
+    }};
 }
 
 patch offsetfinder64::find_proc_enforce(){
@@ -1339,7 +1342,10 @@ patch offsetfinder64::find_lwvm_patch_offsets(){
     
     loc_t target = (loc_t)( dstfunc.pc() + 4*dstfunc.imm());
     
-    return {destination,&target,sizeof(target)};
+    return {destination,&target,sizeof(target),[](class patch *p,uint64_t slide){
+        slide += (uint64_t)p->_patch;
+        memcpy((void*)p->_patch, &slide, 4);
+    }};
 }
 
 loc_t offsetfinder64::find_sbops(){
