@@ -43,10 +43,10 @@ namespace tihmstar {
             const loc_t _location;
             const void *_patch;
             const size_t _patchSize;
-            patch(loc_t location, const void *patch, size_t patchSize, void(*slidefunc)(class patch *patch, uint64_t slide) = NULL) : _location(location), _patchSize(patchSize){
+            patch(loc_t location, const void *patch, size_t patchSize, void(*slidefunc)(class patch *patch, uint64_t slide) = NULL) : _location(location), _patchSize(patchSize), _slidefunc(slidefunc){
                 _patch = malloc(_patchSize);
                 memcpy((void*)_patch, patch, _patchSize);
-                _slideme = (slidefunc) ? true : false;
+                _slideme = (_slidefunc) ? true : false;
             }
             patch(const patch& cpy) : _location(cpy._location), _patchSize(cpy._patchSize){
                 _patch = malloc(_patchSize);
