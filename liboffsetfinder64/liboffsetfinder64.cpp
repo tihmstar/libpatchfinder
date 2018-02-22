@@ -161,7 +161,6 @@ void offsetfinder64::loadSegments(uint64_t slide){
             } *thread = (struct _tread*)(ptr + 2);
             if (flavor == 6) {
                 _kernel_entry = (patchfinder64::loc_t)(thread->pc);
-                _kernel_entry+=8; // i have no clue why i have to add 8 here
             }
         }
     }
