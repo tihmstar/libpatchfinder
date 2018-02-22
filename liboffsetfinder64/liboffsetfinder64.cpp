@@ -158,6 +158,9 @@ offsetfinder64::offsetfinder64(void* buf, size_t size, uint64_t slide) : _freeKe
     loadSegments(slide);
 }
 
+const void *offsetfinder64::kdata(){
+    return _kdata;
+}
 
 
 #pragma mark macho offsetfinder

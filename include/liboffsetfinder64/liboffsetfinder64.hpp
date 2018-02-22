@@ -78,6 +78,7 @@ namespace tihmstar {
     public:
         offsetfinder64(const char *filename);
         offsetfinder64(void* buf, size_t size, uint64_t base);
+        const void *kdata();
         
         patchfinder64::loc_t memmem(const void *little, size_t little_len);
         
