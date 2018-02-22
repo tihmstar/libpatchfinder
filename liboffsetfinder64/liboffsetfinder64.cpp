@@ -644,6 +644,7 @@ namespace tihmstar{
                     case orr:
                     case ldxr:
                     case str:
+                    case ldr:
                     case stp:
                         return BIT_RANGE(value(), 5, 9);
                         
@@ -663,6 +664,7 @@ namespace tihmstar{
                     case tbz:
                     case ldxr:
                     case str:
+                    case ldr:
                     case stp:
                         return (value() % (1<<5));
                         
@@ -772,6 +774,41 @@ namespace tihmstar{
 #pragma mark common patchs
 constexpr char patch_nop[] = "\x1F\x20\x03\xD5";
 constexpr size_t patch_nop_size = sizeof(patch_nop)-1;
+
+uint64_t offsetfinder64::find_register_value(loc_t where, int reg){
+    insn functop(_segments, _kslide, where);
+    
+    //might be functop
+    //good enough for my purpose
+    while (--functop != insn::stp || (functop+1) != insn::stp || (functop+2) != insn::stp);
+    
+    uint64_t value[32] = {0};
+    
+    for (;(loc_t)functop.pc() < where;++functop) {
+        
+        switch (functop.type()) {
+            case patchfinder64::insn::adrp:
+                value[functop.rd()] = functop.imm();
+//                printf("%p: ADRP X%d, 0x%llx\n", (void*)functop.pc(), functop.rd(), functop.imm());
+                break;
+            case patchfinder64::insn::add:
+                value[functop.rd()] = value[functop.rn()] + functop.imm();
+//                printf("%p: ADD X%d, X%d, 0x%llx\n", (void*)functop.pc(), functop.rd(), functop.rn(), (uint64_t)functop.imm());
+                break;
+            case patchfinder64::insn::adr:
+                value[functop.rd()] = functop.imm();
+//                printf("%p: ADR X%d, 0x%llx\n", (void*)functop.pc(), functop.rd(), functop.imm());
+                break;
+            case patchfinder64::insn::ldr:
+//                printf("%p: LDR X%d, [X%d, 0x%llx]\n", (void*)functop.pc(), functop.rt(), functop.rn(), (uint64_t)functop.imm());
+                value[functop.rt()] = value[functop.rn()] + functop.imm(); // XXX address, not actual value
+                break;
+            default:
+                break;
+        }
+    }
+    return value[reg];
+}
 
 #pragma mark v0rtex
 loc_t offsetfinder64::find_zone_map(){

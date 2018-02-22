@@ -84,6 +84,7 @@ namespace tihmstar {
         
         patchfinder64::loc_t find_sym(const char *sym);
         patchfinder64::loc_t find_syscall0();
+        uint64_t             find_register_value(patchfinder64::loc_t where, int reg);
         
         /*------------------------ v0rtex -------------------------- */
         patchfinder64::loc_t find_zone_map();
