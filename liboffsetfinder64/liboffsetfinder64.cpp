@@ -1145,8 +1145,8 @@ loc_t offsetfinder64::find_rop_ldr_x0_x0_0x10(){
 
 #pragma mark patch_finders
 void slide_ptr(class patch *p,uint64_t slide){
-    slide += (uint64_t)p->_patch;
-    memcpy((void*)p->_patch, &slide, 4);
+    slide += *(uint64_t*)p->_patch;
+    memcpy((void*)p->_patch, &slide, 8);
 }
 
 patch offsetfinder64::find_sandbox_patch(){
