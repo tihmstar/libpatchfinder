@@ -93,12 +93,13 @@ namespace tihmstar {
         offsetfinder64(void* buf, size_t size, uint64_t base);
         const void *kdata();
         patchfinder64::loc_t find_entry();
+        const std::vector<text_t> &segments(){return _segments;};
         
         patchfinder64::loc_t memmem(const void *little, size_t little_len);
         
         patchfinder64::loc_t find_sym(const char *sym);
         patchfinder64::loc_t find_syscall0();
-        uint64_t             find_register_value(patchfinder64::loc_t where, int reg);
+        uint64_t             find_register_value(patchfinder64::loc_t where, int reg, patchfinder64::loc_t startAddr = 0);
         
         /*------------------------ v0rtex -------------------------- */
         patchfinder64::loc_t find_zone_map();
@@ -146,7 +147,9 @@ namespace tihmstar {
         patchfinder64::loc_t find_gPhysBase();
         patchfinder64::loc_t find_kernel_pmap();
         patchfinder64::loc_t find_cpacr_write();
-        
+        patchfinder64::loc_t find_idlesleep_str_loc();
+        patchfinder64::loc_t find_deepsleep_str_loc();
+
         
         ~offsetfinder64();
     };

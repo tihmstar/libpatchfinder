@@ -330,6 +330,16 @@ namespace tihmstar{
             insn &operator-=(int i){
                 return this->operator+=(-i);
             }
+            insn &operator=(loc_t p){
+                for (int i=0; i<_segments.size(); i++){
+                    auto seg = _segments[i];
+                    if ((loc_t)seg.base <= p && p < (loc_t)seg.base+seg.size){
+                        _p = {p,i};
+                        return *this;
+                    }
+                }
+                reterror("initializing insn with out of range location");
+            }
             
         public: //helpers
             __attribute__((always_inline)) static int64_t signExtend64(uint64_t v, int vSize){
@@ -467,6 +477,12 @@ namespace tihmstar{
             static bool is_bcond(uint32_t i){
                 return (BIT_RANGE(i, 24, 31) == 0b01010100) && !BIT_AT(i, 4);
             }
+            static bool is_b(uint32_t i){
+                return (BIT_RANGE(i, 26, 31) == 0b000101);
+            }
+            static bool is_nop(uint32_t i){
+                return (BIT_RANGE(i, 12, 31) == 0b11010101000000110010) && (0b11111 % (1<<5));
+            }
             
             
         public: //type
@@ -489,7 +505,9 @@ namespace tihmstar{
                 str,
                 stp,
                 movz,
-                bcond
+                bcond,
+                b,
+                nop
             };
             enum subtype{
                 st_general,
@@ -556,6 +574,10 @@ namespace tihmstar{
                     return movz;
                 else if (is_bcond(val))
                     return bcond;
+                else if (is_b(val))
+                    return b;
+                else if (is_nop(val))
+                    return nop;
                 
                 return unknown;
             }
@@ -579,6 +601,7 @@ namespace tihmstar{
                     case cbnz:
                     case tbnz:
                     case bcond:
+                    case b:
                         return sut_branch_imm;
                         
                     default:
@@ -628,6 +651,8 @@ namespace tihmstar{
                         return BIT_RANGE(value(), 5, 18);
                     case stp:
                         return signExtend64(BIT_RANGE(value(), 15, 21),7) << (2+(value()>>31));
+                    case b:
+                        return pc() + ((value() % (1<< 26))<<2);
                     default:
                         reterror("failed to get imm value");
                         break;
@@ -794,12 +819,16 @@ namespace tihmstar{
 constexpr char patch_nop[] = "\x1F\x20\x03\xD5";
 constexpr size_t patch_nop_size = sizeof(patch_nop)-1;
 
-uint64_t offsetfinder64::find_register_value(loc_t where, int reg){
+uint64_t offsetfinder64::find_register_value(loc_t where, int reg, loc_t startAddr){
     insn functop(_segments, _kslide, where);
     
-    //might be functop
-    //good enough for my purpose
-    while (--functop != insn::stp || (functop+1) != insn::stp || (functop+2) != insn::stp);
+    if (!startAddr) {
+        //might be functop
+        //good enough for my purpose
+        while (--functop != insn::stp || (functop+1) != insn::stp || (functop+2) != insn::stp);
+    }else{
+        functop = startAddr;
+    }
     
     uint64_t value[32] = {0};
     
@@ -1385,6 +1414,57 @@ loc_t offsetfinder64::find_kernel_pmap(){
 
 loc_t offsetfinder64::find_cpacr_write(){
     return memmem("\x40\x10\x18\xD5", 4);
+}
+
+loc_t offsetfinder64::find_idlesleep_str_loc(){
+    loc_t entryp = find_entry();
+    loc_t rvbar = (loc_t)((uint64_t)entryp & (~0xFFF));
+    
+    loc_t cpul = (loc_t)find_register_value(rvbar+0x40, 1);
+    
+    insn finder(_segments,_kslide,cpul);
+    assure(finder == insn::b);
+    
+    insn deepsleepfinder(finder, (loc_t)finder.imm());
+    while (--deepsleepfinder != insn::nop);
+    
+    loc_t fref = find_literal_ref(_segments, _kslide, (loc_t)(deepsleepfinder.pc())+4+0xC);
+    
+    insn str(finder,fref);
+    while (++str != insn::str);
+    while (++str != insn::str);
+    
+    loc_t idlesleep_str_loc = (loc_t)str.imm();
+    int rn = str.rn();
+    while (--str != insn::adrp || str.rd() != rn);
+    idlesleep_str_loc += str.imm();
+    
+    return idlesleep_str_loc;
+}
+
+loc_t offsetfinder64::find_deepsleep_str_loc(){
+    loc_t entryp = find_entry();
+    loc_t rvbar = (loc_t)((uint64_t)entryp & (~0xFFF));
+    
+    loc_t cpul = (loc_t)find_register_value(rvbar+0x40, 1);
+    
+    insn finder(_segments,_kslide,cpul);
+    assure(finder == insn::b);
+    
+    insn deepsleepfinder(finder, (loc_t)finder.imm());
+    while (--deepsleepfinder != insn::nop);
+    
+    loc_t fref = find_literal_ref(_segments, _kslide, (loc_t)(deepsleepfinder.pc())+4+0xC);
+    
+    insn str(finder,fref);
+    while (++str != insn::str);
+    
+    loc_t idlesleep_str_loc = (loc_t)str.imm();
+    int rn = str.rn();
+    while (--str != insn::adrp || str.rd() != rn);
+    idlesleep_str_loc += str.imm();
+    
+    return idlesleep_str_loc;
 }
 
 

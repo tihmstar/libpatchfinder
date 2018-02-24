@@ -18,6 +18,14 @@ int main(int argc, const char * argv[]) {
     
     
     {
+        patchfinder64::loc_t asd = fi.find_idlesleep_str_loc();
+        cout << hex << (void*)asd << endl;
+    }
+    {
+        patchfinder64::loc_t asd = fi.find_deepsleep_str_loc();
+        cout << hex << (void*)asd << endl;
+    }
+    {
         patchfinder64::loc_t asd = fi.find_sbops();
         cout << hex << (void*)asd << endl;
     }
