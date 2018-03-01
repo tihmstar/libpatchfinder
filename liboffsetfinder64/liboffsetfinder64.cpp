@@ -1047,7 +1047,7 @@ uint32_t offsetfinder64::find_task_itk_self(){
     
     insn ldr(mach_ports_register);
     
-    while (++ldr != insn::ldr || (ldr+2) != insn::ldr);
+    while (++ldr != insn::ldr || (ldr+1) != insn::cbz);
     
     return (uint32_t)ldr.imm();
 }
@@ -1063,8 +1063,8 @@ uint32_t offsetfinder64::find_task_itk_registered(){
     
     insn ldr(mach_ports_register);
     
-    while (++ldr != insn::ldr || (ldr+2) != insn::ldr);
-    ldr +=2;
+    while (++ldr != insn::ldr || (ldr+1) != insn::cbz);
+    while (++ldr != insn::ldr);
     
     return (uint32_t)ldr.imm();
 }
