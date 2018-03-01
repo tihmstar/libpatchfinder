@@ -1134,8 +1134,25 @@ uint32_t offsetfinder64::find_sizeof_task(){
     retassure(ref, "literal ref to str");
     
     insn thebl(_segments, _kslide, ref);
+   
+    loc_t zinit = 0;
+    try {
+        zinit = find_sym("_zinit");
+    } catch (tihmstar::exception &e) {
+        if (strncmp("Failed to find symbol", e.what(), strlen("Failed to find symbol")))
+            throw;
+        loc_t str = memmem("zlog%d", sizeof("zlog%d"));
+        retassure(str, "Failed to find str2");
+        
+        loc_t ref = find_literal_ref(_segments, _kslide, str);
+        retassure(ref, "literal ref to str2");
+        
+        insn functop(_segments,_kslide,ref);
+        while (--functop != insn::stp || (functop+1) != insn::stp || (functop+2) != insn::stp || (functop-1) != insn::ret);
+        zinit = (loc_t)functop.pc();
+    }
     
-    while (++thebl != insn::bl || (loc_t)(thebl.pc() + 4*thebl.imm()) != find_sym("_zinit"));
+    while (++thebl != insn::bl || (loc_t)(thebl.pc() + 4*thebl.imm()) != zinit);
     
     --thebl;
     
