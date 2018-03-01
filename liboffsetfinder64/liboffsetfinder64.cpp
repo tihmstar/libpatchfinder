@@ -1418,11 +1418,8 @@ loc_t offsetfinder64::find_cpacr_write(){
 
 loc_t offsetfinder64::find_idlesleep_str_loc(){
     loc_t entryp = find_entry();
-    loc_t rvbar = (loc_t)((uint64_t)entryp & (~0xFFF));
     
-    loc_t cpul = (loc_t)find_register_value(rvbar+0x40, 1);
-    
-    insn finder(_segments,_kslide,cpul);
+    insn finder(_segments,_kslide,entryp);
     assure(finder == insn::b);
     
     insn deepsleepfinder(finder, (loc_t)finder.imm());
@@ -1444,11 +1441,8 @@ loc_t offsetfinder64::find_idlesleep_str_loc(){
 
 loc_t offsetfinder64::find_deepsleep_str_loc(){
     loc_t entryp = find_entry();
-    loc_t rvbar = (loc_t)((uint64_t)entryp & (~0xFFF));
     
-    loc_t cpul = (loc_t)find_register_value(rvbar+0x40, 1);
-    
-    insn finder(_segments,_kslide,cpul);
+    insn finder(_segments,_kslide,entryp);
     assure(finder == insn::b);
     
     insn deepsleepfinder(finder, (loc_t)finder.imm());
