@@ -1024,7 +1024,7 @@ uint32_t offsetfinder64::find_vm_map_hdr(){
 
     while (++stp != insn::cbz);
     
-    while (++stp != insn::stp);
+    while (++stp != insn::stp || stp.rt() != stp.other());
     
     return (uint32_t)stp.imm();
 }
