@@ -768,14 +768,22 @@ namespace tihmstar{
             }
             return 0;
         }
-        loc_t find_rel_branch_source(insn bdst, bool searchUp, int ignoreTimes=0){
+        loc_t find_rel_branch_source(insn bdst, bool searchUp, int ignoreTimes=0, int limit = 0){
             insn bsrc(bdst);
             
+            bool hasLimit = (limit);
             while (true) {
-                if (searchUp)
-                    while ((--bsrc).supertype() != insn::sut_branch_imm);
-                else
-                    while ((++bsrc).supertype() != insn::sut_branch_imm);
+                if (searchUp){
+                    while ((--bsrc).supertype() != insn::sut_branch_imm){
+                        if (hasLimit && !limit--)
+                            reterror("find_rel_branch_source: limit reached!");
+                    }
+                }else{
+                    while ((++bsrc).supertype() != insn::sut_branch_imm){
+                        if (hasLimit && !limit--)
+                            reterror("find_rel_branch_source: limit reached!");
+                    }
+                }
                 
                 if (bsrc.imm()*4 + bsrc.pc() == bdst.pc()) {
                     if (ignoreTimes) {
@@ -1117,12 +1125,26 @@ uint32_t offsetfinder64::find_ipc_space_is_task(){
     loc_t ref = find_literal_ref(_segments, _kslide, str);
     retassure(ref, "literal ref to str");
     
-    loc_t bref = find_rel_branch_source(insn(_segments,_kslide,ref), true, 2);
+    loc_t bref = 0;
+    bool do_backup_plan = false;
+
+    try {
+        bref = find_rel_branch_source(insn(_segments,_kslide,ref), true, 2, 0x2000);
+    } catch (tihmstar::exception &e) {
+        if (!strstr(e.what(),"limit reached"))
+            throw;
+        //previous attempt doesn't work on some 10.0.2 devices, trying something else...
+        do_backup_plan = bref = find_rel_branch_source(insn(_segments,_kslide,ref), true, 1);
+    }
     
     insn istr(_segments,_kslide,bref);
     
-    while (++istr != insn::str);
-    
+    if (!do_backup_plan) {
+        while (++istr != insn::str);
+    }else{
+        while (--istr != insn::str);
+    }
+
     return (uint32_t)istr.imm();
 }
 
