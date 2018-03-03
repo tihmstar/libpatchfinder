@@ -55,6 +55,20 @@ int main(int argc, const char * argv[]) {
     }(&fi);
     
     
+    /*------------------------ kernelpatches -------------------------- */
+    auto i_can_has_debugger_patch_off = fi.find_i_can_has_debugger_patch_off();
+    auto lwvm_patch_offsets = fi.find_lwvm_patch_offsets();
+    auto remount_patch_offset = fi.find_remount_patch_offset();
+    auto nosuid_off = fi.find_nosuid_off();
+    auto proc_enforce = fi.find_proc_enforce();
+    auto amfi_patch_offsets = fi.find_amfi_patch_offsets();
+    auto cs_enforcement_disable_amfi = fi.find_cs_enforcement_disable_amfi();
+    auto amfi_substrate_patch = fi.find_amfi_substrate_patch();
+//    auto sandbox_patch = fi.find_sandbox_patch();
+    auto sbops = fi.find_sbops();
+    
+
+    
     
 
     

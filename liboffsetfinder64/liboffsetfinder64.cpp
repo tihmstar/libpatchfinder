@@ -1228,7 +1228,7 @@ patch offsetfinder64::find_amfi_substrate_patch(){
     insn tbnz(funcend);
     while (--tbnz != insn::tbnz);
     
-    constexpr char mypatch[] = "\x1F\x20\x03\xD5\x00\x78\x16\x12\x1F\x20\x03\xD5\x00\x00\x80\x52\xE9\x01\x80\x52";
+    constexpr char mypatch[] = "\x1F\x20\x03\xD5\x08\x79\x16\x12\x1F\x20\x03\xD5\x00\x00\x80\x52\xE9\x01\x80\x52";
     return {(loc_t)tbnz.pc(),mypatch,sizeof(mypatch)-1};
 }
 
