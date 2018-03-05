@@ -734,6 +734,14 @@ namespace tihmstar{
                 }
             }
         public: //cast operators
+#warning TODO change this to a different type
+            /*
+             TODO:
+             I realized this is an exception to the general rule that loc_t are virtual addresses
+             thus it does not make sense that casting insn to loc_t returns a pointer into the actual mapped address.
+             Instead at some point this should be changed in a way that casting to loc_t actually get the pc()
+             and casting to say uint8_t* or uint64_t* or maybe even a new type lime map_t, will reveal the mapped address.
+             */
             operator loc_t(){
                 return (loc_t)(_p.first - _segments[_p.second].base + _segments[_p.second].map);
             }
@@ -1424,6 +1432,51 @@ loc_t offsetfinder64::find_sbops(){
     retassure(ref, "Failed to find ref");
     
     return (loc_t)insn::deref(_segments, _kslide, ref+0x18);
+}
+
+enum OFVariableType : uint32_t{
+    kOFVariableTypeBoolean = 1,
+    kOFVariableTypeNumber,
+    kOFVariableTypeString,
+    kOFVariableTypeData
+} ;
+
+enum OFVariablePerm : uint32_t{
+    kOFVariablePermRootOnly = 0,
+    kOFVariablePermUserRead,
+    kOFVariablePermUserWrite,
+    kOFVariablePermKernelOnly
+};
+struct OFVariable {
+    const char *variableName;
+    OFVariableType     variableType;
+    OFVariablePerm     variablePerm;
+    uint32_t           _padding;
+    uint32_t           variableOffset;
+};
+
+
+patch offsetfinder64::find_nonceEnabler_patch(){
+    loc_t str = memmem("com.apple.System.boot-nonce", sizeof("com.apple.System.boot-nonce"));
+    retassure(str, "Failed to find str");
+
+    loc_t sym = find_sym("_gOFVariables");
+
+    insn ptr(_segments,_kslide,sym);
+    
+    OFVariable *varp = (OFVariable*)(loc_t)ptr;
+    OFVariable nullvar = {0};
+    for (OFVariable *vars = varp;memcmp(vars, &nullvar, sizeof(OFVariable)) != 0; vars++) {
+        
+        if ((loc_t)vars->variableName == str) {
+            uint8_t mypatch = (uint8_t)kOFVariablePermUserWrite;
+            loc_t location =  sym + ((uint8_t*)&vars->variablePerm - (uint8_t*)varp);
+            return {location,&mypatch,1};
+        }
+    }
+    
+    reterror("failed to find \"com.apple.System.boot-nonce\"");
+    return {0,0,0};
 }
 
 #pragma mark KPP bypass
