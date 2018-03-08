@@ -152,6 +152,8 @@ namespace tihmstar {
         patchfinder64::loc_t find_idlesleep_str_loc();
         patchfinder64::loc_t find_deepsleep_str_loc();
 
+        /*------------------------ Util -------------------------- */
+        patchfinder64::loc_t find_rootvnode();
         
         ~offsetfinder64();
     };
