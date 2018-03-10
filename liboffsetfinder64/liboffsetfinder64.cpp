@@ -935,6 +935,10 @@ loc_t offsetfinder64::find_deepsleep_str_loc(){
     return idlesleep_str_loc;
 }
 
+loc_t offsetfinder64::find_rootvnode() {
+    return find_symbol("_rootvnode");
+}
+
 
 offsetfinder64::~offsetfinder64(){
     if (_freeKernel) safeFree(_kdata);
