@@ -8,6 +8,8 @@
 
 #include <liboffsetfinder64/liboffsetfinder64.hpp>
 
+#define LOCAL_FILENAME "liboffsetfinder.cpp"
+#include "all_liboffsetfinder.hpp"
 
 extern "C"{
 #include <stdio.h>
@@ -19,45 +21,15 @@ extern "C"{
 #include "lzssdec.h"
 }
 
-#define info(a ...) ({printf(a),printf("\n");})
-#define log(a ...) ({if (dbglog) printf(a),printf("\n");})
-#define warning(a ...) ({if (dbglog) printf("[WARNING] "), printf(a),printf("\n");})
-#define error(a ...) ({printf("[Error] "),printf(a),printf("\n");})
-
-#define safeFree(ptr) ({if (ptr) free(ptr),ptr=NULL;})
-
-#define reterror(err) throw tihmstar::exception(__LINE__,err)
-#define assure(cond) if ((cond) == 0) throw tihmstar::exception(__LINE__, "assure failed")
-#define doassure(cond,code) do {if (!(cond)){(code);assure(cond);}} while(0)
-#define retassure(cond, err) if ((cond) == 0) throw tihmstar::exception(__LINE__,err)
-#define assureclean(cond) do {if (!(cond)){clean();assure(cond);}} while(0)
-
-#ifdef DEBUG
-#define OFFSETFINDER64_VERSION_COMMIT_COUNT "Debug"
-#define OFFSETFINDER64_VERSION_COMMIT_SHA "Build: " __DATE__ " " __TIME__
-
-uint64_t BIT_RANGE(uint64_t v, int begin, int end) { return ((v)>>(begin)) % (1 << ((end)-(begin)+1)); }
-uint64_t BIT_AT(uint64_t v, int pos){ return (v >> pos) % 2; }
-
-#else
-#define BIT_RANGE(v,begin,end) ( ((v)>>(begin)) % (1 << ((end)-(begin)+1)) )
-#define BIT_AT(v,pos) ( (v >> pos) % 2 )
-#endif
-
 using namespace std;
 using namespace tihmstar;
 using namespace patchfinder64;
 
-using segment_t = std::vector<offsetfinder64::text_t>;
+#pragma mark liboffsetfinder
 
 #define HAS_BITS(a,b) (((a) & (b)) == (b))
 #define _symtab getSymtab()
 int decompress_lzss(u_int8_t *dst, u_int8_t *src, u_int32_t srclen);
-
-namespace patchfinder64 {
-    class insn;
-}
-
 
 #pragma mark macho external
 
@@ -210,7 +182,7 @@ loc_t offsetfinder64::find_sym(const char *sym){
         if (!strcmp(sym, (char*)(pstrtab + entry->n_un.n_strx)))
             return (loc_t)entry->n_value;
 
-    reterror("Failed to find symbol "+string(sym));
+    retcustomerror("Failed to find symbol "+string(sym),symbol_not_found);
     return 0;
 }
 
@@ -222,598 +194,13 @@ loc_t offsetfinder64::find_syscall0(){
 
 
 #pragma mark patchfinder64
-namespace tihmstar{
-    namespace patchfinder64{
-        
-        class insn{
-        public:
-            enum segtype{
-                kText_only,
-                kData_only,
-                kText_and_Data
-            };
-        private:
-            std::pair <loc_t,int> _p;
-            std::vector<offsetfinder64::text_t> _segments;
-            offset_t _kslide;
-            segtype _segtype;
-        public:
-            insn(segment_t segments, offset_t kslide, loc_t p = 0, segtype segType = kText_only) : _segments(segments), _kslide(kslide), _segtype(segType){
-                std::sort(_segments.begin(),_segments.end(),[ ]( const offsetfinder64::text_t& lhs, const offsetfinder64::text_t& rhs){
-                    return lhs.base < rhs.base;
-                });
-                if (_segtype != kText_and_Data) {
-                    _segments.erase(std::remove_if(_segments.begin(), _segments.end(), [&](const offsetfinder64::text_t obj){
-                        return (!obj.isExec) == (_segtype == kText_only);
-                    }));
-                }
-                if (p == 0) {
-                    p = _segments.at(0).base;
-                }
-                for (int i=0; i<_segments.size(); i++){
-                    auto seg = _segments[i];
-                    if ((loc_t)seg.base <= p && p < (loc_t)seg.base+seg.size){
-                        _p = {p,i};
-                        return;
-                    }
-                }
-                reterror("initializing insn with out of range location");
-            }
-            
-            insn(const insn &cpy, loc_t p=0){
-                _segments = cpy._segments;
-                _kslide = cpy._kslide;
-                _segtype = cpy._segtype;
-                if (p==0) {
-                    _p = cpy._p;
-                }else{
-                    for (int i=0; i<_segments.size(); i++){
-                        auto seg = _segments[i];
-                        if ((loc_t)seg.base <= p && p < (loc_t)seg.base+seg.size){
-                            _p = {p,i};
-                            return;
-                        }
-                    }
-                    reterror("initializing insn with out of range location");
-                }
-            }
-            
-            insn &operator++(){
-                _p.first+=4;
-                if (_p.first >=_segments[_p.second].base+_segments[_p.second].size){
-                    if (_p.second+1 < _segments.size()) {
-                        _p.first = _segments[++_p.second].base;
-                    }else{
-                        _p.first-=4;
-                        throw out_of_range("overflow");
-                    }
-                }
-                return *this;
-            }
-            insn &operator--(){
-                _p.first-=4;
-                if (_p.first < _segments[_p.second].base){
-                    if (_p.second-1 >0) {
-                        --_p.second;
-                        _p.first = _segments[_p.second].base+_segments[_p.second].size;
-                    }else{
-                        _p.first+=4;
-                        throw out_of_range("underflow");
-                    }
-                }
-                return *this;
-            }
-            insn operator+(int i){
-                insn cpy(*this);
-                if (i>0) {
-                    while (i--)
-                        ++cpy;
-                }else{
-                    while (i++)
-                        --cpy;
-                }
-                return cpy;
-            }
-            insn operator-(int i){
-                return this->operator+(-i);
-            }
-            insn &operator+=(int i){
-                if (i>0) {
-                    while (i-->0)
-                        this->operator++();
-                }else{
-                    while (i++>0)
-                        this->operator--();
-                }
-                return *this;
-            }
-            insn &operator-=(int i){
-                return this->operator+=(-i);
-            }
-            insn &operator=(loc_t p){
-                for (int i=0; i<_segments.size(); i++){
-                    auto seg = _segments[i];
-                    if ((loc_t)seg.base <= p && p < (loc_t)seg.base+seg.size){
-                        _p = {p,i};
-                        return *this;
-                    }
-                }
-                reterror("initializing insn with out of range location");
-            }
-            
-        public: //helpers
-            __attribute__((always_inline)) static int64_t signExtend64(uint64_t v, int vSize){
-                uint64_t e = (v & 1 << (vSize-1))>>(vSize-1);
-                for (int i=vSize; i<64; i++)
-                    v |= e << i;
-                return v;
-            }
-            __attribute__((always_inline)) static int highestSetBit(uint64_t x){
-                for (int i=63; i>=0; i--) {
-                    if (x & ((uint64_t)1<<i))
-                        return i;
-                }
-                return -1;
-            }
-            __attribute__((always_inline)) static int lowestSetBit(uint64_t x){
-                for (int i=0; i<=63; i++) {
-                    if (x & (1<<i))
-                        return i;
-                }
-                return 64;
-            }
-            __attribute__((always_inline)) static uint64_t replicate(uint8_t val, int bits){
-                uint64_t ret = val;
-                unsigned shift;
-                for (shift = bits; shift < 64; shift += bits) {    // XXX actually, it is either 32 or 64
-                    ret |= (val << shift);
-                }
-                return ret;
-            }
-            
-            __attribute__((always_inline)) static uint64_t ones(uint64_t n){
-                uint64_t ret = 0;
-                while (n--) {
-                    ret <<=1;
-                    ret |= 1;
-                }
-                return ret;
-            }
-            __attribute__((always_inline)) static uint64_t ROR(uint64_t x, int shift, int len){
-                while (shift--) {
-                    x |= (x & 1) << len;
-                    x >>=1;
-                }
-                return x;
-            }
-            __attribute__((always_inline)) static pair<int64_t, int64_t> DecodeBitMasks(uint64_t immN, uint8_t imms, uint8_t immr, bool immediate){
-                int64_t tmask = 0, wmask = 0;
-                int8_t levels = 0;
-                
-                int len = highestSetBit( (uint64_t)((immN<<6) | ((~imms) & 0b111111)) );
-                assure(len != -1); //reserved value
-                levels = ones(len);
-                
-                assure(immediate && (imms & levels) != levels); //reserved value
-                
-                uint8_t S = imms & levels;
-                uint8_t R = immr & levels;
-                
-                uint8_t esize = 1 << len;
-                
-                uint8_t welem = ones(S + 1);
-                wmask = replicate(ROR(welem, R, 32),esize);
-#warning TODO incomplete function implementation!
-                return {wmask,0};
-            }
-            uint64_t pc(){
-                return (uint64_t)_p.first + (uint64_t)_kslide;
-            }
-            uint32_t value(){
-                return (*(uint32_t*)(loc_t)(*this));
-            }
-            uint64_t doublevalue(){
-                return (*(uint64_t*)(loc_t)(*this));
-            }
-            
-        public: //static type determinition
-            static uint64_t deref(segment_t segments, offset_t kslide, loc_t p){
-                return *(uint64_t*)(loc_t)insn(segments, kslide, p,kText_and_Data);
-            }
-            static bool is_adrp(uint32_t i){
-                return BIT_RANGE(i, 24, 28) == 0b10000 && (i>>31);
-            }
-            static bool is_adr(uint32_t i){
-                return BIT_RANGE(i, 24, 28) == 0b10000 && !(i>>31);
-            }
-            static bool is_add(uint32_t i){
-                return BIT_RANGE(i, 24, 28) == 0b10001;
-            }
-            static bool is_bl(uint32_t i){
-                return (i>>26) == 0b100101;
-            }
-            static bool is_cbz(uint32_t i){
-                return BIT_RANGE(i, 24, 30) == 0b0110100;
-            }
-            static bool is_ret(uint32_t i){
-                return ((0b11111 << 5) | i) == 0b11010110010111110000001111100000;
-            }
-            static bool is_tbnz(uint32_t i){
-                return BIT_RANGE(i, 24, 30) == 0b0110111;
-            }
-            static bool is_br(uint32_t i){
-                return ((0b11111 << 5) | i) == 0b11010110000111110000001111100000;
-            }
-            static bool is_ldr(uint32_t i){
-#warning TODO recheck this mask
-                return (((i>>22) | 0b0100000000) == 0b1111100001 && ((i>>10) % 4)) || ((i>>22 | 0b0100000000) == 0b1111100101) || ((i>>23) == 0b00011000);
-            }
-            static bool is_cbnz(uint32_t i){
-                return BIT_RANGE(i, 24, 30) == 0b0110101;
-            }
-            static bool is_movk(uint32_t i){
-                return BIT_RANGE(i, 23, 30) == 0b11100101;
-            }
-            static bool is_orr(uint32_t i){
-                return BIT_RANGE(i, 23, 30) == 0b01100100;
-            }
-            static bool is_tbz(uint32_t i){
-                return BIT_RANGE(i, 24, 30) == 0b0110110;
-            }
-            static bool is_ldxr(uint32_t i){
-                return (BIT_RANGE(i, 24, 29) == 0b001000) && (i >> 31) && BIT_AT(i, 22);
-            }
-            static bool is_str(uint32_t i){
-#warning TODO redo this! currently only recognises STR (immediate)
-                return (BIT_RANGE(i, 22, 29) == 0b11100100) && (i >> 31);
-            }
-            static bool is_stp(uint32_t i){
-#warning TODO redo this! currently only recognises STR (immediate)
-                return (BIT_RANGE(i, 25, 30) == 0b010100) && !BIT_AT(i, 22);
-            }
-            static bool is_movz(uint32_t i){
-                return (BIT_RANGE(i, 23, 30) == 0b10100101);
-            }
-            static bool is_bcond(uint32_t i){
-                return (BIT_RANGE(i, 24, 31) == 0b01010100) && !BIT_AT(i, 4);
-            }
-            static bool is_b(uint32_t i){
-                return (BIT_RANGE(i, 26, 31) == 0b000101);
-            }
-            static bool is_nop(uint32_t i){
-                return (BIT_RANGE(i, 12, 31) == 0b11010101000000110010) && (0b11111 % (1<<5));
-            }
-            
-            
-        public: //type
-            enum type{
-                unknown,
-                adrp,
-                adr,
-                bl,
-                cbz,
-                ret,
-                tbnz,
-                add,
-                br,
-                ldr,
-                cbnz,
-                movk,
-                orr,
-                tbz,
-                ldxr,
-                str,
-                stp,
-                movz,
-                bcond,
-                b,
-                nop
-            };
-            enum subtype{
-                st_general,
-                st_register,
-                st_immediate,
-                st_literal
-            };
-            enum supertype{
-                sut_general,
-                sut_branch_imm
-            };
-            enum cond{
-                NE = 000,
-                EG = 000,
-                CS = 001,
-                CC = 001,
-                MI = 010,
-                PL = 010,
-                VS = 011,
-                VC = 011,
-                HI = 100,
-                LS = 100,
-                GE = 101,
-                LT = 101,
-                GT = 110,
-                LE = 110,
-                AL = 111
-            };
-            type type(){
-                uint32_t val = value();
-                if (is_adrp(val))
-                    return adrp;
-                else if (is_adr(val))
-                    return adr;
-                else if (is_add(val))
-                    return add;
-                else if (is_bl(val))
-                    return bl;
-                else if (is_cbz(val))
-                    return cbz;
-                else if (is_ret(val))
-                    return ret;
-                else if (is_tbnz(val))
-                    return tbnz;
-                else if (is_br(val))
-                    return br;
-                else if (is_ldr(val))
-                    return ldr;
-                else if (is_cbnz(val))
-                    return cbnz;
-                else if (is_movk(val))
-                    return movk;
-                else if (is_orr(val))
-                    return orr;
-                else if (is_tbz(val))
-                    return tbz;
-                else if (is_ldxr(val))
-                    return ldxr;
-                else if (is_str(val))
-                    return str;
-                else if (is_stp(val))
-                    return stp;
-                else if (is_movz(val))
-                    return movz;
-                else if (is_bcond(val))
-                    return bcond;
-                else if (is_b(val))
-                    return b;
-                else if (is_nop(val))
-                    return nop;
-                
-                return unknown;
-            }
-            subtype subtype(){
-                uint32_t i = value();
-                if (is_ldr(i)) {
-                    if ((((i>>22) | (1 << 8)) == 0b1111100001) && BIT_RANGE(i, 10, 11) == 0b10)
-                        return st_register;
-                    else if (i>>31)
-                        return st_immediate;
-                    else
-                        return st_literal;
-                    
-                }
-                return st_general;
-            }
-            supertype supertype(){
-                switch (type()) {
-                    case bl:
-                    case cbz:
-                    case cbnz:
-                    case tbnz:
-                    case bcond:
-                    case b:
-                        return sut_branch_imm;
-                        
-                    default:
-                        return sut_general;
-                }
-            }
-            int64_t imm(){
-                switch (type()) {
-                    case unknown:
-                        reterror("can't get imm value of unknown instruction");
-                        break;
-                    case adrp:
-                        return ((pc()>>12)<<12) + signExtend64(((((value() % (1<<24))>>5)<<2) | BIT_RANGE(value(), 29, 30))<<12,32);
-                    case adr:
-                        return pc() + signExtend64((BIT_RANGE(value(), 5, 23)<<2) | (BIT_RANGE(value(), 29, 30)), 21);
-                    case add:
-                        return BIT_RANGE(value(), 10, 21) << (((value()>>22)&1) * 12);
-                    case bl:
-                        return signExtend64(value() % (1<<26), 25); //untested
-                    case cbz:
-                    case cbnz:
-                    case tbnz:
-                    case bcond:
-                        return signExtend64(BIT_RANGE(value(), 5, 23), 19); //untested
-                    case movk:
-                    case movz:
-                        return BIT_RANGE(value(), 5, 20);
-                    case ldr:
-                        if(subtype() != st_immediate){
-                            reterror("can't get imm value of ldr that has non immediate subtype");
-                            break;
-                        }
-                        if(BIT_RANGE(value(), 24, 25)){
-                            // Unsigned Offset
-                            return BIT_RANGE(value(), 10, 21) << (value()>>30);
-                        }else{
-                            // Signed Offset
-                            return signExtend64(BIT_RANGE(value(), 12, 21), 9); //untested
-                        }
-                    case str:
-#warning TODO rewrite this! currently only unsigned offset supported
-                        // Unsigned Offset
-                        return BIT_RANGE(value(), 10, 21) << (value()>>30);
-                    case orr:
-                        return DecodeBitMasks(BIT_AT(value(), 22),BIT_RANGE(value(), 10, 15),BIT_RANGE(value(), 16,21), true).first;
-                    case tbz:
-                        return BIT_RANGE(value(), 5, 18);
-                    case stp:
-                        return signExtend64(BIT_RANGE(value(), 15, 21),7) << (2+(value()>>31));
-                    case b:
-                        return pc() + ((value() % (1<< 26))<<2);
-                    default:
-                        reterror("failed to get imm value");
-                        break;
-                }
-                return 0;
-            }
-            uint8_t rd(){
-                switch (type()) {
-                    case unknown:
-                        reterror("can't get rd of unknown instruction");
-                        break;
-                    case adrp:
-                    case adr:
-                    case add:
-                    case movk:
-                    case orr:
-                    case movz:
-                        return (value() % (1<<5));
-                        
-                    default:
-                        reterror("failed to get rd");
-                        break;
-                }
-            }
-            uint8_t rn(){
-                switch (type()) {
-                    case unknown:
-                        reterror("can't get rn of unknown instruction");
-                        break;
-                    case add:
-                    case ret:
-                    case br:
-                    case orr:
-                    case ldxr:
-                    case str:
-                    case ldr:
-                    case stp:
-                        return BIT_RANGE(value(), 5, 9);
-                        
-                    default:
-                        reterror("failed to get rn");
-                        break;
-                }
-            }
-            uint8_t rt(){
-                switch (type()) {
-                    case unknown:
-                        reterror("can't get rt of unknown instruction");
-                        break;
-                    case cbz:
-                    case cbnz:
-                    case tbnz:
-                    case tbz:
-                    case ldxr:
-                    case str:
-                    case ldr:
-                    case stp:
-                        return (value() % (1<<5));
-                        
-                    default:
-                        reterror("failed to get rt");
-                        break;
-                }
-            }
-            uint8_t other(){
-                switch (type()) {
-                    case unknown:
-                        reterror("can't get other of unknown instruction");
-                        break;
-                    case tbz:
-                        return ((value() >>31) << 5) | BIT_RANGE(value(), 19, 23);
-                    case stp:
-                        return BIT_RANGE(value(), 10, 14); //Rt2
-                    case bcond:
-                        return 0; //condition
-                    default:
-                        reterror("failed to get other");
-                        break;
-                }
-            }
-        public: //cast operators
-#warning TODO change this to a different type
-            /*
-             TODO:
-             I realized this is an exception to the general rule that loc_t are virtual addresses
-             thus it does not make sense that casting insn to loc_t returns a pointer into the actual mapped address.
-             Instead at some point this should be changed in a way that casting to loc_t actually get the pc()
-             and casting to say uint8_t* or uint64_t* or maybe even a new type lime map_t, will reveal the mapped address.
-             */
-            operator loc_t(){
-                return (loc_t)(_p.first - _segments[_p.second].base + _segments[_p.second].map);
-            }
-            operator enum type(){
-                return type();
-            }
-        };
-        
-        loc_t find_literal_ref(segment_t segemts, offset_t kslide, loc_t pos){
-            insn adrp(segemts,kslide);
-            
-            uint8_t rd = 0xff;
-            uint64_t imm = 0;
-            try {
-                while (1){
-                    if (adrp == insn::adr) {
-                        if (adrp.imm() == (uint64_t)pos)
-                            return (loc_t)adrp.pc();
-                    }else if (adrp == insn::adrp) {
-                        rd = adrp.rd();
-                        imm = adrp.imm();
-                    }else if (adrp == insn::add && rd == adrp.rd()){
-                        if (imm + adrp.imm() == (int64_t)pos)
-                            return (loc_t)adrp.pc();
-                    }
-                    ++adrp;
-                }
-                
-                
-            } catch (std::out_of_range &e) {
-                return 0;
-            }
-            return 0;
-        }
-        loc_t find_rel_branch_source(insn bdst, bool searchUp, int ignoreTimes=0, int limit = 0){
-            insn bsrc(bdst);
-            
-            bool hasLimit = (limit);
-            while (true) {
-                if (searchUp){
-                    while ((--bsrc).supertype() != insn::sut_branch_imm){
-                        if (hasLimit && !limit--)
-                            reterror("find_rel_branch_source: limit reached!");
-                    }
-                }else{
-                    while ((++bsrc).supertype() != insn::sut_branch_imm){
-                        if (hasLimit && !limit--)
-                            reterror("find_rel_branch_source: limit reached!");
-                    }
-                }
-                
-                if (bsrc.imm()*4 + bsrc.pc() == bdst.pc()) {
-                    if (ignoreTimes) {
-                        ignoreTimes--;
-                        continue;
-                    }
-                    return (loc_t)bsrc.pc();
-                }
-            }
-            return 0;
-        }
-
-    };
-};
 
 namespace tihmstar{
     namespace patchfinder64{
-        
         
         loc_t jump_stub_call_ptr_loc(insn bl_insn){
             assure(bl_insn == insn::bl);
-            insn fdst(bl_insn,(loc_t)(bl_insn.imm()*4+bl_insn.pc()));
+            insn fdst(bl_insn,(loc_t)bl_insn.imm());
             insn ldr((fdst+1));
             retassure((fdst == insn::adrp && ldr == insn::ldr && (fdst+2) == insn::br), "branch destination not jump_stub_call");
             return (loc_t)fdst.imm() + ldr.imm();
@@ -942,7 +329,7 @@ loc_t offsetfinder64::find_ipc_port_alloc_special(){
     while (++ptr != insn::bl);
     while (++ptr != insn::bl);
     
-    return (loc_t)ptr.pc() + 4*ptr.imm();
+    return (loc_t)ptr.imm();
 }
 
 loc_t offsetfinder64::find_ipc_kobject_set(){
@@ -953,7 +340,7 @@ loc_t offsetfinder64::find_ipc_kobject_set(){
     while (++ptr != insn::bl);
     while (++ptr != insn::bl);
     
-    return (loc_t)ptr.pc() + 4*ptr.imm();
+    return (loc_t)ptr.imm();
 }
 
 loc_t offsetfinder64::find_ipc_port_make_send(){
@@ -962,7 +349,7 @@ loc_t offsetfinder64::find_ipc_port_make_send(){
     while (++ptr != insn::bl);
     while (++ptr != insn::bl);
     
-    return (loc_t)ptr.pc() + 4*ptr.imm();
+    return (loc_t)ptr.imm();
 }
 
 loc_t offsetfinder64::find_chgproccnt(){
@@ -1059,7 +446,7 @@ uint32_t offsetfinder64::find_task_itk_self(){
     
     insn mach_ports_register(_segments,_kslide, (loc_t)insn::deref(_segments, _kslide, task_subsystem+3*5*8));
     
-    while (++mach_ports_register != insn::bl || mach_ports_register.imm()*4+mach_ports_register.pc() != (uint64_t)find_sym("_lck_mtx_lock"));
+    while (++mach_ports_register != insn::bl || mach_ports_register.imm() != (uint64_t)find_sym("_lck_mtx_lock"));
     
     insn ldr(mach_ports_register);
     
@@ -1075,7 +462,7 @@ uint32_t offsetfinder64::find_task_itk_registered(){
     
     insn mach_ports_register(_segments,_kslide, (loc_t)insn::deref(_segments, _kslide, task_subsystem+3*5*8));
     
-    while (++mach_ports_register != insn::bl || mach_ports_register.imm()*4+mach_ports_register.pc() != (uint64_t)find_sym("_lck_mtx_lock"));
+    while (++mach_ports_register != insn::bl || mach_ports_register.imm() != (uint64_t)find_sym("_lck_mtx_lock"));
     
     insn ldr(mach_ports_register);
     
@@ -1101,7 +488,7 @@ uint32_t offsetfinder64::find_iouserclient_ipc(){
             uint64_t z0;
             uint64_t z1;
             uint64_t z2;
-        } *obj = (struct _anon*)(loc_t)memiterator;
+        } *obj = (struct _anon*)(void*)memiterator;
         
         if (!obj->z0 && !obj->z1 &&
             !memcmp(&obj[0], &obj[1], sizeof(struct _anon)) &&
@@ -1119,7 +506,7 @@ uint32_t offsetfinder64::find_iouserclient_ipc(){
     insn bl_to_iokit_add_connect_reference(_segments,_kslide,iokit_user_client_trap_func);
     while (++bl_to_iokit_add_connect_reference != insn::bl);
     
-    insn iokit_add_connect_reference(bl_to_iokit_add_connect_reference,(loc_t)(bl_to_iokit_add_connect_reference.imm()*4 + bl_to_iokit_add_connect_reference.pc()));
+    insn iokit_add_connect_reference(bl_to_iokit_add_connect_reference,(loc_t)bl_to_iokit_add_connect_reference.imm());
     
     while (++iokit_add_connect_reference != insn::add || iokit_add_connect_reference.rd() != 8 || ++iokit_add_connect_reference != insn::ldxr || iokit_add_connect_reference.rn() != 8);
 
@@ -1138,9 +525,7 @@ uint32_t offsetfinder64::find_ipc_space_is_task(){
 
     try {
         bref = find_rel_branch_source(insn(_segments,_kslide,ref), true, 2, 0x2000);
-    } catch (tihmstar::exception &e) {
-        if (!strstr(e.what(),"limit reached"))
-            throw;
+    } catch (tihmstar::limit_reached &e) {
         //previous attempt doesn't work on some 10.0.2 devices, trying something else...
         do_backup_plan = bref = find_rel_branch_source(insn(_segments,_kslide,ref), true, 1);
     }
@@ -1168,9 +553,7 @@ uint32_t offsetfinder64::find_sizeof_task(){
     loc_t zinit = 0;
     try {
         zinit = find_sym("_zinit");
-    } catch (tihmstar::exception &e) {
-        if (strncmp("Failed to find symbol", e.what(), strlen("Failed to find symbol")))
-            throw;
+    } catch (tihmstar::symbol_not_found &e) {
         loc_t str = memmem("zlog%d", sizeof("zlog%d"));
         retassure(str, "Failed to find str2");
         
@@ -1182,7 +565,7 @@ uint32_t offsetfinder64::find_sizeof_task(){
         zinit = (loc_t)functop.pc();
     }
     
-    while (++thebl != insn::bl || (loc_t)(thebl.pc() + 4*thebl.imm()) != zinit);
+    while (++thebl != insn::bl || (loc_t)thebl.imm() != zinit);
     
     --thebl;
     
@@ -1322,9 +705,7 @@ patch offsetfinder64::find_amfi_patch_offsets(){
     //ret
     insn ret0(_segments, _kslide, find_sym("_memcmp"));
     for (;; --ret0) {
-#warning TODO change this to proper instruction parsing
-        if (ret0.value() == *(uint32_t*)"\x00\x00\x80\x52" //movz       w0, #0x0
-            && (ret0+1) == insn::ret) {
+        if (ret0 == insn::movz && ret0.rd() == 0 && ret0.imm() == 0 && (ret0+1) == insn::ret) {
             break;
         }
     }
@@ -1362,7 +743,7 @@ vector<patch> offsetfinder64::find_nosuid_off(){
     loc_t cbnz = find_rel_branch_source(ldr, 1);
     
     insn bl_vfs_context_is64bit(ldr,cbnz);
-    while (--bl_vfs_context_is64bit != insn::bl || bl_vfs_context_is64bit.imm()*4+bl_vfs_context_is64bit.pc() != (uint64_t)find_sym("_vfs_context_is64bit"));
+    while (--bl_vfs_context_is64bit != insn::bl || bl_vfs_context_is64bit.imm() != (uint64_t)find_sym("_vfs_context_is64bit"));
     
     //patch1
     insn movk(bl_vfs_context_is64bit);
@@ -1408,18 +789,18 @@ patch offsetfinder64::find_lwvm_patch_offsets(){
     while (1) {
         while (++dstfunc != insn::bl);
         
-        try {
-            destination = jump_stub_call_ptr_loc(dstfunc);
-        } catch (tihmstar::exception &e) {
+        if (!is_call_to_jump_stub(dstfunc))
             continue;
-        }
+        
+        destination = jump_stub_call_ptr_loc(dstfunc);
+
         if (insn::deref(_segments, _kslide, destination) == (uint64_t)find_sym("_PE_i_can_has_kernel_configuration"))
             break;
     }
     
     while (++dstfunc != insn::bcond || dstfunc.other() != insn::cond::NE);
     
-    loc_t target = (loc_t)( dstfunc.pc() + 4*dstfunc.imm());
+    loc_t target = (loc_t)dstfunc.imm();
     
     return {destination,&target,sizeof(target),slide_ptr};
 }
@@ -1464,7 +845,8 @@ patch offsetfinder64::find_nonceEnabler_patch(){
 
     insn ptr(_segments,_kslide,sym);
     
-    OFVariable *varp = (OFVariable*)(loc_t)ptr;
+#warning TODO: doublecast works, but is still kinda ugly
+    OFVariable *varp = (OFVariable*)(void*)ptr;
     OFVariable nullvar = {0};
     for (OFVariable *vars = varp;memcmp(vars, &nullvar, sizeof(OFVariable)) != 0; vars++) {
         

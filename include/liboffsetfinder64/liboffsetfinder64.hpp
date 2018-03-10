@@ -17,72 +17,19 @@
 #include <vector>
 
 #include <stdlib.h>
-
-typedef uint64_t offset_t;
-
+#include "common.h"
+#include "insn.hpp"
+#include "exception.hpp"
+#include "patch.hpp"
 
 namespace tihmstar {
-    
-    class exception : public std::exception{
-        std::string _err;
-        int _code;
-    public:
-        exception(int code, std::string err) : _err(err), _code(code) {};
-        exception(std::string err) : _err(err), _code(0) {};
-        exception(int code) : _code(code) {};
-        const char *what(){return _err.c_str();}
-        int code(){return _code;}
-    };
-    namespace patchfinder64{
-        typedef uint8_t* loc_t;
-        
-        class patch{
-            bool _slideme;
-            void(*_slidefunc)(class patch *patch, uint64_t slide);
-        public:
-            const loc_t _location;
-            const void *_patch;
-            const size_t _patchSize;
-            patch(loc_t location, const void *patch, size_t patchSize, void(*slidefunc)(class patch *patch, uint64_t slide) = NULL) : _location(location), _patchSize(patchSize), _slidefunc(slidefunc){
-                _patch = malloc(_patchSize);
-                memcpy((void*)_patch, patch, _patchSize);
-                _slideme = (_slidefunc) ? true : false;
-            }
-            patch(const patch& cpy) : _location(cpy._location), _patchSize(cpy._patchSize){
-                _patch = malloc(_patchSize);
-                memcpy((void*)_patch, cpy._patch, _patchSize);
-                _slidefunc = cpy._slidefunc;
-                _slideme = cpy._slideme;
-            }
-            void slide(uint64_t slide){
-                if (!_slideme)
-                    return;
-                printf("sliding with %p\n",(void*)slide);
-                _slidefunc(this,slide);
-                _slideme = false; //only slide once
-            }
-            ~patch(){
-                free((void*)_patch);
-            }
-            
-        };
-    }
     class offsetfinder64 {
-    public:
-        struct text_t{
-            patchfinder64::loc_t map;
-            size_t size;
-            patchfinder64::loc_t base;
-            bool isExec;
-        };
-        
-    private:
         bool _freeKernel;
         uint8_t *_kdata;
         size_t _ksize;
-        offset_t _kslide;
+        patchfinder64::offset_t _kslide;
         patchfinder64::loc_t _kernel_entry;
-        std::vector<text_t> _segments;
+        std::vector<patchfinder64::text_t> _segments;
         
         struct symtab_command *__symtab;
         void loadSegments(uint64_t slide);
@@ -93,7 +40,7 @@ namespace tihmstar {
         offsetfinder64(void* buf, size_t size, uint64_t base);
         const void *kdata();
         patchfinder64::loc_t find_entry();
-        const std::vector<text_t> &segments(){return _segments;};
+        const std::vector<patchfinder64::text_t> &segments(){return _segments;};
         
         patchfinder64::loc_t memmem(const void *little, size_t little_len);
         
@@ -155,11 +102,6 @@ namespace tihmstar {
         
         ~offsetfinder64();
     };
-    using segment_t = std::vector<tihmstar::offsetfinder64::text_t>;
-    namespace patchfinder64{
-        
-        loc_t find_literal_ref(segment_t segemts, offset_t kslide, loc_t pos);
-    }
 }
 
 

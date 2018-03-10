@@ -13,6 +13,9 @@
 		870E967020077AC70043690C /* libcrypto.1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 870E966F20077AC70043690C /* libcrypto.1.0.0.dylib */; };
 		8719283120067C84005144BB /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8719283020067C84005144BB /* main.cpp */; };
 		8719283920067C9A005144BB /* liboffsetfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8719283720067C9A005144BB /* liboffsetfinder64.cpp */; };
+		87F62801205289F00075271B /* insn.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87F627FF205289F00075271B /* insn.cpp */; };
+		87F6280520528DCC0075271B /* exception.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87F6280320528DCC0075271B /* exception.cpp */; };
+		87F62808205294040075271B /* patch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87F62806205294040075271B /* patch.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -41,6 +44,14 @@
 		8719283020067C84005144BB /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		8719283720067C9A005144BB /* liboffsetfinder64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = liboffsetfinder64.cpp; sourceTree = "<group>"; };
 		8719283820067C9A005144BB /* liboffsetfinder64.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = liboffsetfinder64.hpp; path = ../include/liboffsetfinder64/liboffsetfinder64.hpp; sourceTree = "<group>"; };
+		87F627FF205289F00075271B /* insn.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = insn.cpp; sourceTree = "<group>"; };
+		87F62800205289F00075271B /* insn.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = insn.hpp; sourceTree = "<group>"; };
+		87F6280220528D860075271B /* all_liboffsetfinder.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = all_liboffsetfinder.hpp; sourceTree = "<group>"; };
+		87F6280320528DCC0075271B /* exception.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = exception.cpp; sourceTree = "<group>"; };
+		87F6280420528DCC0075271B /* exception.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = exception.hpp; sourceTree = "<group>"; };
+		87F62806205294040075271B /* patch.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = patch.cpp; sourceTree = "<group>"; };
+		87F62807205294040075271B /* patch.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = patch.hpp; sourceTree = "<group>"; };
+		87F628092052945A0075271B /* common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,6 +111,14 @@
 			isa = PBXGroup;
 			children = (
 				870E965C200778F60043690C /* external */,
+				87F6280220528D860075271B /* all_liboffsetfinder.hpp */,
+				87F628092052945A0075271B /* common.h */,
+				87F6280420528DCC0075271B /* exception.hpp */,
+				87F6280320528DCC0075271B /* exception.cpp */,
+				87F62800205289F00075271B /* insn.hpp */,
+				87F627FF205289F00075271B /* insn.cpp */,
+				87F62807205294040075271B /* patch.hpp */,
+				87F62806205294040075271B /* patch.cpp */,
 				8719283820067C9A005144BB /* liboffsetfinder64.hpp */,
 				8719283720067C9A005144BB /* liboffsetfinder64.cpp */,
 				8719283020067C84005144BB /* main.cpp */,
@@ -167,7 +186,10 @@
 				870E9662200779140043690C /* img4.c in Sources */,
 				8719283920067C9A005144BB /* liboffsetfinder64.cpp in Sources */,
 				870E9663200779140043690C /* lzssdec.c in Sources */,
+				87F62801205289F00075271B /* insn.cpp in Sources */,
 				8719283120067C84005144BB /* main.cpp in Sources */,
+				87F62808205294040075271B /* patch.cpp in Sources */,
+				87F6280520528DCC0075271B /* exception.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -5,4 +5,4 @@ lib_LTLIBRARIES = liboffsetfinder64.la
 
 liboffsetfinder64_la_CPPFLAGS = $(AM_CFLAGS)
 liboffsetfinder64_la_LIBADD = $(AM_LDFLAGS)
-liboffsetfinder64_la_SOURCES = liboffsetfinder64.cpp
+liboffsetfinder64_la_SOURCES = liboffsetfinder64.cpp exception.cpp insn.cpp patch.cpp
