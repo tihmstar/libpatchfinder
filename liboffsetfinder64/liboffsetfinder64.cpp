@@ -936,7 +936,7 @@ loc_t offsetfinder64::find_deepsleep_str_loc(){
 }
 
 loc_t offsetfinder64::find_rootvnode() {
-    return find_symbol("_rootvnode");
+    return find_sym("_rootvnode");
 }
 
 

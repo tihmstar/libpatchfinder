@@ -66,6 +66,7 @@ int main(int argc, const char * argv[]) {
     tihmstar::patchfinder64::patch sandbox_patch = fi.find_sandbox_patch();
     tihmstar::patchfinder64::patch nonce = fi.find_nonceEnabler_patch();
     
+    
     auto nosuid_off = fi.find_nosuid_off();
     auto sbops = fi.find_sbops();
     
@@ -77,6 +78,11 @@ int main(int argc, const char * argv[]) {
         printf("%p\n",s._location);
     }
     printf("%p\n",sbops);
+    
+    printf("/*------------------------ Util -------------------------- */\n");
+    tihmstar::patchfinder64::loc_t vnode = fi.find_rootvnode();
+    
+    printf("%p\n",vnode);
     
     printf("");
     
