@@ -51,6 +51,11 @@ namespace tihmstar {
         limit_reached(int code, std::string err, std::string filename);
     };
     
+    class bad_branch_destination : public exception{
+    public:
+        bad_branch_destination(int code, std::string err, std::string filename);
+    };
+    
 };
 
 #endif /* exception_hpp */

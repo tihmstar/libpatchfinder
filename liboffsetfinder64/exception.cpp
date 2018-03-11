@@ -40,3 +40,5 @@ symbol_not_found::symbol_not_found(int code, std::string sym, std::string filena
 
 limit_reached::limit_reached(int code, std::string err, std::string filename) : exception(code,err,filename) {};
 
+bad_branch_destination::bad_branch_destination(int code, std::string err, std::string filename) : exception(code,err,filename) {};
+

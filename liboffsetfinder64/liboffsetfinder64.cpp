@@ -202,7 +202,9 @@ namespace tihmstar{
             assure(bl_insn == insn::bl);
             insn fdst(bl_insn,(loc_t)bl_insn.imm());
             insn ldr((fdst+1));
-            retassure((fdst == insn::adrp && ldr == insn::ldr && (fdst+2) == insn::br), "branch destination not jump_stub_call");
+            if (!((fdst == insn::adrp && ldr == insn::ldr && (fdst+2) == insn::br))) {
+                retcustomerror("branch destination not jump_stub_call", bad_branch_destination);
+            }
             return (loc_t)fdst.imm() + ldr.imm();
         }
         
@@ -210,7 +212,7 @@ namespace tihmstar{
             try {
                 jump_stub_call_ptr_loc(bl_insn);
                 return true;
-            } catch (tihmstar::exception &e) {
+            } catch (tihmstar::bad_branch_destination &e) {
                 return false;
             }
         }
@@ -693,7 +695,7 @@ patch offsetfinder64::find_amfi_patch_offsets(){
         
         try {
             jscpl = jump_stub_call_ptr_loc(bl_amfi_memcp);
-        } catch (tihmstar::exception &e) {
+        } catch (tihmstar::bad_branch_destination &e) {
             continue;
         }
         if (insn::deref(_segments, _kslide, jscpl) == (uint64_t)find_sym("_memcmp"))
@@ -789,10 +791,11 @@ patch offsetfinder64::find_lwvm_patch_offsets(){
     while (1) {
         while (++dstfunc != insn::bl);
         
-        if (!is_call_to_jump_stub(dstfunc))
+        try {
+            destination = jump_stub_call_ptr_loc(dstfunc);
+        } catch (tihmstar::bad_branch_destination &e) {
             continue;
-        
-        destination = jump_stub_call_ptr_loc(dstfunc);
+        }
 
         if (insn::deref(_segments, _kslide, destination) == (uint64_t)find_sym("_PE_i_can_has_kernel_configuration"))
             break;
