@@ -11,32 +11,19 @@ autoconf
 autoheader
 automake --add-missing
 
+
+SYSROOT="$(xcrun --show-sdk-path --sdk iphoneos)"
+export CFLAGS+="-arch arm64 -isysroot $SYSROOT -DIMG4TOOL_NOMAIN"
+export CXXFLAGS+="-arch arm64 -isysroot $SYSROOT -DIMG4TOOL_NOMAIN"
+
 # otherwise img4tool cant find libplist
 CFLAGS+=" -I$PWD/external/libplist/include"
 CXXFLAGS+=" -I$PWD/external/libplist/include"
-export LDFLAGS+=" -L$PWD/external/libplist/src"
-
-MAC="x86_64-apple-darwin$(uname -r)"
-IOS="aarch64-apple-darwin"
-
-BUILD="$MAC"
-if [ ! -z ${NOCROSS+x} ]; then
-  echo "no cross compile"
-  HOST="$MAC"
-else
-  echo "cross compiling for ios"
-  HOST="$IOS"
-  SYSROOT="$(xcrun --show-sdk-path --sdk iphoneos)"
-  CFLAGS+="-arch arm64 -isysroot $SYSROOT"
-  CXXFLAGS+="-arch arm64 -isysroot $SYSROOT"
-fi
-
-export CFLAGS+="-DIMG4TOOL_NOMAIN"
-export CXXFLAGS+="-DIMG4TOOL_NOMAIN"
+export LDFLAGS+="-L$PWD/external/libplist/src"
 
 CONFIGURE_FLAGS="--enable-static --disable-shared\
-  --build=$BUILD \
-  --host=$HOST \
+  --build=x86_64-apple-darwin`uname -r` \
+  --host=aarch64-apple-darwin \
   --without-cython --without-openssl \
   $@"
 
