@@ -18,7 +18,6 @@ extern "C"{
 #include <unistd.h>
 #include <string.h>
 #include "img4.h"
-#include "lzssdec.h"
 }
 
 using namespace std;
@@ -29,7 +28,6 @@ using namespace patchfinder64;
 
 #define HAS_BITS(a,b) (((a) & (b)) == (b))
 #define _symtab getSymtab()
-int decompress_lzss(u_int8_t *dst, u_int8_t *src, u_int32_t srclen);
 
 #pragma mark macho external
 
@@ -74,35 +72,27 @@ offsetfinder64::offsetfinder64(const char* filename) : _freeKernel(true),__symta
     assureclean((_kdata = (uint8_t*)malloc( _ksize = fs.st_size)));
     assureclean(read(fd,_kdata,_ksize)==_ksize);
     
-    //check if feedfacf, lzss, img4, im4p
+    //check if feedfacf, compressed (lzfse/lzss), img4, im4p
     img4tmp = (char*)_kdata;
     if (sequenceHasName(img4tmp, (char*)"IMG4")){
         img4tmp = getElementFromIMG4((char*)_kdata, (char*)"IM4P");
     }
     if (sequenceHasName(img4tmp, (char*)"IM4P")){
-        /*extract file from IM4P*/
-        char *extractFile = [](char *buf, char **dstBuf)->char*{
-            int elems = asn1ElementsInObject(buf);
-            if (elems < 4){
-                error("not enough elements in SEQUENCE %d\n",elems);
-                return NULL;
+        char *extracted = NULL;
+        {
+            size_t klen;
+            const char* compname;
+
+            extracted = extractKernelFromIM4P(img4tmp, &compname, &klen);
+
+            if (compname) {
+                printf("%s comp detected, uncompressing : %s ...\n", compname, extracted ? "success" : "failure");
             }
-            
-            char *dataTag = asn1ElementAtIndex(buf, 3)+1;
-            t_asn1ElemLen dlen = asn1Len(dataTag);
-            char *data = dataTag+dlen.sizeBytes;
-            
-            char *kernel = NULL;
-            if ((kernel = tryLZSS(data, (size_t*)&dlen.dataLen))){
-                data = kernel;
-                printf("lzsscomp detected, uncompressing...\n");
-            }
-            return kernel;
-        }(img4tmp,&extractFile);
-        /* done extract file from IM4P*/
-        
-        free(_kdata);
-        _kdata = (uint8_t*)extractFile;
+        }
+        if (extracted != NULL) {
+            free(_kdata);
+            _kdata = (uint8_t*)extracted;
+        }
     }
     
     assureclean(*(uint32_t*)_kdata == 0xfeedfacf);
