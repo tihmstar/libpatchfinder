@@ -12,13 +12,27 @@ autoheader
 automake --add-missing
 
 
+SYSROOT="$(xcrun --show-sdk-path --sdk iphoneos)"
+export CFLAGS+="-arch arm64 -isysroot $SYSROOT -DIMG4TOOL_NOMAIN"
+export CXXFLAGS+="-arch arm64 -isysroot $SYSROOT -DIMG4TOOL_NOMAIN"
+
+# otherwise img4tool cant find libplist
+CFLAGS+=" -I$PWD/external/libplist/include"
+CXXFLAGS+=" -I$PWD/external/libplist/include"
+export LDFLAGS+="-L$PWD/external/libplist/src"
+
+CONFIGURE_FLAGS="--enable-static --disable-shared\
+  --build=x86_64-apple-darwin`uname -r` \
+  --host=aarch64-apple-darwin \
+  --without-cython --without-openssl \
+  $@"
+
 SUBDIRS="external/libplist external/img4tool"
-export CFLAGS="-arch arm64 -isysroot $(xcrun --show-sdk-path --sdk iphoneos) -D IMG4TOOL_NOMAIN -D IMG4TOOL_NOOPENSSL"
-export CPPFLAGS="-arch arm64 -isysroot $(xcrun --show-sdk-path --sdk iphoneos)"
 for SUB in $SUBDIRS; do
     pushd $SUB
-    ./autogen.sh --enable-static --disable-shared --host=arm-apple-darwin --without-cython
+    ./autogen.sh $CONFIGURE_FLAGS
     popd
 done
 
-./configure --host=arm-apple-darwin --enable-static --disable-shared "$@"
+./configure $CONFIGURE_FLAGS
+
