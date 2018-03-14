@@ -1,4 +1,4 @@
-AM_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/external/img4tool/img4tool -I$(top_srcdir)/external/libplist/include
+AM_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/include/liboffsetfinder64 -I$(top_srcdir)/external/img4tool/img4tool -I$(top_srcdir)/external/libplist/include
 AM_LDFLAGS = -L/usr/local/lib/
 
 lib_LTLIBRARIES = liboffsetfinder64.la 
