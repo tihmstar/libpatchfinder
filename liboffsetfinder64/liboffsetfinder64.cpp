@@ -72,7 +72,7 @@ offsetfinder64::offsetfinder64(const char* filename) : _freeKernel(true),__symta
     assureclean((_kdata = (uint8_t*)malloc( _ksize = fs.st_size)));
     assureclean(read(fd,_kdata,_ksize)==_ksize);
     
-    //check if feedfacf, compressed (lzfse/lzss), img4, im4p
+    //check if feedfacf, fat, compressed (lzfse/lzss), img4, im4p
     img4tmp = (char*)_kdata;
     if (sequenceHasName(img4tmp, (char*)"IMG4")){
         img4tmp = getElementFromIMG4((char*)_kdata, (char*)"IM4P");
@@ -92,6 +92,46 @@ offsetfinder64::offsetfinder64(const char* filename) : _freeKernel(true),__symta
         if (extracted != NULL) {
             free(_kdata);
             _kdata = (uint8_t*)extracted;
+        }
+    }
+
+    if (*(uint32_t*)_kdata == 0xbebafeca || *(uint32_t*)_kdata == 0xcafebabe) {
+        bool swap = *(uint32_t*)_kdata == 0xbebafeca;
+
+        uint8_t* tryfat = [=]() -> uint8_t* {
+            // just select first slice
+            uint32_t* kdata32 = (uint32_t*) _kdata;
+            uint32_t narch = kdata32[1];
+            if (swap) narch = ntohl(narch);
+
+            if (narch != 1) {
+                printf("expected 1 arch in fat file, got %u\n", narch);
+                return NULL;
+            }
+
+            uint32_t offset = kdata32[2 + 2];
+            if (swap) offset = ntohl(offset);
+
+            if (offset != sizeof(uint32_t)*(2 + 5)) {
+                printf("wat, file offset not sizeof(fat_header) + sizeof(fat_arch)?!\n");
+            }
+
+            uint32_t filesize = kdata32[2 + 3];
+            if (swap) filesize = ntohl(filesize);
+
+            // I'm too lazy to make it free what needed
+            uint8_t *ret = (uint8_t*) malloc(filesize);
+            if (ret != NULL) {
+                memcpy(ret, _kdata + offset, filesize);
+            }
+            return ret;
+        }();
+
+        if (tryfat != NULL) {
+            printf("got fat macho with first slice at %u\n", (uint32_t) (tryfat - _kdata));
+            _kdata = tryfat;
+        } else {
+            printf("got fat macho but failed to parse\n");
         }
     }
     
