@@ -528,8 +528,14 @@ uint32_t offsetfinder64::find_ipc_space_is_task(){
     try {
         bref = find_rel_branch_source(insn(_segments,_kslide,ref), true, 2, 0x2000);
     } catch (tihmstar::limit_reached &e) {
-        //previous attempt doesn't work on some 10.0.2 devices, trying something else...
-        do_backup_plan = bref = find_rel_branch_source(insn(_segments,_kslide,ref), true, 1);
+        try {
+            //previous attempt doesn't work on some 10.0.2 devices, trying something else...
+            do_backup_plan = bref = find_rel_branch_source(insn(_segments,_kslide,ref), true, 1, 0x2000);
+        } catch (tihmstar::limit_reached &ee) {
+            //this seems to be good for iOS 9.3.3
+            do_backup_plan = bref = find_rel_branch_source(insn(_segments,_kslide,ref-4), true, 1, 0x2000);
+        }
+        
     }
     
     insn istr(_segments,_kslide,bref);
@@ -544,7 +550,7 @@ uint32_t offsetfinder64::find_ipc_space_is_task(){
 }
 
 uint32_t offsetfinder64::find_sizeof_task(){
-    loc_t str = memmem("tasks", sizeof("tasks"));
+    loc_t str = memmem("\0tasks", sizeof("\0tasks"))+1;
     retassure(str, "Failed to find str");
     
     loc_t ref = find_literal_ref(_segments, _kslide, str);
@@ -846,7 +852,7 @@ patch offsetfinder64::find_nonceEnabler_patch(){
 
     loc_t sym = find_sym("_gOFVariables");
 
-    insn ptr(_segments,_kslide,sym);
+    insn ptr(_segments,_kslide,sym, insn::kText_and_Data);
     
 #warning TODO: doublecast works, but is still kinda ugly
     OFVariable *varp = (OFVariable*)(void*)ptr;
