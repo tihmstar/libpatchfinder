@@ -51,5 +51,4 @@ AC_CONFIG_FILES([Makefile
                  include/Makefile
                  liboffsetfinder64/Makefile
 		 liboffsetfinder64.pc])
-AC_CONFIG_SUBDIRS([external/img4tool])
 AC_OUTPUT

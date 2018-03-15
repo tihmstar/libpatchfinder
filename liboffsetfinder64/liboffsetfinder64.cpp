@@ -18,7 +18,6 @@ extern "C"{
 #include <unistd.h>
 #include <string.h>
 #include "img4.h"
-#include "lzssdec.h"
 }
 
 using namespace std;
@@ -29,7 +28,6 @@ using namespace patchfinder64;
 
 #define HAS_BITS(a,b) (((a) & (b)) == (b))
 #define _symtab getSymtab()
-int decompress_lzss(u_int8_t *dst, u_int8_t *src, u_int32_t srclen);
 
 #pragma mark macho external
 
@@ -74,35 +72,67 @@ offsetfinder64::offsetfinder64(const char* filename) : _freeKernel(true),__symta
     assureclean((_kdata = (uint8_t*)malloc( _ksize = fs.st_size)));
     assureclean(read(fd,_kdata,_ksize)==_ksize);
     
-    //check if feedfacf, lzss, img4, im4p
+    //check if feedfacf, fat, compressed (lzfse/lzss), img4, im4p
     img4tmp = (char*)_kdata;
     if (sequenceHasName(img4tmp, (char*)"IMG4")){
         img4tmp = getElementFromIMG4((char*)_kdata, (char*)"IM4P");
     }
     if (sequenceHasName(img4tmp, (char*)"IM4P")){
-        /*extract file from IM4P*/
-        char *extractFile = [](char *buf, char **dstBuf)->char*{
-            int elems = asn1ElementsInObject(buf);
-            if (elems < 4){
-                error("not enough elements in SEQUENCE %d\n",elems);
+        char *extracted = NULL;
+        {
+            size_t klen;
+            const char* compname;
+
+            extracted = extractKernelFromIM4P(img4tmp, &compname, &klen);
+
+            if (compname) {
+                printf("%s comp detected, uncompressing : %s ...\n", compname, extracted ? "success" : "failure");
+            }
+        }
+        if (extracted != NULL) {
+            free(_kdata);
+            _kdata = (uint8_t*)extracted;
+        }
+    }
+
+    if (*(uint32_t*)_kdata == 0xbebafeca || *(uint32_t*)_kdata == 0xcafebabe) {
+        bool swap = *(uint32_t*)_kdata == 0xbebafeca;
+
+        uint8_t* tryfat = [=]() -> uint8_t* {
+            // just select first slice
+            uint32_t* kdata32 = (uint32_t*) _kdata;
+            uint32_t narch = kdata32[1];
+            if (swap) narch = ntohl(narch);
+
+            if (narch != 1) {
+                printf("expected 1 arch in fat file, got %u\n", narch);
                 return NULL;
             }
-            
-            char *dataTag = asn1ElementAtIndex(buf, 3)+1;
-            t_asn1ElemLen dlen = asn1Len(dataTag);
-            char *data = dataTag+dlen.sizeBytes;
-            
-            char *kernel = NULL;
-            if ((kernel = tryLZSS(data, (size_t*)&dlen.dataLen))){
-                data = kernel;
-                printf("lzsscomp detected, uncompressing...\n");
+
+            uint32_t offset = kdata32[2 + 2];
+            if (swap) offset = ntohl(offset);
+
+            if (offset != sizeof(uint32_t)*(2 + 5)) {
+                printf("wat, file offset not sizeof(fat_header) + sizeof(fat_arch)?!\n");
             }
-            return kernel;
-        }(img4tmp,&extractFile);
-        /* done extract file from IM4P*/
-        
-        free(_kdata);
-        _kdata = (uint8_t*)extractFile;
+
+            uint32_t filesize = kdata32[2 + 3];
+            if (swap) filesize = ntohl(filesize);
+
+            // I'm too lazy to make it free what needed
+            uint8_t *ret = (uint8_t*) malloc(filesize);
+            if (ret != NULL) {
+                memcpy(ret, _kdata + offset, filesize);
+            }
+            return ret;
+        }();
+
+        if (tryfat != NULL) {
+            printf("got fat macho with first slice at %u\n", (uint32_t) (tryfat - _kdata));
+            _kdata = tryfat;
+        } else {
+            printf("got fat macho but failed to parse\n");
+        }
     }
     
     assureclean(*(uint32_t*)_kdata == 0xfeedfacf);
