@@ -46,6 +46,18 @@ namespace tihmstar {
         symbol_not_found(int code, std::string sym, std::string filename);
     };
     
+    class load_command_not_found : public exception{
+        int _cmd;
+    public:
+        int cmd() const;
+        load_command_not_found(int code, int cmd, std::string filename);
+    };
+    
+    class symtab_not_found : public exception{
+    public:
+        symtab_not_found(int code, std::string err, std::string filename);
+    };
+    
     class limit_reached : public exception{
     public:
         limit_reached(int code, std::string err, std::string filename);

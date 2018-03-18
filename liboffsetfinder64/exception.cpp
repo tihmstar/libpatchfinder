@@ -8,6 +8,7 @@
 
 #include "exception.hpp"
 #include "all_liboffsetfinder.hpp"
+#include <string>
 
 using namespace tihmstar;
 
@@ -37,6 +38,11 @@ const std::string& exception::build_commit_sha() const {
 out_of_range::out_of_range(std::string err) : exception(__LINE__, err, "exception.cpp"){};
 
 symbol_not_found::symbol_not_found(int code, std::string sym, std::string filename) : exception(code,{"failed to find symbol: " + sym},filename) {};
+
+load_command_not_found::load_command_not_found(int code, int cmd, std::string filename) : exception(code,{"failed to find cmd: " + std::to_string(cmd)},filename), _cmd(cmd) {};
+int load_command_not_found::cmd() const { return _cmd;};
+
+symtab_not_found::symtab_not_found(int code, std::string err, std::string filename) : exception(code,err,filename) {};
 
 limit_reached::limit_reached(int code, std::string err, std::string filename) : exception(code,err,filename) {};
 

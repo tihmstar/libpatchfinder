@@ -24,10 +24,9 @@ namespace tihmstar{
         private:
             std::pair <loc_t,int> _p;
             std::vector<text_t> _segments;
-            offset_t _kslide;
             segtype _segtype;
         public:
-            insn(segment_t segments, offset_t kslide, loc_t p = 0, segtype segType = kText_only);
+            insn(segment_t segments, loc_t p = 0, segtype segType = kText_only);
             insn(const insn &cpy, loc_t p=0);
             insn &operator++();
             insn &operator--();
@@ -43,7 +42,7 @@ namespace tihmstar{
             uint64_t doublevalue();
             
         public: //static type determinition
-            static uint64_t deref(segment_t segments, offset_t kslide, loc_t p);
+            static uint64_t deref(segment_t segments, loc_t p);
             static bool is_adrp(uint32_t i);
             static bool is_adr(uint32_t i);
             static bool is_add(uint32_t i);
@@ -58,6 +57,7 @@ namespace tihmstar{
             static bool is_orr(uint32_t i);
             static bool is_tbz(uint32_t i);
             static bool is_ldxr(uint32_t i);
+            static bool is_ldrb(uint32_t i);
             static bool is_str(uint32_t i);
             static bool is_stp(uint32_t i);
             static bool is_movz(uint32_t i);
@@ -82,6 +82,7 @@ namespace tihmstar{
                 orr,
                 tbz,
                 ldxr,
+                ldrb,
                 str,
                 stp,
                 movz,
@@ -130,7 +131,7 @@ namespace tihmstar{
             operator enum type();
         };
         
-        loc_t find_literal_ref(segment_t segemts, offset_t kslide, loc_t pos);
+        loc_t find_literal_ref(segment_t segemts, loc_t pos);
         loc_t find_rel_branch_source(insn bdst, bool searchUp, int ignoreTimes=0, int limit = 0);
         
     };

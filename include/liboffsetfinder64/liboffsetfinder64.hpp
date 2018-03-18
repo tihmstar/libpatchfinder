@@ -24,25 +24,34 @@
 
 namespace tihmstar {
     class offsetfinder64 {
+    public:
+        enum tristate{
+            kfalse = 0,
+            ktrue = 1,
+            kuninitialized = 2
+        };
+    private:
         bool _freeKernel;
         uint8_t *_kdata;
         size_t _ksize;
-        patchfinder64::offset_t _kslide;
         patchfinder64::loc_t _kernel_entry;
         std::vector<patchfinder64::text_t> _segments;
+        tristate _haveSymtab = kuninitialized;
         
         struct symtab_command *__symtab;
-        void loadSegments(uint64_t slide);
+        void loadSegments();
         __attribute__((always_inline)) struct symtab_command *getSymtab();
         
     public:
         offsetfinder64(const char *filename);
-        offsetfinder64(void* buf, size_t size, uint64_t base);
+        offsetfinder64(void* buf, size_t size);
         const void *kdata();
         patchfinder64::loc_t find_entry();
         const std::vector<patchfinder64::text_t> &segments(){return _segments;};
+        bool haveSymbols();
         
         patchfinder64::loc_t memmem(const void *little, size_t little_len);
+        patchfinder64::loc_t findstr(const char *str, bool hasNullTerminator = 1);
         
         patchfinder64::loc_t find_sym(const char *sym);
         patchfinder64::loc_t find_syscall0();
@@ -90,6 +99,7 @@ namespace tihmstar {
         patchfinder64::patch find_sandbox_patch();
         patchfinder64::loc_t find_sbops();
         patchfinder64::patch find_nonceEnabler_patch();
+        patchfinder64::patch find_nonceEnabler_patch_nosym();
 
         
         /*------------------------ KPP bypass -------------------------- */

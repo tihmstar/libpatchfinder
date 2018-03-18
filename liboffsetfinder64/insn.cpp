@@ -14,7 +14,7 @@
 
 using namespace tihmstar::patchfinder64;
 
-insn::insn(segment_t segments, offset_t kslide, loc_t p, segtype segType) : _segments(segments), _kslide(kslide), _segtype(segType){
+insn::insn(segment_t segments, loc_t p, segtype segType) : _segments(segments), _segtype(segType){
     std::sort(_segments.begin(),_segments.end(),[ ]( const text_t& lhs, const text_t& rhs){
         return lhs.base < rhs.base;
     });
@@ -38,7 +38,6 @@ insn::insn(segment_t segments, offset_t kslide, loc_t p, segtype segType) : _seg
 
 insn::insn(const insn &cpy, loc_t p){
     _segments = cpy._segments;
-    _kslide = cpy._kslide;
     _segtype = cpy._segtype;
     if (p==0) {
         _p = cpy._p;
@@ -196,7 +195,7 @@ __attribute__((always_inline)) static std::pair<int64_t, int64_t> DecodeBitMasks
 
 #pragma mark bridges
 uint64_t insn::pc(){
-    return (uint64_t)_p.first + (uint64_t)_kslide;
+    return (uint64_t)_p.first;
 }
 
 uint32_t insn::value(){
@@ -209,8 +208,8 @@ uint64_t insn::doublevalue(){
 
 #pragma mark static type determinition
 
-uint64_t insn::deref(segment_t segments, offset_t kslide, loc_t p){
-    return insn(segments, kslide, p, insn::kText_and_Data).doublevalue();
+uint64_t insn::deref(segment_t segments, loc_t p){
+    return insn(segments, p, insn::kText_and_Data).doublevalue();
 }
 
 bool insn::is_adrp(uint32_t i){
@@ -270,6 +269,12 @@ bool insn::is_ldxr(uint32_t i){
     return (BIT_RANGE(i, 24, 29) == 0b001000) && (i >> 31) && BIT_AT(i, 22);
 }
 
+bool insn::is_ldrb(uint32_t i){
+    return BIT_RANGE(i, 21, 31) == 0b00111000010 || //Immediate post/pre -indexed
+           BIT_RANGE(i, 22, 31) == 0b0011100101  || //Immediate unsigned offset
+           (BIT_RANGE(i, 21, 31) == 0b00111000011 && BIT_RANGE(i, 10, 11) == 0b10); //Register
+}
+
 bool insn::is_str(uint32_t i){
 #warning TODO redo this! currently only recognises STR (immediate)
     return (BIT_RANGE(i, 22, 29) == 0b11100100) && (i >> 31);
@@ -327,6 +332,8 @@ enum insn::type insn::type(){
         return tbz;
     else if (is_ldxr(val))
         return ldxr;
+    else if (is_ldrb(val))
+        return ldrb;
     else if (is_str(val))
         return str;
     else if (is_stp(val))
@@ -352,7 +359,11 @@ enum insn::subtype insn::subtype(){
             return st_immediate;
         else
             return st_literal;
-
+    }else if (is_ldrb(i)){
+        if (BIT_RANGE(i, 21, 31) == 0b00111000011 && BIT_RANGE(i, 10, 11) == 0b10)
+            return st_register;
+        else
+            return st_immediate;
     }
     return st_general;
 }
@@ -407,6 +418,16 @@ int64_t insn::imm(){
                 // Signed Offset
                 return signExtend64(BIT_RANGE(value(), 12, 21), 9); //untested
             }
+        case ldrb:
+            if (st_immediate) {
+                if (BIT_RANGE(value(), 22, 31) == 0b0011100101) { //unsigned
+                    return BIT_RANGE(value(), 10, 21) << BIT_RANGE(value(), 30, 31);
+                }else{  //pre/post indexed
+                    return BIT_RANGE(value(), 12, 20) << BIT_RANGE(value(), 30, 31);
+                }
+            }else{
+                reterror("ldrb must be st_immediate for imm to be defined!");
+            }
         case str:
 #warning TODO rewrite this! currently only unsigned offset supported
             // Unsigned Offset
@@ -455,6 +476,7 @@ uint8_t insn::rn(){
         case br:
         case orr:
         case ldxr:
+        case ldrb:
         case str:
         case ldr:
         case stp:
@@ -476,6 +498,7 @@ uint8_t insn::rt(){
         case tbnz:
         case tbz:
         case ldxr:
+        case ldrb:
         case str:
         case ldr:
         case stp:
@@ -498,6 +521,11 @@ uint8_t insn::other(){
             return BIT_RANGE(value(), 10, 14); //Rt2
         case bcond:
             return 0; //condition
+        case ldrb:
+            if (subtype() == st_register)
+                reterror("ERROR: unimplemented!");
+            else
+                reterror("ldrb must be st_register for this to be defined!");
         default:
             reterror("failed to get other");
             break;
@@ -518,8 +546,8 @@ insn::operator enum type(){
 }
 
 #pragma mark additional functions
-loc_t tihmstar::patchfinder64::find_literal_ref(segment_t segemts, offset_t kslide, loc_t pos){
-    insn adrp(segemts,kslide);
+loc_t tihmstar::patchfinder64::find_literal_ref(segment_t segemts, loc_t pos){
+    insn adrp(segemts);
 
     uint8_t rd = 0xff;
     uint64_t imm = 0;

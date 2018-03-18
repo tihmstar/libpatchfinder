@@ -40,7 +40,7 @@ __attribute__((always_inline)) struct load_command *find_load_command64(struct m
             return lcmd;
     }
     
-    reterror("Failed to find load command "+ to_string(lc));
+    retcustomerror(lc,load_command_not_found);
     return NULL;
 }
 
@@ -107,12 +107,11 @@ offsetfinder64::offsetfinder64(const char* filename) : _freeKernel(true),__symta
     
     assureclean(*(uint32_t*)_kdata == 0xfeedfacf);
     
-    loadSegments(0);
+    loadSegments();
     clean();
 }
 
-void offsetfinder64::loadSegments(uint64_t slide){
-    _kslide = slide;
+void offsetfinder64::loadSegments(){
     struct mach_header_64 *mh = (struct mach_header_64*)_kdata;
     struct load_command *lcmd = (struct load_command *)(mh + 1);
     for (uint32_t i=0; i<mh->ncmds; i++, lcmd = (struct load_command *)((uint8_t *)lcmd + lcmd->cmdsize)) {
@@ -137,12 +136,17 @@ void offsetfinder64::loadSegments(uint64_t slide){
         }
     }
     
-    info("Inited offsetfinder64 %s %s\n",OFFSETFINDER64_VERSION_COMMIT_COUNT, OFFSETFINDER64_VERSION_COMMIT_SHA);
-    
+    info("Inited offsetfinder64 %s %s",OFFSETFINDER64_VERSION_COMMIT_COUNT, OFFSETFINDER64_VERSION_COMMIT_SHA);
+    try {
+        getSymtab();
+    } catch (tihmstar::symtab_not_found &e) {
+        info("Symtab not found. Assuming we are operating on a dumped kernel");
+    }
+    printf("\n");
 }
 
-offsetfinder64::offsetfinder64(void* buf, size_t size, uint64_t slide) : _freeKernel(false),_kdata((uint8_t*)buf),_ksize(size),__symtab(NULL){
-    loadSegments(slide);
+offsetfinder64::offsetfinder64(void* buf, size_t size) : _freeKernel(false),_kdata((uint8_t*)buf),_ksize(size),__symtab(NULL){
+    loadSegments();
 }
 
 const void *offsetfinder64::kdata(){
@@ -153,11 +157,29 @@ loc_t offsetfinder64::find_entry(){
     return _kernel_entry;
 }
 
+bool offsetfinder64::haveSymbols(){
+    if (_haveSymtab == kuninitialized) {
+        try {
+            getSymtab();
+            _haveSymtab = ktrue;
+        } catch (tihmstar::symtab_not_found &e) {
+            _haveSymtab = kfalse;
+        }
+    }
+    return _haveSymtab;
+}
 
 #pragma mark macho offsetfinder
 __attribute__((always_inline)) struct symtab_command *offsetfinder64::getSymtab(){
-    if (!__symtab)
-        __symtab = find_symtab_command((struct mach_header_64 *)_kdata);
+    if (!__symtab){
+        try {
+            __symtab = find_symtab_command((struct mach_header_64 *)_kdata);
+        } catch (tihmstar::load_command_not_found &e) {
+            if (e.cmd() != LC_SYMTAB)
+                throw;
+            retcustomerror("symtab not found. Is this a dumped kernel?", symtab_not_found);
+        }
+    }
     return __symtab;
 }
 
@@ -166,10 +188,14 @@ __attribute__((always_inline)) struct symtab_command *offsetfinder64::getSymtab(
 loc_t offsetfinder64::memmem(const void *little, size_t little_len){
     for (auto seg : _segments) {
         if (loc_t rt = (loc_t)::memmem(seg.map, seg.size, little, little_len)) {
-            return rt-seg.map+seg.base+_kslide;
+            return rt-seg.map+seg.base;
         }
     }
     return 0;
+}
+
+loc_t offsetfinder64::findstr(const char *str, bool hasNullTerminator){
+    return memmem(str, strlen(str)+hasNullTerminator);
 }
 
 
@@ -187,8 +213,8 @@ loc_t offsetfinder64::find_sym(const char *sym){
 }
 
 loc_t offsetfinder64::find_syscall0(){
-#define SIG_SYSCALL_3 "\x06\x00\x00\x00\x03\x00\x0c\x00"
-    loc_t sys3 = memmem(SIG_SYSCALL_3, sizeof(SIG_SYSCALL_3)-1);
+    constexpr char sig_syscall_3[] = "\x06\x00\x00\x00\x03\x00\x0c\x00";
+    loc_t sys3 = memmem(sig_syscall_3, sizeof(sig_syscall_3)-1);
     return sys3 - (3 * 0x18) + 0x8;
 }
 
@@ -225,7 +251,7 @@ constexpr char patch_nop[] = "\x1F\x20\x03\xD5";
 constexpr size_t patch_nop_size = sizeof(patch_nop)-1;
 
 uint64_t offsetfinder64::find_register_value(loc_t where, int reg, loc_t startAddr){
-    insn functop(_segments, _kslide, where);
+    insn functop(_segments, where);
     
     if (!startAddr) {
         //might be functop
@@ -265,13 +291,13 @@ uint64_t offsetfinder64::find_register_value(loc_t where, int reg, loc_t startAd
 
 #pragma mark v0rtex
 loc_t offsetfinder64::find_zone_map(){
-    loc_t str = memmem("zone_init", sizeof("zone_init"));
+    loc_t str = findstr("zone_init");
     retassure(str, "Failed to find str");
     
-    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    loc_t ref = find_literal_ref(_segments, str);
     retassure(ref, "literal ref to str");
 
-    insn ptr(_segments,_kslide,ref);
+    insn ptr(_segments,ref);
     
     loc_t ret = 0;
     
@@ -295,7 +321,7 @@ loc_t offsetfinder64::find_kernel_task(){
 loc_t offsetfinder64::find_realhost(){
     loc_t sym = find_sym("_KUNCExecute");
     
-    insn ptr(_segments,_kslide,sym);
+    insn ptr(_segments,sym);
     
     loc_t ret = 0;
     
@@ -326,7 +352,7 @@ loc_t offsetfinder64::find_copyin(){
 
 loc_t offsetfinder64::find_ipc_port_alloc_special(){
     loc_t sym = find_sym("_KUNCGetNotificationID");
-    insn ptr(_segments,_kslide,sym);
+    insn ptr(_segments,sym);
     
     while (++ptr != insn::bl);
     while (++ptr != insn::bl);
@@ -336,7 +362,7 @@ loc_t offsetfinder64::find_ipc_port_alloc_special(){
 
 loc_t offsetfinder64::find_ipc_kobject_set(){
     loc_t sym = find_sym("_KUNCGetNotificationID");
-    insn ptr(_segments,_kslide,sym);
+    insn ptr(_segments,sym);
     
     while (++ptr != insn::bl);
     while (++ptr != insn::bl);
@@ -347,7 +373,7 @@ loc_t offsetfinder64::find_ipc_kobject_set(){
 
 loc_t offsetfinder64::find_ipc_port_make_send(){
     loc_t sym = find_sym("_convert_task_to_port");
-    insn ptr(_segments,_kslide,sym);
+    insn ptr(_segments,sym);
     while (++ptr != insn::bl);
     while (++ptr != insn::bl);
     
@@ -355,13 +381,13 @@ loc_t offsetfinder64::find_ipc_port_make_send(){
 }
 
 loc_t offsetfinder64::find_chgproccnt(){
-    loc_t str = memmem("\"chgproccnt: lost user\"", sizeof("\"chgproccnt: lost user\""));
+    loc_t str = findstr("\"chgproccnt: lost user\"");
     retassure(str, "Failed to find str");
     
-    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    loc_t ref = find_literal_ref(_segments, str);
     retassure(ref, "literal ref to str");
     
-    insn functop(_segments,_kslide,ref);
+    insn functop(_segments,ref);
     
     while (--functop != insn::stp);
     while (--functop == insn::stp);
@@ -384,7 +410,7 @@ uint32_t offsetfinder64::find_vtab_get_external_trap_for_index(){
     
     loc_t nn = find_sym("__ZN12IOUserClient23getExternalTrapForIndexEj");
     
-    insn data(_segments,_kslide,sym,insn::kText_and_Data);
+    insn data(_segments,sym,insn::kText_and_Data);
     --data;
     for (int i=0; i<0x200; i++) {
         if ((++data).doublevalue() == (uint64_t)nn)
@@ -400,7 +426,7 @@ uint32_t offsetfinder64::find_vtab_get_retain_count(){
     
     loc_t nn = find_sym("__ZNK8OSObject14getRetainCountEv");
     
-    insn data(_segments,_kslide,sym,insn::kText_and_Data);
+    insn data(_segments,sym,insn::kText_and_Data);
     --data;
     for (int i=0; i<0x200; i++) {
         if ((++data).doublevalue() == (uint64_t)nn)
@@ -412,18 +438,18 @@ uint32_t offsetfinder64::find_vtab_get_retain_count(){
 
 uint32_t offsetfinder64::find_proc_ucred(){
     loc_t sym = find_sym("_proc_ucred");
-    return (uint32_t)insn(_segments,_kslide,sym).imm();
+    return (uint32_t)insn(_segments,sym).imm();
 }
 
 uint32_t offsetfinder64::find_task_bsd_info(){
     loc_t sym = find_sym("_get_bsdtask_info");
-    return (uint32_t)insn(_segments,_kslide,sym).imm();
+    return (uint32_t)insn(_segments,sym).imm();
 }
 
 uint32_t offsetfinder64::find_vm_map_hdr(){
     loc_t sym = find_sym("_vm_map_create");
     
-    insn stp(_segments, _kslide, sym);
+    insn stp(_segments, sym);
     
     while (++stp != insn::bl);
 
@@ -446,7 +472,7 @@ uint32_t offsetfinder64::find_task_itk_self(){
     assure(task_subsystem);
     task_subsystem += 4*sizeof(uint64_t); //index0 now
     
-    insn mach_ports_register(_segments,_kslide, (loc_t)insn::deref(_segments, _kslide, task_subsystem+3*5*8));
+    insn mach_ports_register(_segments, (loc_t)insn::deref(_segments, task_subsystem+3*5*8));
     
     while (++mach_ports_register != insn::bl || mach_ports_register.imm() != (uint64_t)find_sym("_lck_mtx_lock"));
     
@@ -462,7 +488,7 @@ uint32_t offsetfinder64::find_task_itk_registered(){
     assure(task_subsystem);
     task_subsystem += 4*sizeof(uint64_t); //index0 now
     
-    insn mach_ports_register(_segments,_kslide, (loc_t)insn::deref(_segments, _kslide, task_subsystem+3*5*8));
+    insn mach_ports_register(_segments, (loc_t)insn::deref(_segments, task_subsystem+3*5*8));
     
     while (++mach_ports_register != insn::bl || mach_ports_register.imm() != (uint64_t)find_sym("_lck_mtx_lock"));
     
@@ -481,7 +507,7 @@ uint32_t offsetfinder64::find_iouserclient_ipc(){
     loc_t host_priv_subsystem=memmem(&host_priv_subsys, 8);
     assure(host_priv_subsystem);
 
-    insn memiterator(_segments,_kslide,host_priv_subsystem,insn::kData_only);
+    insn memiterator(_segments,host_priv_subsystem,insn::kData_only);
     loc_t thetable = 0;
     while (1){
         --memiterator;--memiterator; //dec 8 byte
@@ -503,9 +529,9 @@ uint32_t offsetfinder64::find_iouserclient_ipc(){
         }
     }
     
-    loc_t iokit_user_client_trap_func = (loc_t)insn::deref(_segments, _kslide, thetable + 100*4*8 - 8);
+    loc_t iokit_user_client_trap_func = (loc_t)insn::deref(_segments, thetable + 100*4*8 - 8);
     
-    insn bl_to_iokit_add_connect_reference(_segments,_kslide,iokit_user_client_trap_func);
+    insn bl_to_iokit_add_connect_reference(_segments,iokit_user_client_trap_func);
     while (++bl_to_iokit_add_connect_reference != insn::bl);
     
     insn iokit_add_connect_reference(bl_to_iokit_add_connect_reference,(loc_t)bl_to_iokit_add_connect_reference.imm());
@@ -516,29 +542,29 @@ uint32_t offsetfinder64::find_iouserclient_ipc(){
 }
 
 uint32_t offsetfinder64::find_ipc_space_is_task(){
-    loc_t str = memmem("\"ipc_task_init\"", sizeof("\"ipc_task_init\""));
+    loc_t str = findstr("\"ipc_task_init\"");
     retassure(str, "Failed to find str");
     
-    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    loc_t ref = find_literal_ref(_segments, str);
     retassure(ref, "literal ref to str");
     
     loc_t bref = 0;
     bool do_backup_plan = false;
 
     try {
-        bref = find_rel_branch_source(insn(_segments,_kslide,ref), true, 2, 0x2000);
+        bref = find_rel_branch_source(insn(_segments,ref), true, 2, 0x2000);
     } catch (tihmstar::limit_reached &e) {
         try {
             //previous attempt doesn't work on some 10.0.2 devices, trying something else...
-            do_backup_plan = bref = find_rel_branch_source(insn(_segments,_kslide,ref), true, 1, 0x2000);
+            do_backup_plan = bref = find_rel_branch_source(insn(_segments,ref), true, 1, 0x2000);
         } catch (tihmstar::limit_reached &ee) {
             //this seems to be good for iOS 9.3.3
-            do_backup_plan = bref = find_rel_branch_source(insn(_segments,_kslide,ref-4), true, 1, 0x2000);
+            do_backup_plan = bref = find_rel_branch_source(insn(_segments,ref-4), true, 1, 0x2000);
         }
         
     }
     
-    insn istr(_segments,_kslide,bref);
+    insn istr(_segments,bref);
     
     if (!do_backup_plan) {
         while (++istr != insn::str);
@@ -550,25 +576,25 @@ uint32_t offsetfinder64::find_ipc_space_is_task(){
 }
 
 uint32_t offsetfinder64::find_sizeof_task(){
-    loc_t str = memmem("\0tasks", sizeof("\0tasks"))+1;
+    loc_t str = findstr("\0tasks")+1;
     retassure(str, "Failed to find str");
     
-    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    loc_t ref = find_literal_ref(_segments, str);
     retassure(ref, "literal ref to str");
     
-    insn thebl(_segments, _kslide, ref);
+    insn thebl(_segments, ref);
    
     loc_t zinit = 0;
     try {
         zinit = find_sym("_zinit");
     } catch (tihmstar::symbol_not_found &e) {
-        loc_t str = memmem("zlog%d", sizeof("zlog%d"));
+        loc_t str = findstr("zlog%d");
         retassure(str, "Failed to find str2");
         
-        loc_t ref = find_literal_ref(_segments, _kslide, str);
+        loc_t ref = find_literal_ref(_segments, str);
         retassure(ref, "literal ref to str2");
         
-        insn functop(_segments,_kslide,ref);
+        insn functop(_segments,ref);
         while (--functop != insn::stp || (functop+1) != insn::stp || (functop+2) != insn::stp || (functop-1) != insn::ret);
         zinit = (loc_t)functop.pc();
     }
@@ -582,32 +608,32 @@ uint32_t offsetfinder64::find_sizeof_task(){
 
 loc_t offsetfinder64::find_rop_add_x0_x0_0x10(){
     constexpr char ropbytes[] = "\x00\x40\x00\x91\xC0\x03\x5F\xD6";
-    return [](const void *little, size_t little_len, vector<text_t>segments, offset_t kslide)->loc_t{
+    return [](const void *little, size_t little_len, vector<text_t>segments)->loc_t{
         for (auto seg : segments) {
             if (!seg.isExec)
                 continue;
             
             if (loc_t rt = (loc_t)::memmem(seg.map, seg.size, little, little_len)) {
-                return rt-seg.map+seg.base+kslide;
+                return rt-seg.map+seg.base;
             }
         }
         return 0;
-    }(ropbytes,sizeof(ropbytes)-1,_segments,_kslide);
+    }(ropbytes,sizeof(ropbytes)-1,_segments);
 }
 
 loc_t offsetfinder64::find_rop_ldr_x0_x0_0x10(){
     constexpr char ropbytes[] = "\x00\x08\x40\xF9\xC0\x03\x5F\xD6";
-    return [](const void *little, size_t little_len, vector<text_t>segments, offset_t kslide)->loc_t{
+    return [](const void *little, size_t little_len, vector<text_t>segments)->loc_t{
         for (auto seg : segments) {
             if (!seg.isExec)
                 continue;
             
             if (loc_t rt = (loc_t)::memmem(seg.map, seg.size, little, little_len)) {
-                return rt-seg.map+seg.base+kslide;
+                return rt-seg.map+seg.base;
             }
         }
         return 0;
-    }(ropbytes,sizeof(ropbytes)-1,_segments,_kslide);
+    }(ropbytes,sizeof(ropbytes)-1,_segments);
 }
 
 #pragma mark patch_finders
@@ -617,13 +643,13 @@ void slide_ptr(class patch *p,uint64_t slide){
 }
 
 patch offsetfinder64::find_sandbox_patch(){
-    loc_t str = memmem("process-exec denied while updating label", sizeof("process-exec denied while updating label")-1);
+    loc_t str = findstr("process-exec denied while updating label",0);
     retassure(str, "Failed to find str");
 
-    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    loc_t ref = find_literal_ref(_segments, str);
     retassure(ref, "literal ref to str");
 
-    insn bdst(_segments, _kslide, ref);
+    insn bdst(_segments, ref);
     for (int i=0; i<4; i++) {
         while (--bdst != insn::bl){
         }
@@ -637,13 +663,13 @@ patch offsetfinder64::find_sandbox_patch(){
 
 
 patch offsetfinder64::find_amfi_substrate_patch(){
-    loc_t str = memmem("AMFI: hook..execve() killing pid %u: %s", sizeof("AMFI: hook..execve() killing pid %u: %s")-1);
+    loc_t str = findstr("AMFI: hook..execve() killing pid %u: %s",0);
     retassure(str, "Failed to find str");
 
-    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    loc_t ref = find_literal_ref(_segments, str);
     retassure(ref, "literal ref to str");
 
-    insn funcend(_segments, _kslide, ref);
+    insn funcend(_segments, ref);
     while (++funcend != insn::ret);
     
     insn tbnz(funcend);
@@ -654,13 +680,13 @@ patch offsetfinder64::find_amfi_substrate_patch(){
 }
 
 patch offsetfinder64::find_cs_enforcement_disable_amfi(){
-    loc_t str = memmem("csflags", sizeof("csflags"));
+    loc_t str = findstr("csflags");
     retassure(str, "Failed to find str");
     
-    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    loc_t ref = find_literal_ref(_segments, str);
     retassure(ref, "literal ref to str");
 
-    insn cbz(_segments, _kslide, ref);
+    insn cbz(_segments, ref);
     while (--cbz != insn::cbz);
     
     insn movz(cbz);
@@ -678,7 +704,7 @@ patch offsetfinder64::find_cs_enforcement_disable_amfi(){
 }
 
 patch offsetfinder64::find_i_can_has_debugger_patch_off(){
-    loc_t str = memmem("Darwin Kernel", sizeof("Darwin Kernel")-1);
+    loc_t str = findstr("Darwin Kernel",0);
     retassure(str, "Failed to find str");
     
     str -=4;
@@ -687,14 +713,16 @@ patch offsetfinder64::find_i_can_has_debugger_patch_off(){
 }
 
 patch offsetfinder64::find_amfi_patch_offsets(){
-    loc_t str = memmem("int _validateCodeDirectoryHashInDaemon", sizeof("int _validateCodeDirectoryHashInDaemon")-1);
+    loc_t str = findstr("int _validateCodeDirectoryHashInDaemon",0);
     retassure(str, "Failed to find str");
     
-    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    loc_t ref = find_literal_ref(_segments, str);
     retassure(ref, "literal ref to str");
 
-    insn bl_amfi_memcp(_segments, _kslide, ref);
+    insn bl_amfi_memcp(_segments, ref);
 
+    loc_t memcmp = 0;
+    
     loc_t jscpl = 0;
     while (1) {
         while (++bl_amfi_memcp != insn::bl);
@@ -704,14 +732,27 @@ patch offsetfinder64::find_amfi_patch_offsets(){
         } catch (tihmstar::bad_branch_destination &e) {
             continue;
         }
-        if (insn::deref(_segments, _kslide, jscpl) == (uint64_t)find_sym("_memcmp"))
-            break;
+        if (haveSymbols()) {
+            if (insn::deref(_segments, jscpl) == (uint64_t)(memcmp = find_sym("_memcmp")))
+                break;
+        }else{
+            //check for _memcmp function signature
+            insn checker(_segments, memcmp = (loc_t)insn::deref(_segments, jscpl));
+            if (checker == insn::cbz
+                && (++checker == insn::ldrb && checker.rn() == 0)
+                && (++checker == insn::ldrb && checker.rn() == 1)
+//                ++checker == insn::sub //i'm too lazy to implement this now, first 3 instructions should be good enough though.
+                ) {
+                break;
+            }
+        }
+        
     }
     
     /* find*/
     //movz w0, #0x0
     //ret
-    insn ret0(_segments, _kslide, find_sym("_memcmp"));
+    insn ret0(_segments, memcmp);
     for (;; --ret0) {
         if (ret0 == insn::movz && ret0.rd() == 0 && ret0.imm() == 0 && (ret0+1) == insn::ret) {
             break;
@@ -723,7 +764,7 @@ patch offsetfinder64::find_amfi_patch_offsets(){
 }
 
 patch offsetfinder64::find_proc_enforce(){
-    loc_t str = memmem("Enforce MAC policy on process operations", sizeof("Enforce MAC policy on process operations")-1);
+    loc_t str = findstr("Enforce MAC policy on process operations", 0);
     retassure(str, "Failed to find str");
     
     loc_t valref = memmem(&str, sizeof(str));
@@ -731,20 +772,20 @@ patch offsetfinder64::find_proc_enforce(){
     
     loc_t proc_enforce_ptr = valref - (5 * sizeof(uint64_t));
     
-    loc_t proc_enforce_val_loc = (loc_t)insn::deref(_segments, _kslide, proc_enforce_ptr);
+    loc_t proc_enforce_val_loc = (loc_t)insn::deref(_segments, proc_enforce_ptr);
     
     uint8_t mypatch = 1;
     return {proc_enforce_val_loc,&mypatch,1};
 }
 
 vector<patch> offsetfinder64::find_nosuid_off(){
-    loc_t str = memmem("\"mount_common(): mount of %s filesystem failed with %d, but vnode list is not empty.\"", sizeof("\"mount_common(): mount of %s filesystem failed with %d, but vnode list is not empty.\"")-1);
+    loc_t str = findstr("\"mount_common(): mount of %s filesystem failed with %d, but vnode list is not empty.\"", 0);
     retassure(str, "Failed to find str");
     
-    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    loc_t ref = find_literal_ref(_segments, str);
     retassure(ref, "literal ref to str");
 
-    insn ldr(_segments, _kslide,ref);
+    insn ldr(_segments,ref);
     
     while (--ldr != insn::ldr);
     
@@ -769,9 +810,9 @@ patch offsetfinder64::find_remount_patch_offset(){
     
     loc_t syscall_mac_mount = (off + 3*(424-1)*sizeof(uint64_t));
 
-    loc_t __mac_mount = (loc_t)insn::deref(_segments, _kslide, syscall_mac_mount);
+    loc_t __mac_mount = (loc_t)insn::deref(_segments, syscall_mac_mount);
     
-    insn patchloc(_segments, _kslide, __mac_mount);
+    insn patchloc(_segments, __mac_mount);
     
     while (++patchloc != insn::tbz || patchloc.rt() != 8 || patchloc.other() != 6);
     
@@ -782,29 +823,46 @@ patch offsetfinder64::find_remount_patch_offset(){
 }
 
 patch offsetfinder64::find_lwvm_patch_offsets(){
-    loc_t str = memmem("_mapForIO", sizeof("_mapForIO")-1);
+    loc_t str = findstr("_mapForIO", 0);
     retassure(str, "Failed to find str");
     
-    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    loc_t ref = find_literal_ref(_segments, str);
     retassure(ref, "literal ref to str");
     
-    insn functop(_segments,_kslide,ref);
+    insn functop(_segments,ref);
     
     while (--functop != insn::stp || (functop+1) != insn::stp || (functop+2) != insn::stp || (functop-2) != insn::ret);
     
     insn dstfunc(functop);
     loc_t destination = 0;
     while (1) {
-        while (++dstfunc != insn::bl);
+        while (++dstfunc != insn::bl){
+            if (dstfunc == insn::ret)
+                reterror("failed to find correct BL within function bounds");
+        }
         
         try {
             destination = jump_stub_call_ptr_loc(dstfunc);
         } catch (tihmstar::bad_branch_destination &e) {
             continue;
         }
-
-        if (insn::deref(_segments, _kslide, destination) == (uint64_t)find_sym("_PE_i_can_has_kernel_configuration"))
-            break;
+        
+        if (haveSymbols()) {
+            if (insn::deref(_segments, destination) == (uint64_t)find_sym("_PE_i_can_has_kernel_configuration"))
+                break;
+        }else{
+            //check for _memcmp function signature
+            insn checker(_segments, (loc_t)insn::deref(_segments, destination));
+            uint8_t reg = 0;
+            if ((checker == insn::adrp && (static_cast<void>(reg = checker.rd()),true))
+                && (++checker == insn::add && checker.rd() == reg)
+                && ++checker == insn::ldr
+                && ++checker == insn::ret
+                ) {
+                break;
+            }
+        }
+        
     }
     
     while (++dstfunc != insn::bcond || dstfunc.other() != insn::cond::NE);
@@ -815,13 +873,13 @@ patch offsetfinder64::find_lwvm_patch_offsets(){
 }
 
 loc_t offsetfinder64::find_sbops(){
-    loc_t str = memmem("Seatbelt sandbox policy", sizeof("Seatbelt sandbox policy")-1);
+    loc_t str = findstr("Seatbelt sandbox policy", 0);
     retassure(str, "Failed to find str");
     
     loc_t ref = memmem(&str, sizeof(str));
     retassure(ref, "Failed to find ref");
     
-    return (loc_t)insn::deref(_segments, _kslide, ref+0x18);
+    return (loc_t)insn::deref(_segments, ref+0x18);
 }
 
 enum OFVariableType : uint32_t{
@@ -847,12 +905,17 @@ struct OFVariable {
 
 
 patch offsetfinder64::find_nonceEnabler_patch(){
-    loc_t str = memmem("com.apple.System.boot-nonce", sizeof("com.apple.System.boot-nonce"));
+    if (!haveSymbols()){
+        info("Falling back to find_nonceEnabler_patch_nosym, because we don't have symbols");
+        return find_nonceEnabler_patch_nosym();
+    }
+    
+    loc_t str = findstr("com.apple.System.boot-nonce");
     retassure(str, "Failed to find str");
-
+    
     loc_t sym = find_sym("_gOFVariables");
-
-    insn ptr(_segments,_kslide,sym, insn::kText_and_Data);
+    
+    insn ptr(_segments,sym, insn::kText_and_Data);
     
 #warning TODO: doublecast works, but is still kinda ugly
     OFVariable *varp = (OFVariable*)(void*)ptr;
@@ -870,15 +933,45 @@ patch offsetfinder64::find_nonceEnabler_patch(){
     return {0,0,0};
 }
 
-#pragma mark KPP bypass
-loc_t offsetfinder64::find_gPhysBase(){
-    loc_t str = memmem("\"pmap_map_high_window_bd: area too large", sizeof("\"pmap_map_high_window_bd: area too large")-1);
+patch offsetfinder64::find_nonceEnabler_patch_nosym(){
+    loc_t str = findstr("com.apple.System.boot-nonce");
     retassure(str, "Failed to find str");
     
-    loc_t ref = find_literal_ref(_segments, _kslide, str);
+    loc_t valref = memmem(&str, sizeof(str));
+    retassure(valref, "Failed to find val ref");
+    
+    loc_t str2 = findstr("com.apple.System.sep.art");
+    retassure(str2, "Failed to find str2");
+    
+    loc_t valref2 = memmem(&str2, sizeof(str2));
+    retassure(valref2, "Failed to find val ref2");
+    
+    auto diff = abs(valref - valref2);
+    
+    assure(diff % sizeof(OFVariable) == 0 && diff < 0x50); //simple sanity check
+    
+    insn ptr(_segments, valref, insn::kText_and_Data);
+
+    OFVariable *vars = (OFVariable*)(void*)ptr;
+    if ((loc_t)vars->variableName == str) {
+        uint8_t mypatch = (uint8_t)kOFVariablePermUserWrite;
+        loc_t location = valref + offsetof(OFVariable, variablePerm);
+        return {location,&mypatch,1};
+    }
+    
+    reterror("failed to find \"com.apple.System.boot-nonce\"");
+    return {0,0,0};
+}
+
+#pragma mark KPP bypass
+loc_t offsetfinder64::find_gPhysBase(){
+    loc_t str = findstr("\"pmap_map_high_window_bd: area too large", 0);
+    retassure(str, "Failed to find str");
+    
+    loc_t ref = find_literal_ref(_segments, str);
     retassure(ref, "literal ref to str");
     
-    insn tgtref(_segments, _kslide, ref);
+    insn tgtref(_segments, ref);
 
     loc_t gPhysBase = 0;
     
@@ -902,13 +995,13 @@ loc_t offsetfinder64::find_cpacr_write(){
 loc_t offsetfinder64::find_idlesleep_str_loc(){
     loc_t entryp = find_entry();
     
-    insn finder(_segments,_kslide,entryp);
+    insn finder(_segments,entryp);
     assure(finder == insn::b);
     
     insn deepsleepfinder(finder, (loc_t)finder.imm());
     while (--deepsleepfinder != insn::nop);
     
-    loc_t fref = find_literal_ref(_segments, _kslide, (loc_t)(deepsleepfinder.pc())+4+0xC);
+    loc_t fref = find_literal_ref(_segments, (loc_t)(deepsleepfinder.pc())+4+0xC);
     
     insn str(finder,fref);
     while (++str != insn::str);
@@ -925,13 +1018,13 @@ loc_t offsetfinder64::find_idlesleep_str_loc(){
 loc_t offsetfinder64::find_deepsleep_str_loc(){
     loc_t entryp = find_entry();
     
-    insn finder(_segments,_kslide,entryp);
+    insn finder(_segments,entryp);
     assure(finder == insn::b);
     
     insn deepsleepfinder(finder, (loc_t)finder.imm());
     while (--deepsleepfinder != insn::nop);
     
-    loc_t fref = find_literal_ref(_segments, _kslide, (loc_t)(deepsleepfinder.pc())+4+0xC);
+    loc_t fref = find_literal_ref(_segments, (loc_t)(deepsleepfinder.pc())+4+0xC);
     
     insn str(finder,fref);
     while (++str != insn::str);
