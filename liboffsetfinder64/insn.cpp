@@ -9,8 +9,8 @@
 #define LOCAL_FILENAME "insn.cpp"
 
 #include "all_liboffsetfinder.hpp"
-#include "insn.hpp"
-#include "exception.hpp"
+#include <liboffsetfinder64/insn.hpp>
+#include <liboffsetfinder64/exception.hpp>
 
 using namespace tihmstar::patchfinder64;
 

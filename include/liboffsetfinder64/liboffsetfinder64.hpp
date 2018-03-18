@@ -17,10 +17,10 @@
 #include <vector>
 
 #include <stdlib.h>
-#include "common.h"
-#include "insn.hpp"
-#include "exception.hpp"
-#include "patch.hpp"
+#include <liboffsetfinder64/common.h>
+#include <liboffsetfinder64/insn.hpp>
+#include <liboffsetfinder64/exception.hpp>
+#include <liboffsetfinder64/patch.hpp>
 
 namespace tihmstar {
     class offsetfinder64 {

@@ -83,7 +83,7 @@ offsetfinder64::offsetfinder64(const char* filename) : _freeKernel(true),__symta
             size_t klen;
             const char* compname;
 
-            extracted = extractKernelFromIM4P(img4tmp, &compname, &klen);
+            extracted = extractPayloadFromIM4P(img4tmp, &compname, &klen);
 
             if (compname) {
                 printf("%s comp detected, uncompressing : %s ...\n", compname, extracted ? "success" : "failure");

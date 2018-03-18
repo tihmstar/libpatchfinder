@@ -6,8 +6,8 @@
 //  Copyright © 2018 tihmstar. All rights reserved.
 //
 
-#include "exception.hpp"
 #include "all_liboffsetfinder.hpp"
+#include <liboffsetfinder64/exception.hpp>
 #include <string>
 
 using namespace tihmstar;
