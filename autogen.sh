@@ -25,6 +25,7 @@ CONFIGURE_FLAGS="--enable-static --disable-shared\
   --build=x86_64-apple-darwin`uname -r` \
   --host=aarch64-apple-darwin \
   --without-cython --without-openssl \
+  --without-lzfse \
   $@"
 
 SUBDIRS="external/libplist external/img4tool"
