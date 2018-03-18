@@ -119,7 +119,6 @@ offsetfinder64::offsetfinder64(const char* filename) : _freeKernel(true),__symta
             uint32_t filesize = kdata32[2 + 3];
             if (swap) filesize = ntohl(filesize);
 
-            // I'm too lazy to make it free what needed
             uint8_t *ret = (uint8_t*) malloc(filesize);
             if (ret != NULL) {
                 memcpy(ret, _kdata + offset, filesize);
@@ -129,6 +128,7 @@ offsetfinder64::offsetfinder64(const char* filename) : _freeKernel(true),__symta
 
         if (tryfat != NULL) {
             printf("got fat macho with first slice at %u\n", (uint32_t) (tryfat - _kdata));
+            free(_kdata);
             _kdata = tryfat;
         } else {
             printf("got fat macho but failed to parse\n");
