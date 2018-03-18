@@ -29,6 +29,8 @@ using namespace patchfinder64;
 #define HAS_BITS(a,b) (((a) & (b)) == (b))
 #define _symtab getSymtab()
 
+#define findstr(str,hasNullTerminator) memmem(str, sizeof(str)-(hasNullTerminator == 0))
+
 #pragma mark macho external
 
 __attribute__((always_inline)) struct load_command *find_load_command64(struct mach_header_64 *mh, uint32_t lc){
@@ -224,11 +226,6 @@ loc_t offsetfinder64::memmem(const void *little, size_t little_len){
     return 0;
 }
 
-loc_t offsetfinder64::findstr(const char *str, bool hasNullTerminator){
-    return memmem(str, strlen(str)+hasNullTerminator);
-}
-
-
 loc_t offsetfinder64::find_sym(const char *sym){
     uint8_t *psymtab = _kdata + _symtab->symoff;
     uint8_t *pstrtab = _kdata + _symtab->stroff;
@@ -321,7 +318,7 @@ uint64_t offsetfinder64::find_register_value(loc_t where, int reg, loc_t startAd
 
 #pragma mark v0rtex
 loc_t offsetfinder64::find_zone_map(){
-    loc_t str = findstr("zone_init");
+    loc_t str = findstr("zone_init",true);
     retassure(str, "Failed to find str");
     
     loc_t ref = find_literal_ref(_segments, str);
@@ -411,7 +408,7 @@ loc_t offsetfinder64::find_ipc_port_make_send(){
 }
 
 loc_t offsetfinder64::find_chgproccnt(){
-    loc_t str = findstr("\"chgproccnt: lost user\"");
+    loc_t str = findstr("\"chgproccnt: lost user\"",true);
     retassure(str, "Failed to find str");
     
     loc_t ref = find_literal_ref(_segments, str);
@@ -572,7 +569,7 @@ uint32_t offsetfinder64::find_iouserclient_ipc(){
 }
 
 uint32_t offsetfinder64::find_ipc_space_is_task(){
-    loc_t str = findstr("\"ipc_task_init\"");
+    loc_t str = findstr("\"ipc_task_init\"",true);
     retassure(str, "Failed to find str");
     
     loc_t ref = find_literal_ref(_segments, str);
@@ -606,7 +603,7 @@ uint32_t offsetfinder64::find_ipc_space_is_task(){
 }
 
 uint32_t offsetfinder64::find_sizeof_task(){
-    loc_t str = findstr("\0tasks")+1;
+    loc_t str = findstr("\0tasks",true)+1;
     retassure(str, "Failed to find str");
     
     loc_t ref = find_literal_ref(_segments, str);
@@ -618,7 +615,7 @@ uint32_t offsetfinder64::find_sizeof_task(){
     try {
         zinit = find_sym("_zinit");
     } catch (tihmstar::symbol_not_found &e) {
-        loc_t str = findstr("zlog%d");
+        loc_t str = findstr("zlog%d",true);
         retassure(str, "Failed to find str2");
         
         loc_t ref = find_literal_ref(_segments, str);
@@ -673,7 +670,7 @@ void slide_ptr(class patch *p,uint64_t slide){
 }
 
 patch offsetfinder64::find_sandbox_patch(){
-    loc_t str = findstr("process-exec denied while updating label",0);
+    loc_t str = findstr("process-exec denied while updating label",false);
     retassure(str, "Failed to find str");
 
     loc_t ref = find_literal_ref(_segments, str);
@@ -693,7 +690,7 @@ patch offsetfinder64::find_sandbox_patch(){
 
 
 patch offsetfinder64::find_amfi_substrate_patch(){
-    loc_t str = findstr("AMFI: hook..execve() killing pid %u: %s",0);
+    loc_t str = findstr("AMFI: hook..execve() killing pid %u: %s",false);
     retassure(str, "Failed to find str");
 
     loc_t ref = find_literal_ref(_segments, str);
@@ -710,7 +707,7 @@ patch offsetfinder64::find_amfi_substrate_patch(){
 }
 
 patch offsetfinder64::find_cs_enforcement_disable_amfi(){
-    loc_t str = findstr("csflags");
+    loc_t str = findstr("csflags",true);
     retassure(str, "Failed to find str");
     
     loc_t ref = find_literal_ref(_segments, str);
@@ -734,7 +731,7 @@ patch offsetfinder64::find_cs_enforcement_disable_amfi(){
 }
 
 patch offsetfinder64::find_i_can_has_debugger_patch_off(){
-    loc_t str = findstr("Darwin Kernel",0);
+    loc_t str = findstr("Darwin Kernel",false);
     retassure(str, "Failed to find str");
     
     str -=4;
@@ -743,7 +740,7 @@ patch offsetfinder64::find_i_can_has_debugger_patch_off(){
 }
 
 patch offsetfinder64::find_amfi_patch_offsets(){
-    loc_t str = findstr("int _validateCodeDirectoryHashInDaemon",0);
+    loc_t str = findstr("int _validateCodeDirectoryHashInDaemon",false);
     retassure(str, "Failed to find str");
     
     loc_t ref = find_literal_ref(_segments, str);
@@ -794,7 +791,7 @@ patch offsetfinder64::find_amfi_patch_offsets(){
 }
 
 patch offsetfinder64::find_proc_enforce(){
-    loc_t str = findstr("Enforce MAC policy on process operations", 0);
+    loc_t str = findstr("Enforce MAC policy on process operations", false);
     retassure(str, "Failed to find str");
     
     loc_t valref = memmem(&str, sizeof(str));
@@ -809,7 +806,7 @@ patch offsetfinder64::find_proc_enforce(){
 }
 
 vector<patch> offsetfinder64::find_nosuid_off(){
-    loc_t str = findstr("\"mount_common(): mount of %s filesystem failed with %d, but vnode list is not empty.\"", 0);
+    loc_t str = findstr("\"mount_common(): mount of %s filesystem failed with %d, but vnode list is not empty.\"", false);
     retassure(str, "Failed to find str");
     
     loc_t ref = find_literal_ref(_segments, str);
@@ -853,7 +850,7 @@ patch offsetfinder64::find_remount_patch_offset(){
 }
 
 patch offsetfinder64::find_lwvm_patch_offsets(){
-    loc_t str = findstr("_mapForIO", 0);
+    loc_t str = findstr("_mapForIO", false);
     retassure(str, "Failed to find str");
     
     loc_t ref = find_literal_ref(_segments, str);
@@ -866,10 +863,7 @@ patch offsetfinder64::find_lwvm_patch_offsets(){
     insn dstfunc(functop);
     loc_t destination = 0;
     while (1) {
-        while (++dstfunc != insn::bl){
-            if (dstfunc == insn::ret)
-                reterror("failed to find correct BL within function bounds");
-        }
+        while (++dstfunc != insn::bl);
         
         try {
             destination = jump_stub_call_ptr_loc(dstfunc);
@@ -903,7 +897,7 @@ patch offsetfinder64::find_lwvm_patch_offsets(){
 }
 
 loc_t offsetfinder64::find_sbops(){
-    loc_t str = findstr("Seatbelt sandbox policy", 0);
+    loc_t str = findstr("Seatbelt sandbox policy", false);
     retassure(str, "Failed to find str");
     
     loc_t ref = memmem(&str, sizeof(str));
@@ -940,7 +934,7 @@ patch offsetfinder64::find_nonceEnabler_patch(){
         return find_nonceEnabler_patch_nosym();
     }
     
-    loc_t str = findstr("com.apple.System.boot-nonce");
+    loc_t str = findstr("com.apple.System.boot-nonce",true);
     retassure(str, "Failed to find str");
     
     loc_t sym = find_sym("_gOFVariables");
@@ -964,13 +958,13 @@ patch offsetfinder64::find_nonceEnabler_patch(){
 }
 
 patch offsetfinder64::find_nonceEnabler_patch_nosym(){
-    loc_t str = findstr("com.apple.System.boot-nonce");
+    loc_t str = findstr("com.apple.System.boot-nonce",true);
     retassure(str, "Failed to find str");
     
     loc_t valref = memmem(&str, sizeof(str));
     retassure(valref, "Failed to find val ref");
     
-    loc_t str2 = findstr("com.apple.System.sep.art");
+    loc_t str2 = findstr("com.apple.System.sep.art",true);
     retassure(str2, "Failed to find str2");
     
     loc_t valref2 = memmem(&str2, sizeof(str2));
@@ -995,7 +989,7 @@ patch offsetfinder64::find_nonceEnabler_patch_nosym(){
 
 #pragma mark KPP bypass
 loc_t offsetfinder64::find_gPhysBase(){
-    loc_t str = findstr("\"pmap_map_high_window_bd: area too large", 0);
+    loc_t str = findstr("\"pmap_map_high_window_bd: area too large", false);
     retassure(str, "Failed to find str");
     
     loc_t ref = find_literal_ref(_segments, str);

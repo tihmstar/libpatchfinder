@@ -51,7 +51,6 @@ namespace tihmstar {
         bool haveSymbols();
         
         patchfinder64::loc_t memmem(const void *little, size_t little_len);
-        patchfinder64::loc_t findstr(const char *str, bool hasNullTerminator = 1);
         
         patchfinder64::loc_t find_sym(const char *sym);
         patchfinder64::loc_t find_syscall0();
