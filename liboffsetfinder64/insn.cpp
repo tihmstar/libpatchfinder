@@ -546,22 +546,36 @@ insn::operator enum type(){
 }
 
 #pragma mark additional functions
-loc_t tihmstar::patchfinder64::find_literal_ref(segment_t segemts, loc_t pos){
+loc_t tihmstar::patchfinder64::find_literal_ref(segment_t segemts, loc_t pos, int ignoreTimes){
     insn adrp(segemts);
-
     uint8_t rd = 0xff;
     uint64_t imm = 0;
+    
     try {
         while (1){
             if (adrp == insn::adr) {
-                if (adrp.imm() == (uint64_t)pos)
+                if (adrp.imm() == (uint64_t)pos){
+                    if (ignoreTimes) {
+                        ignoreTimes--;
+                        rd = 0xff;
+                        imm = 0;
+                        continue;
+                    }
                     return (loc_t)adrp.pc();
+                }
             }else if (adrp == insn::adrp) {
                 rd = adrp.rd();
                 imm = adrp.imm();
             }else if (adrp == insn::add && rd == adrp.rd()){
-                if (imm + adrp.imm() == (int64_t)pos)
+                if (imm + adrp.imm() == (int64_t)pos){
+                    if (ignoreTimes) {
+                        ignoreTimes--;
+                        rd = 0xff;
+                        imm = 0;
+                        continue;
+                    }
                     return (loc_t)adrp.pc();
+                }
             }
             ++adrp;
         }

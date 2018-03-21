@@ -1012,6 +1012,30 @@ loc_t offsetfinder64::find_kernel_pmap(){
     return find_sym("_kernel_pmap");
 }
 
+loc_t offsetfinder64::find_kernel_pmap_nosym(){
+    loc_t str = findstr("\"pmap_map_bd\"", true);
+    retassure(str, "Failed to find str");
+    
+    loc_t ref = find_literal_ref(_segments, str, 1);
+    retassure(ref, "literal ref to str");
+    
+    insn btm(_segments,ref);
+    while (++btm != insn::ret);
+    
+    insn kerne_pmap_ref(btm);
+    while (--kerne_pmap_ref != insn::adrp);
+    
+    uint8_t reg = kerne_pmap_ref.rd();
+    loc_t kernel_pmap = (loc_t)kerne_pmap_ref.imm();
+    
+    while (++kerne_pmap_ref != insn::ldr || kerne_pmap_ref.rn() != reg);
+    assure(kerne_pmap_ref.pc()<btm.pc());
+    
+    kernel_pmap += kerne_pmap_ref.imm();
+    
+    return kernel_pmap;
+}
+
 loc_t offsetfinder64::find_cpacr_write(){
     return memmem("\x40\x10\x18\xD5", 4);
 }

@@ -131,7 +131,7 @@ namespace tihmstar{
             operator enum type();
         };
         
-        loc_t find_literal_ref(segment_t segemts, loc_t pos);
+        loc_t find_literal_ref(segment_t segemts, loc_t pos, int ignoreTimes = 0);
         loc_t find_rel_branch_source(insn bdst, bool searchUp, int ignoreTimes=0, int limit = 0);
         
     };

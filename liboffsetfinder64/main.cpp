@@ -16,6 +16,8 @@ typedef uint64_t kptr_t;
 int main(int argc, const char * argv[]) {
     offsetfinder64 fi(argv[1]);
     
+    fi.find_kernel_pmap_nosym();
+    
     [](offsetfinder64 *fi){
         kptr_t sizeof_task =                      (kptr_t)fi->find_sizeof_task();
         kptr_t task_itk_self =                    (kptr_t)fi->find_task_itk_self();
