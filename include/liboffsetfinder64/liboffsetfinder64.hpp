@@ -44,7 +44,7 @@ namespace tihmstar {
         
     public:
         offsetfinder64(const char *filename);
-        offsetfinder64(void* buf, size_t size);
+        offsetfinder64(void* buf, size_t size, bool haveSymbols = false);
         const void *kdata();
         patchfinder64::loc_t find_entry();
         const std::vector<patchfinder64::text_t> &segments(){return _segments;};

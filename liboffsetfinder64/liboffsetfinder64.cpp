@@ -177,7 +177,8 @@ void offsetfinder64::loadSegments(){
     printf("\n");
 }
 
-offsetfinder64::offsetfinder64(void* buf, size_t size) : _freeKernel(false),_kdata((uint8_t*)buf),_ksize(size),__symtab(NULL){
+offsetfinder64::offsetfinder64(void* buf, size_t size, bool haveSymbols) : _freeKernel(false),_kdata((uint8_t*)buf),_ksize(size),__symtab(NULL){
+    _haveSymtab = _haveSymtab;
     loadSegments();
 }
 
