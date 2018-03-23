@@ -33,7 +33,7 @@ insn::insn(segment_t segments, loc_t p, segtype segType) : _segments(segments), 
             return;
         }
     }
-    reterror("initializing insn with out of range location");
+    throw out_of_range("initializing insn with out of range location");
 }
 
 insn::insn(const insn &cpy, loc_t p){
@@ -49,7 +49,7 @@ insn::insn(const insn &cpy, loc_t p){
                 return;
             }
         }
-        reterror("initializing insn with out of range location");
+        throw out_of_range("initializing insn with out of range location");
     }
 }
 
@@ -119,7 +119,7 @@ insn &insn::operator=(loc_t p){
             return *this;
         }
     }
-    reterror("initializing insn with out of range location");
+    throw out_of_range("initializing insn with out of range location");
 }
 
 #pragma mark reference manual helpers

@@ -62,7 +62,12 @@ __attribute__((always_inline)) struct section_64 *find_section(struct segment_co
     return NULL;
 }
 
-offsetfinder64::offsetfinder64(const char* filename) : _freeKernel(true),__symtab(NULL){
+offsetfinder64::offsetfinder64(const char* filename, uint64_t kslide, tristate haveSymbols) :
+        _freeKernel(true),
+        __symtab(NULL),
+        _kslide(kslide),
+        _haveSymtab(haveSymbols)
+{
     struct stat fs = {0};
     int fd = 0;
     char *img4tmp = NULL;
@@ -150,6 +155,9 @@ void offsetfinder64::loadSegments(){
         if (lcmd->cmd == LC_SEGMENT_64){
             struct segment_command_64* seg = (struct segment_command_64*)lcmd;
             _segments.push_back({_kdata+seg->fileoff,seg->filesize, (loc_t)seg->vmaddr, (seg->maxprot & VM_PROT_EXECUTE) !=0});
+            if (i==0){
+                _kernel_base = _segments.back().base; //first segment is base. Is this correct??
+            }
         }
         if (lcmd->cmd == LC_UNIXTHREAD) {
             uint32_t *ptr = (uint32_t *)(lcmd + 1);
@@ -168,6 +176,21 @@ void offsetfinder64::loadSegments(){
         }
     }
     
+    try {
+        deref(_kernel_entry);
+        info("Detected non-slid kernel.");
+        _kernelIsSlid = false;
+    } catch (tihmstar::out_of_range &e) {
+        info("Detected slid kernel. Using kernelslide=%p",(void*)_kslide);
+        _kernel_entry += _kslide;
+        _kernelIsSlid = true;
+    }
+    try {
+        deref(_kernel_entry);
+    } catch (tihmstar::out_of_range &e) {
+        reterror("Error occured when handling kernel entry checks");
+    }
+    
     info("Inited offsetfinder64 %s %s",OFFSETFINDER64_VERSION_COMMIT_COUNT, OFFSETFINDER64_VERSION_COMMIT_SHA);
     try {
         getSymtab();
@@ -177,8 +200,14 @@ void offsetfinder64::loadSegments(){
     printf("\n");
 }
 
-offsetfinder64::offsetfinder64(void* buf, size_t size, bool haveSymbols) : _freeKernel(false),_kdata((uint8_t*)buf),_ksize(size),__symtab(NULL){
-    _haveSymtab = _haveSymtab;
+offsetfinder64::offsetfinder64(void* buf, size_t size, uint64_t kslide, tristate haveSymbols) :
+        _freeKernel(false),
+        _kdata((uint8_t*)buf),
+        _ksize(size),
+        __symtab(NULL),
+        _kslide(kslide),
+        _haveSymtab(haveSymbols)
+{
     loadSegments();
 }
 
@@ -188,6 +217,10 @@ const void *offsetfinder64::kdata(){
 
 loc_t offsetfinder64::find_entry(){
     return _kernel_entry;
+}
+
+loc_t offsetfinder64::find_base(){
+    return _kernel_base;
 }
 
 bool offsetfinder64::haveSymbols(){
@@ -225,6 +258,10 @@ loc_t offsetfinder64::memmem(const void *little, size_t little_len){
         }
     }
     return 0;
+}
+
+uint64_t offsetfinder64::deref(loc_t pos){
+    return insn::deref(_segments,pos);
 }
 
 loc_t offsetfinder64::find_sym(const char *sym){
@@ -1010,7 +1047,11 @@ loc_t offsetfinder64::find_gPhysBase(){
 }
 
 loc_t offsetfinder64::find_kernel_pmap(){
-    return find_sym("_kernel_pmap");
+    if (haveSymbols()) {
+        return find_sym("_kernel_pmap");
+    }else{
+        return find_kernel_pmap_nosym();
+    }
 }
 
 loc_t offsetfinder64::find_kernel_pmap_nosym(){

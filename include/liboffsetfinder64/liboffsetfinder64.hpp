@@ -32,9 +32,12 @@ namespace tihmstar {
         };
     private:
         bool _freeKernel;
+        bool _kernelIsSlid;
+        uint64_t _kslide;
         uint8_t *_kdata;
         size_t _ksize;
         patchfinder64::loc_t _kernel_entry;
+        patchfinder64::loc_t _kernel_base;
         std::vector<patchfinder64::text_t> _segments;
         tristate _haveSymtab = kuninitialized;
         
@@ -43,14 +46,16 @@ namespace tihmstar {
         __attribute__((always_inline)) struct symtab_command *getSymtab();
         
     public:
-        offsetfinder64(const char *filename);
-        offsetfinder64(void* buf, size_t size, bool haveSymbols = false);
+        offsetfinder64(const char *filename, uint64_t kslide = 0, tristate haveSymbols = kuninitialized);
+        offsetfinder64(void* buf, size_t size, uint64_t kslide, tristate haveSymbols = kfalse);
         const void *kdata();
         patchfinder64::loc_t find_entry();
+        patchfinder64::loc_t find_base();
         const std::vector<patchfinder64::text_t> &segments(){return _segments;};
         bool haveSymbols();
         
         patchfinder64::loc_t memmem(const void *little, size_t little_len);
+        uint64_t             deref(patchfinder64::loc_t pos);
         
         patchfinder64::loc_t find_sym(const char *sym);
         patchfinder64::loc_t find_syscall0();
