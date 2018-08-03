@@ -1163,6 +1163,10 @@ loc_t offsetfinder64::find_SHA1Final() {
     return find_sym("_SHA1Final");
 }
 
+loc_t offsetfinder64::find_osunserializexml() {
+    return find_sym("__Z16OSUnserializeXMLPKcPP8OSString");
+}
+
 loc_t offsetfinder64::find_rootvnode() {
     return find_sym("_rootvnode");
 }

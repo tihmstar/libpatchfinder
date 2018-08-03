@@ -124,6 +124,7 @@ namespace tihmstar {
         patchfinder64::loc_t find_SHA1Init();
         patchfinder64::loc_t find_SHA1Update();
         patchfinder64::loc_t find_SHA1Final();
+        patchfinder64::loc_t find_osunserializexml();
         patchfinder64::loc_t find_rootvnode();
         
         ~offsetfinder64();
