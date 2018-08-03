@@ -1127,10 +1127,49 @@ loc_t offsetfinder64::find_deepsleep_str_loc(){
     return idlesleep_str_loc;
 }
 
+loc_t offsetfinder64::find_vfs_context_current() {
+    return find_sym("_vfs_context_current");
+}
+
+loc_t offsetfinder64::find_vnode_getfromfd() {
+    return find_sym("_vnode_getfromfd");
+}
+
+loc_t offsetfinder64::find_vnode_lookup() {
+    return find_sym("_vnode_lookup");
+}
+
+loc_t offsetfinder64::find_vnode_put() {
+    return find_sym("_vnode_put");
+}
+
+loc_t offsetfinder64::find_vnode_getattr() {
+    return find_sym("_vnode_getattr");
+}
+
+loc_t offsetfinder64::find_csblob_entitlements_dictionary_set() {
+    return find_sym("_csblob_entitlements_dictionary_set");
+}
+
+loc_t offsetfinder64::find_SHA1Init() {
+    return find_sym("_SHA1Init");
+}
+
+loc_t offsetfinder64::find_SHA1Update() {
+    return find_sym("_SHA1Update");
+}
+
+loc_t offsetfinder64::find_SHA1Final() {
+    return find_sym("_SHA1Final");
+}
+
+loc_t offsetfinder64::find_osunserializexml() {
+    return find_sym("__Z16OSUnserializeXMLPKcPP8OSString");
+}
+
 loc_t offsetfinder64::find_rootvnode() {
     return find_sym("_rootvnode");
 }
-
 
 offsetfinder64::~offsetfinder64(){
     if (_freeKernel) safeFree(_kdata);

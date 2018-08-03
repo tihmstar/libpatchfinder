@@ -115,6 +115,16 @@ namespace tihmstar {
         patchfinder64::loc_t find_deepsleep_str_loc();
 
         /*------------------------ Util -------------------------- */
+        patchfinder64::loc_t find_vfs_context_current();
+        patchfinder64::loc_t find_vnode_getfromfd();
+        patchfinder64::loc_t find_vnode_lookup();
+        patchfinder64::loc_t find_vnode_put();
+        patchfinder64::loc_t find_vnode_getattr();
+        patchfinder64::loc_t find_csblob_entitlements_dictionary_set();
+        patchfinder64::loc_t find_SHA1Init();
+        patchfinder64::loc_t find_SHA1Update();
+        patchfinder64::loc_t find_SHA1Final();
+        patchfinder64::loc_t find_osunserializexml();
         patchfinder64::loc_t find_rootvnode();
         
         ~offsetfinder64();
