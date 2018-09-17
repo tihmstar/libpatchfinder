@@ -1027,6 +1027,23 @@ patch offsetfinder64::find_nonceEnabler_patch_nosym(){
 
 #pragma mark KPP bypass
 loc_t offsetfinder64::find_gPhysBase(){
+    loc_t ref = find_sym("_ml_static_ptovirt");
+    
+    insn tgtref(_segments, ref);
+    
+    loc_t gPhysBase = 0;
+    
+    if (tgtref != insn::adrp)
+        while (++tgtref != insn::adrp);
+    gPhysBase = (loc_t)tgtref.imm();
+    
+    while (++tgtref != insn::ldr);
+    gPhysBase += tgtref.imm();
+    
+    return gPhysBase;
+}
+
+loc_t offsetfinder64::find_gPhysBase_nosym(){
     loc_t str = findstr("\"pmap_map_high_window_bd: area too large", false);
     retassure(str, "Failed to find str");
     

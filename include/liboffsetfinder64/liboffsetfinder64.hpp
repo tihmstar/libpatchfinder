@@ -108,6 +108,7 @@ namespace tihmstar {
         
         /*------------------------ KPP bypass -------------------------- */
         patchfinder64::loc_t find_gPhysBase();
+        patchfinder64::loc_t find_gPhysBase_nosym();
         patchfinder64::loc_t find_kernel_pmap();
         patchfinder64::loc_t find_kernel_pmap_nosym();
         patchfinder64::loc_t find_cpacr_write();
