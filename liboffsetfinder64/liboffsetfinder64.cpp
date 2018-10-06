@@ -701,6 +701,22 @@ loc_t offsetfinder64::find_rop_ldr_x0_x0_0x10(){
     }(ropbytes,sizeof(ropbytes)-1,_segments);
 }
 
+loc_t offsetfinder64::find_exec(std::function<bool(patchfinder64::insn &i)>cmpfunc){
+    insn i(_segments);
+    while (true) {
+        if (cmpfunc(i))
+            return i;
+        try {
+            ++i;
+        } catch (out_of_range &e) {
+            break;
+        }
+    }
+    return 0;
+}
+
+
+
 #pragma mark patch_finders
 void slide_ptr(class patch *p,uint64_t slide){
     slide += *(uint64_t*)p->_patch;

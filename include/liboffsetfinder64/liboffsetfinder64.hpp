@@ -15,6 +15,7 @@
 #include <mach-o/nlist.h>
 #include <mach-o/dyld_images.h>
 #include <vector>
+#include <functional>
 
 #include <stdlib.h>
 #include <liboffsetfinder64/common.h>
@@ -89,6 +90,7 @@ namespace tihmstar {
         
         patchfinder64::loc_t find_rop_add_x0_x0_0x10();
         patchfinder64::loc_t find_rop_ldr_x0_x0_0x10();
+        patchfinder64::loc_t find_exec(std::function<bool(patchfinder64::insn &i)>cmpfunc);
         
         
         /*------------------------ kernelpatches -------------------------- */
