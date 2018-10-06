@@ -146,7 +146,7 @@ __attribute__((always_inline)) static int lowestSetBit(uint64_t x){
     return 64;
 }
 
-__attribute__((always_inline)) static uint64_t replicate(uint8_t val, int bits){
+__attribute__((always_inline)) static uint64_t replicate(uint64_t val, int bits){
     uint64_t ret = val;
     unsigned shift;
     for (shift = bits; shift < 64; shift += bits) {    // XXX actually, it is either 32 or 64
@@ -172,9 +172,44 @@ __attribute__((always_inline)) static uint64_t ROR(uint64_t x, int shift, int le
     return x;
 }
 
+static inline uint64_t ror(uint64_t elt, unsigned size)
+{
+    return ((elt & 1) << (size-1)) | (elt >> 1);
+}
+
+static inline uint64_t AArch64_AM_decodeLogicalImmediate(uint64_t val, unsigned regSize)
+{
+    // Extract the N, imms, and immr fields.
+    unsigned N = (val >> 12) & 1;
+    unsigned immr = (val >> 6) & 0x3f;
+    unsigned imms = val & 0x3f;
+    unsigned i;
+    
+    // assert((regSize == 64 || N == 0) && "undefined logical immediate encoding");
+//    int len = 31 - countLeadingZeros((N << 6) | (~imms & 0x3f));
+    int len = highestSetBit( (uint64_t)((N<<6) | ((~imms) & 0b111111)) );
+
+    // assert(len >= 0 && "undefined logical immediate encoding");
+    unsigned size = (1 << len);
+    unsigned R = immr & (size - 1);
+    unsigned S = imms & (size - 1);
+    // assert(S != size - 1 && "undefined logical immediate encoding");
+    uint64_t pattern = (1ULL << (S + 1)) - 1;
+    for (i = 0; i < R; ++i)
+        pattern = ror(pattern, size);
+    
+    // Replicate the pattern to fill the regSize.
+    while (size != regSize) {
+        pattern |= (pattern << size);
+        size *= 2;
+    }
+    
+    return pattern;
+}
+
 __attribute__((always_inline)) static std::pair<int64_t, int64_t> DecodeBitMasks(uint64_t immN, uint8_t imms, uint8_t immr, bool immediate){
-    int64_t tmask = 0, wmask = 0;
-    int8_t levels = 0;
+    uint64_t tmask = 0, wmask = 0;
+    int8_t levels = 0; //6bit
 
     int len = highestSetBit( (uint64_t)((immN<<6) | ((~imms) & 0b111111)) );
     assure(len != -1); //reserved value
@@ -187,10 +222,19 @@ __attribute__((always_inline)) static std::pair<int64_t, int64_t> DecodeBitMasks
 
     uint8_t esize = 1 << len;
 
-    uint8_t welem = ones(S + 1);
+    uint8_t diff = S - R; // 6-bit subtract with borrow
+    
+    uint8_t d = (diff & ((1<<len)-1)) << 1;
+    
+    uint64_t welem = ones(S + 1);
+    uint64_t telem = ones(d + 1);
+    
+    uint64_t asd = ROR(welem, R, 32);
+    
     wmask = replicate(ROR(welem, R, 32),esize);
+    tmask = replicate(telem,esize);
 #warning TODO incomplete function implementation!
-    return {wmask,0};
+    return {wmask,tmask};
 }
 
 #pragma mark bridges
@@ -261,6 +305,11 @@ bool insn::is_orr(uint32_t i){
     return BIT_RANGE(i, 23, 30) == 0b01100100;
 }
 
+bool insn::is_and(uint32_t i){
+    return BIT_RANGE(i, 23, 30) == 0b00100100; //immediate
+//    return BIT_RANGE(i, 24, 30) == 0b0001010; //shifted register
+}
+
 bool insn::is_tbz(uint32_t i){
     return BIT_RANGE(i, 24, 30) == 0b0110110;
 }
@@ -328,6 +377,8 @@ enum insn::type insn::type(){
         return movk;
     else if (is_orr(val))
         return orr;
+    else if (is_and(val))
+        return and_;
     else if (is_tbz(val))
         return tbz;
     else if (is_ldxr(val))
@@ -434,6 +485,13 @@ int64_t insn::imm(){
             return BIT_RANGE(value(), 10, 21) << (value()>>30);
         case orr:
             return DecodeBitMasks(BIT_AT(value(), 22),BIT_RANGE(value(), 10, 15),BIT_RANGE(value(), 16,21), true).first;
+        case and_:
+        {
+            int64_t val = DecodeBitMasks(BIT_AT(value(), 22),BIT_RANGE(value(), 10, 15),BIT_RANGE(value(), 16,21), true).first;
+            if (!BIT_AT(value(), 31))
+                val |= (((uint64_t)1<<32)-1) << 32;
+            return val;
+        }
         case tbz:
             return BIT_RANGE(value(), 5, 18);
         case stp:
@@ -457,6 +515,7 @@ uint8_t insn::rd(){
         case add:
         case movk:
         case orr:
+        case and_:
         case movz:
             return (value() % (1<<5));
 
@@ -475,6 +534,7 @@ uint8_t insn::rn(){
         case ret:
         case br:
         case orr:
+        case and_:
         case ldxr:
         case ldrb:
         case str:

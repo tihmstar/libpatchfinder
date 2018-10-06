@@ -1148,6 +1148,21 @@ loc_t offsetfinder64::find_rootvnode() {
     return find_sym("_rootvnode");
 }
 
+loc_t offsetfinder64::find_allproc(){
+    loc_t str = findstr("\"pgrp_add : pgrp is dead adding process\"",true);
+    retassure(str, "Failed to find str");
+    
+    loc_t ref = find_literal_ref(_segments, str);
+    retassure(ref, "literal ref to str");
+    
+    insn ptr(_segments,ref);
+    
+    while (++ptr != insn::and_ || ptr.rd() != 8 || ptr.rn() != 8 || ptr.imm() != 0xffffffffffffdfff);
+
+    loc_t retval = (loc_t)find_register_value(ptr-2, 8);
+    
+    return retval;
+}
 
 offsetfinder64::~offsetfinder64(){
     if (_freeKernel) safeFree(_kdata);

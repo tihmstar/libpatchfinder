@@ -117,6 +117,8 @@ namespace tihmstar {
 
         /*------------------------ Util -------------------------- */
         patchfinder64::loc_t find_rootvnode();
+        patchfinder64::loc_t find_allproc();
+        
         
         ~offsetfinder64();
     };

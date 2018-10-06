@@ -55,6 +55,7 @@ namespace tihmstar{
             static bool is_cbnz(uint32_t i);
             static bool is_movk(uint32_t i);
             static bool is_orr(uint32_t i);
+            static bool is_and(uint32_t i);
             static bool is_tbz(uint32_t i);
             static bool is_ldxr(uint32_t i);
             static bool is_ldrb(uint32_t i);
@@ -88,7 +89,8 @@ namespace tihmstar{
                 movz,
                 bcond,
                 b,
-                nop
+                nop,
+                and_
             };
             enum subtype{
                 st_general,
