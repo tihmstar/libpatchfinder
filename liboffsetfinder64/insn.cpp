@@ -612,7 +612,7 @@ loc_t tihmstar::patchfinder64::find_literal_ref(segment_t segemts, loc_t pos, in
     uint64_t imm = 0;
     
     try {
-        while (1){
+        for (;;++adrp){
             if (adrp == insn::adr) {
                 if (adrp.imm() == (uint64_t)pos){
                     if (ignoreTimes) {
@@ -637,7 +637,6 @@ loc_t tihmstar::patchfinder64::find_literal_ref(segment_t segemts, loc_t pos, in
                     return (loc_t)adrp.pc();
                 }
             }
-            ++adrp;
         }
     } catch (std::out_of_range &e) {
         return 0;

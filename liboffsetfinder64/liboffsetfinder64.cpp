@@ -518,7 +518,7 @@ uint32_t offsetfinder64::find_vm_map_hdr(){
     
     while (++stp != insn::bl);
 
-    while (++stp != insn::cbz);
+    while (++stp != insn::cbz && stp != insn::cbnz);
     
     while (++stp != insn::stp || stp.rt() != stp.other());
     
@@ -606,6 +606,20 @@ uint32_t offsetfinder64::find_iouserclient_ipc(){
     return (uint32_t)((--iokit_add_connect_reference).imm());
 }
 
+uint32_t offsetfinder64::find_ipc_space_is_task_11(){
+    loc_t str = findstr("\"ipc_task_init\"",true);
+    retassure(str, "Failed to find str");
+    
+    loc_t ref = find_literal_ref(_segments, str,1);
+    retassure(ref, "literal ref to str");
+    
+    insn istr(_segments,ref);
+
+    while (--istr != insn::str);
+
+    return (uint32_t)istr.imm();
+}
+
 uint32_t offsetfinder64::find_ipc_space_is_task(){
     loc_t str = findstr("\"ipc_task_init\"",true);
     retassure(str, "Failed to find str");
@@ -618,15 +632,20 @@ uint32_t offsetfinder64::find_ipc_space_is_task(){
 
     try {
         bref = find_rel_branch_source(insn(_segments,ref), true, 2, 0x2000);
+        
     } catch (tihmstar::limit_reached &e) {
         try {
             //previous attempt doesn't work on some 10.0.2 devices, trying something else...
             do_backup_plan = bref = find_rel_branch_source(insn(_segments,ref), true, 1, 0x2000);
         } catch (tihmstar::limit_reached &ee) {
-            //this seems to be good for iOS 9.3.3
-            do_backup_plan = bref = find_rel_branch_source(insn(_segments,ref-4), true, 1, 0x2000);
+            try {
+                //this seems to be good for iOS 9.3.3
+                do_backup_plan = bref = find_rel_branch_source(insn(_segments,ref-4), true, 1, 0x2000);
+            } catch (tihmstar::limit_reached &eee) {
+                //this is for iOS 11(.2.6)
+                return find_ipc_space_is_task_11();
+            }
         }
-        
     }
     
     insn istr(_segments,bref);

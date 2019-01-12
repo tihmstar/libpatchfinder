@@ -81,6 +81,7 @@ namespace tihmstar {
         uint32_t             find_vtab_get_retain_count();
         uint32_t             find_iouserclient_ipc();
         uint32_t             find_ipc_space_is_task();
+        uint32_t             find_ipc_space_is_task_11();
         uint32_t             find_proc_ucred();
         uint32_t             find_task_bsd_info();
         uint32_t             find_vm_map_hdr();
