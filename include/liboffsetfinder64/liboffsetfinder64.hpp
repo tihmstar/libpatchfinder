@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <liboffsetfinder64/common.h>
 #include <liboffsetfinder64/insn.hpp>
-#include <liboffsetfinder64/exception.hpp>
+#include <liboffsetfinder64/OFexception.hpp>
 #include <liboffsetfinder64/patch.hpp>
 
 namespace tihmstar {

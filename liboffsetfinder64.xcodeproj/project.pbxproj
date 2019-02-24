@@ -31,6 +31,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8701694A222346F4001CF5BC /* OFexception.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = OFexception.hpp; path = ../include/liboffsetfinder64/OFexception.hpp; sourceTree = "<group>"; };
 		870E965E200779130043690C /* img4.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = img4.h; path = external/img4tool/img4tool/img4.h; sourceTree = SOURCE_ROOT; };
 		870E965F200779130043690C /* img4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = img4.c; path = external/img4tool/img4tool/img4.c; sourceTree = SOURCE_ROOT; };
 		870E9660200779130043690C /* lzssdec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = lzssdec.c; path = external/img4tool/img4tool/lzssdec.c; sourceTree = SOURCE_ROOT; };
@@ -115,6 +116,7 @@
 				87F628092052945A0075271B /* common.h */,
 				87F6280420528DCC0075271B /* exception.hpp */,
 				87F6280320528DCC0075271B /* exception.cpp */,
+				8701694A222346F4001CF5BC /* OFexception.hpp */,
 				87F62800205289F00075271B /* insn.hpp */,
 				87F627FF205289F00075271B /* insn.cpp */,
 				87F62807205294040075271B /* patch.hpp */,

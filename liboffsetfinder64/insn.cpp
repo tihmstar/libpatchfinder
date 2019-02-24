@@ -10,7 +10,7 @@
 
 #include "all_liboffsetfinder.hpp"
 #include <liboffsetfinder64/insn.hpp>
-#include <liboffsetfinder64/exception.hpp>
+#include <liboffsetfinder64/OFexception.hpp>
 
 using namespace tihmstar::patchfinder64;
 
