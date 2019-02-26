@@ -26,3 +26,11 @@ const char *exception::what(){
 int exception::code() const{
     return _code | (int)(_filename.size()<<16);
 }
+
+std::string exception::build_commit_count() const {
+    return "build_commit_count: override me!";
+};
+
+std::string exception::build_commit_sha() const{
+    return "build_commit_sha: override me!";
+};

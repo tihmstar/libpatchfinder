@@ -29,12 +29,8 @@ namespace tihmstar {
         int code() const;
         
         //Information about build
-        virtual std::string build_commit_count() const {
-            return "build_commit_count: override me!";
-        };
-        virtual std::string build_commit_sha() const{
-            return "build_commit_sha: override me!";
-        };
+        virtual std::string build_commit_count() const;
+        virtual std::string build_commit_sha() const;
     };
 };
 
