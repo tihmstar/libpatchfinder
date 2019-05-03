@@ -17,9 +17,11 @@ int main(int argc, const char * argv[]) {
     offsetfinder64 fi(argv[1]);
     
     [](offsetfinder64 *fi){
+        kptr_t zone_map =                         (kptr_t)fi->find_zone_map();
+
+
         kptr_t ipc_space_is_task =                (kptr_t)fi->find_ipc_space_is_task_11();
         
-        kptr_t zone_map =                         (kptr_t)fi->find_zone_map();
 
         kptr_t sizeof_task =                      (kptr_t)fi->find_sizeof_task();
 

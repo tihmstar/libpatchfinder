@@ -9,8 +9,8 @@
 #ifndef OFexception_h
 #define OFexception_h
 
-#include <liboffsetfinder64/exception.hpp>
-#include "../../liboffsetfinder64/all_liboffsetfinder.hpp"
+#include <libgeneral/macros.h>
+#include <libgeneral/exception.hpp>
 
 namespace tihmstar {
     class OFexception : public tihmstar::exception{
@@ -19,11 +19,11 @@ namespace tihmstar {
         
         
         std::string build_commit_count() const override {
-            return OFFSETFINDER64_VERSION_COMMIT_COUNT;
+            return VERSION_COMMIT_COUNT;
         };
         
         std::string build_commit_sha() const override{
-            return OFFSETFINDER64_VERSION_COMMIT_SHA;
+            return VERSION_COMMIT_SHA;
         };
     };
     //custom exceptions for makeing it easy to catch

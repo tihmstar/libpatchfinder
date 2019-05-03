@@ -6,8 +6,6 @@
 //  Copyright © 2018 tihmstar. All rights reserved.
 //
 
-#define LOCAL_FILENAME "insn.cpp"
-
 #include "all_liboffsetfinder.hpp"
 #include <liboffsetfinder64/insn.hpp>
 #include <liboffsetfinder64/OFexception.hpp>

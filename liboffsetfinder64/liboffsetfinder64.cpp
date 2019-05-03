@@ -8,7 +8,7 @@
 
 #include <liboffsetfinder64/liboffsetfinder64.hpp>
 
-#define LOCAL_FILENAME "liboffsetfinder.cpp"
+#include <libgeneral/macros.h>
 #include "all_liboffsetfinder.hpp"
 
 extern "C"{
@@ -191,7 +191,7 @@ void offsetfinder64::loadSegments(){
         reterror("Error occured when handling kernel entry checks");
     }
     
-    info("Inited offsetfinder64 %s %s",OFFSETFINDER64_VERSION_COMMIT_COUNT, OFFSETFINDER64_VERSION_COMMIT_SHA);
+    info("Inited offsetfinder64 %s %s",VERSION_COMMIT_COUNT, VERSION_COMMIT_SHA);
     try {
         getSymtab();
     } catch (tihmstar::symtab_not_found &e) {

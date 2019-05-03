@@ -4,3 +4,6 @@
 [submodule "external/libplist"]
 	path = external/libplist
 	url = https://github.com/libimobiledevice/libplist/
+[submodule "external/libgeneral"]
+	path = external/libgeneral
+	url = https://github.com/tihmstar/libgeneral.git
