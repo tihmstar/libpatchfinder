@@ -88,18 +88,55 @@ std::vector<patch> ibootpatchfinder64::get_boot_arg_patch(const char *bootargs){
 
         /* Point the boot-args xref to the "Reliance on this cert..." string. */
         debug("Pointing default boot-args xref to %p...\n", cert_str_loc);
-        
-        insn pins(default_boot_args_xref, insn::adr, insn::st_general, (int64_t)cert_str_loc, 9, 0, 0, 0);
-        uint32_t opcode = pins.opcode();
-        patches.push_back({default_boot_args_xref, &opcode, 4});
-        
+
         default_boot_args_str_loc = cert_str_loc;
+
+        insn pins(default_boot_args_xref, insn::adr, insn::st_general, (int64_t)default_boot_args_str_loc, 9, 0, 0, 0);
+        uint32_t opcode = pins.opcode();
+        patches.push_back({(loc_t)pins.pc(), &opcode, 4});
     }
     
     debug("Applying custom boot-args \"%s\"\n", bootargs);
     patches.push_back({default_boot_args_str_loc, bootargs, strlen(bootargs)+1});
     
-#warning TODO do i need to patch more???
+    vmem iter(*_vmem,default_boot_args_xref);
+    uint8_t xrefRD = iter().rd();
+    debug("xrefRD=%d\n",xrefRD);
+
+    
+    while (++iter != insn::csel);
+    
+    insn csel = iter();
+    debug("csel=%p\n", (loc_t)csel.pc());
+
+    assure(xrefRD == csel.rn() || xrefRD == csel.other());
+    
+    debug("cselrd=%d\n",csel.rd());
+    
+    insn pmov(iter(), insn::movz, insn::st_register, 0, csel.rd(), -1, 0, xrefRD);
+    
+    debug("(%p)patching: \"mov x%d, x%d\"\n",(loc_t)pmov.pc(),pmov.rd(),pmov.other());
+    uint32_t opcode = pmov.opcode();
+    patches.push_back({(loc_t)pmov.pc(), &opcode, 4});
+
+    
+    while ((--iter).supertype() != insn::sut_branch_imm || iter() == insn::bl);
+    
+    debug("branch loc=%p\n",(loc_t)iter);
+    
+    iter = (loc_t)iter().imm();
+
+    debug("branch dst=%p\n",(loc_t)iter);
+    
+    if (iter() != insn::adr) {
+        while (++iter != insn::adr);
+    }
+
+    insn pins(iter, insn::adr, insn::st_general, (int64_t)default_boot_args_str_loc, iter().rd(), 0, 0, 0);
+    opcode = pins.opcode();
+    patches.push_back({(loc_t)pins.pc(), &opcode, 4});
+    debug("(%p)patching: \"adr x%d, 0x%llx\"\n",(loc_t)pins.pc(),pins.rd(),pins.imm());
+
     return patches;
 }
 

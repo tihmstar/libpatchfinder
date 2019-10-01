@@ -40,7 +40,8 @@ namespace tihmstar{
                 bcond,
                 b,
                 nop,
-                and_
+                and_,
+                csel
             };
             enum subtype{
                 st_general,
@@ -102,9 +103,12 @@ namespace tihmstar{
             static bool is_bcond(uint32_t i);
             static bool is_b(uint32_t i);
             static bool is_nop(uint32_t i);
-            
+            static bool is_csel(uint32_t i);
+
         public:
             uint32_t opcode();
+            uint64_t pc();
+            
             type type();
             subtype subtype();
             supertype supertype();

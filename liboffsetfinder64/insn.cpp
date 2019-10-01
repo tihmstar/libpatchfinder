@@ -37,6 +37,19 @@ insn::insn(loc_t pc, enum type t, enum subtype subt, int64_t imm, uint8_t rd, ui
                 _opcode |= SET_BITS(BIT_RANGE(diff,2,19), 5);
             }
             break;
+        case movz:
+            {
+                if (subt == st_register) {
+                    _opcode |= SET_BITS(0b0101010, 24) | SET_BITS(1, 31);
+                    _opcode |= (rd % (1<<5));
+                    _opcode |= SET_BITS(other & 0b11111, 16) ;
+                    _opcode |= SET_BITS(rn & 0b11111, 5) ;
+                    _opcode |= SET_BITS(imm & 0b111111, 10) ;
+                }else{
+                    reterror("not implemented");
+                }
+            }
+            break;
             
         default:
             reterror("opcode generation not implemented");
@@ -243,7 +256,7 @@ bool insn::is_stp(uint32_t i){
 }
 
 bool insn::is_movz(uint32_t i){
-    return (BIT_RANGE(i, 23, 30) == 0b10100101);
+    return (BIT_RANGE(i, 23, 30) == 0b10100101) || ((BIT_RANGE(i, 24, 30) == 0b0101010) && (BIT_AT(i, 21) == 0));
 }
 
 bool insn::is_bcond(uint32_t i){
@@ -258,8 +271,16 @@ bool insn::is_nop(uint32_t i){
     return (BIT_RANGE(i, 12, 31) == 0b11010101000000110010) && (0b11111 % (1<<5));
 }
 
+bool insn::is_csel(uint32_t i){
+    return (BIT_RANGE(i, 21, 30) == 0b0011010100) && (BIT_RANGE(i, 10, 11) == 0b00);
+}
+
 uint32_t insn::opcode(){
     return _opcode;
+}
+
+uint64_t insn::pc(){
+    return _pc;
 }
 
 enum insn::type insn::type(){
@@ -309,6 +330,8 @@ enum insn::type insn::type(){
         return b;
     else if (is_nop(_opcode))
         return nop;
+    else if (is_csel(_opcode))
+        return csel;
 
     return unknown;
 }
@@ -323,6 +346,11 @@ enum insn::subtype insn::subtype(){
             return st_literal;
     }else if (is_ldrb(_opcode)){
         if (BIT_RANGE(_opcode, 21, 31) == 0b00111000011 && BIT_RANGE(_opcode, 10, 11) == 0b10)
+            return st_register;
+        else
+            return st_immediate;
+    }else if (is_movz(_opcode)){
+        if ((BIT_RANGE(_opcode, 24, 30) == 0b0101010) && (BIT_AT(_opcode, 21) == 0))
             return st_register;
         else
             return st_immediate;
@@ -430,6 +458,7 @@ uint8_t insn::rd(){
         case orr:
         case and_:
         case movz:
+        case csel:
             return (_opcode % (1<<5));
 
         default:
@@ -454,6 +483,7 @@ uint8_t insn::rn(){
         case str:
         case ldr:
         case stp:
+        case csel:
             return BIT_RANGE(_opcode, 5, 9);
 
         default:
@@ -500,6 +530,13 @@ uint8_t insn::other(){
                 reterror("ERROR: unimplemented!");
             else
                 reterror("ldrb must be st_register for this to be defined!");
+        case csel:
+            return BIT_RANGE(_opcode, 16, 20);
+        case movz:
+            if (subtype() == st_register)
+                return BIT_RANGE(_opcode, 16, 20);
+            else
+                reterror("ERROR: unimplemented!");
         default:
             reterror("failed to get other");
             break;
