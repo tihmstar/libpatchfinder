@@ -8,7 +8,7 @@
 
 #include <liboffsetfinder64/patch.hpp>
 
-using namespace tihmstar::patchfinder64;
+using namespace tihmstar::offsetfinder64;
 
 patch::patch(loc_t location, const void *patch, size_t patchSize, void(*slidefunc)(class patch *patch, uint64_t slide)) : _location(location), _patchSize(patchSize), _slidefunc(slidefunc){
     _patch = malloc(_patchSize);

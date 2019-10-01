@@ -1,39 +1,46 @@
 //
-//  vmem.cpp
+//  vsegment.cpp
 //  liboffsetfinder64
 //
 //  Created by tihmstar on 28.09.19.
 //  Copyright © 2019 tihmstar. All rights reserved.
 //
 
-#include "vmem.hpp"
+#include "vsegment.hpp"
 #include "OFexception.hpp"
 #include <libgeneral/macros.h>
 
 using namespace tihmstar::offsetfinder64;
 
 
-vmem::vmem(void *buf, size_t size, loc_t vaddr, int perms) : _buf((uint8_t*)buf), _size(size), _vaddr(vaddr), _perms(perms),_curpos(0)
+vsegment::vsegment(void *buf, size_t size, loc_t vaddr, int perms) : _buf((uint8_t*)buf), _size(size), _vaddr(vaddr), _perms(perms),_curpos(0)
 {
     //
 }
 
 
-vmem::vmem(const vmem &cpy) : _buf(cpy._buf), _size(cpy._size), _vaddr(cpy._vaddr), _perms(cpy._perms),_curpos(cpy._curpos)
+vsegment::vsegment(const vsegment &cpy) : _buf(cpy._buf), _size(cpy._size), _vaddr(cpy._vaddr), _perms(cpy._perms),_curpos(cpy._curpos)
 {
     //
 }
 
-vmem::vmem(const vmem &cpy, offset_t curpos) : _buf(cpy._buf), _size(cpy._size), _vaddr(cpy._vaddr), _perms(cpy._perms),_curpos(curpos)
+vsegment::vsegment(const vsegment &cpy, offset_t curpos) : _buf(cpy._buf), _size(cpy._size), _vaddr(cpy._vaddr), _perms(cpy._perms),_curpos(curpos)
 {
     //
 }
 
-bool vmem::isInRange(loc_t p){
+vsegment::vsegment(const vsegment &cpy, loc_t pos) : _buf(cpy._buf), _size(cpy._size), _vaddr(cpy._vaddr), _perms(cpy._perms),_curpos(0)
+{
+    assure(isInRange(pos));
+    _curpos = pos - _vaddr;
+}
+
+
+bool vsegment::isInRange(loc_t p){
     return (p - _vaddr) < _size;
 }
 
-loc_t vmem::memmem(const void *little, size_t little_len){
+loc_t vsegment::memmem(const void *little, size_t little_len){
     loc_t rt = NULL;
     if ((rt = (loc_t)::memmem(_buf, _size, little, little_len))) {
         rt = rt - _buf + _vaddr;
@@ -43,54 +50,62 @@ loc_t vmem::memmem(const void *little, size_t little_len){
 
 #pragma mark iterator operator
 
-vmem vmem::operator+(int i){
+insn vsegment::operator+(int i){
+    if (i<0) return this->operator-(-i);
     retcustomassure(_curpos + 4*i < _size-4, out_of_range, "overflow");
-    return vmem(*this,_curpos+4*i);
+    return vsegment(*this,_curpos+4*i).getinsn();
 }
 
-vmem vmem::operator-(int i){
+insn vsegment::operator-(int i){
+    if (i<0) return this->operator+(-i);
     retcustomassure(_curpos >= 4*i, out_of_range, "underflow");
-    return vmem(*this,_curpos-4*i);
+    return vsegment(*this,_curpos-4*i).getinsn();
 }
 
-vmem &vmem::operator++(){
+insn vsegment::operator++(){
     retcustomassure(_curpos + 4 < _size-4, out_of_range, "overflow");
     _curpos+=4;
-    return *this;
+    return getinsn();
 }
 
-vmem &vmem::operator--(){
+insn vsegment::operator--(){
     retcustomassure(_curpos >= 4, out_of_range, "underflow");
     _curpos-=4;
-    return *this;
+    return getinsn();
 }
 
-vmem &vmem::operator+=(int i){
+vsegment &vsegment::operator+=(int i){
+    if (i<0) return this->operator-=(-i);
     retcustomassure(_curpos + 4*i < _size-4, out_of_range, "overflow");
     _curpos+=4*i;
     return *this;
 }
 
-vmem &vmem::operator-=(int i){
+vsegment &vsegment::operator-=(int i){
+    if (i<0) return this->operator+=(-i);
     retcustomassure(_curpos >= 4*i, out_of_range, "underflow");
     _curpos-=4*i;
     return *this;
 }
 
-vmem &vmem::operator=(loc_t p){
-    offset_t newPos = p-_vaddr;
-    retcustomassure(newPos < _size-4 , out_of_range, "underflow");
-    _curpos = newPos;
+vsegment &vsegment::operator=(loc_t p){
+    if (p == 0){
+        _curpos = 0;
+    }else{
+        offset_t newPos = p-_vaddr;
+        retcustomassure(newPos < _size-4 , out_of_range, "underflow");
+        _curpos = newPos;
+    }
     return *this;
 }
 
 #pragma mark deref operator
 
-uint64_t vmem::pc(){
+uint64_t vsegment::pc(){
     return (uint64_t)(_vaddr+_curpos);
 }
 
-uint32_t vmem::value(loc_t p){
+uint32_t vsegment::value(loc_t p){
     offset_t off = (p - _vaddr);
     customassure(off < _size, out_of_range); //check for off being at least 1 byte
     if (off <= _size-4) {
@@ -106,7 +121,7 @@ uint32_t vmem::value(loc_t p){
     return ret;
 }
 
-uint64_t vmem::doublevalue(loc_t p){
+uint64_t vsegment::doublevalue(loc_t p){
     offset_t off = (p - _vaddr);
     customassure(off < _size, out_of_range); //check for off being at least 1 byte
     if (off <= _size-8) {
@@ -122,11 +137,11 @@ uint64_t vmem::doublevalue(loc_t p){
     return ret;
 }
 
-uint32_t vmem::value(){
+uint32_t vsegment::value(){
     return *(uint32_t*)(_buf+_curpos);
 }
 
-uint64_t vmem::doublevalue(){
+uint64_t vsegment::doublevalue(){
     if (_curpos <= _size-8) {
         return *(uint64_t*)(_buf+_curpos);
     }
@@ -135,6 +150,14 @@ uint64_t vmem::doublevalue(){
 
 #pragma mark insn operator
 
-vmem::operator insn(){
-    return insn(value(),pc());
+insn vsegment::getinsn(){
+    return ::insn(value(),pc());
+}
+
+insn vsegment::operator()(){
+    return ::insn(value(),pc());
+}
+
+vsegment::operator loc_t(){
+    return (loc_t)pc();
 }
