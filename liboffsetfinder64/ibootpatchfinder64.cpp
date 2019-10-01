@@ -20,7 +20,7 @@ using namespace tihmstar::offsetfinder64;
 #define ENTERING_RECOVERY_CONSOLE "Entering recovery mode, starting command prompt"
 #define DEBUG_ENABLED_DTRE_VAR_STR "debug-enabled"
 #define DEFAULT_BOOTARGS_STR "rd=md0 nand-enable-reformat=1 -progress"
-#define CERT_STR "Apple Secure Boot Root CA"
+#define CERT_STR "Apple Inc.1"
 
 ibootpatchfinder64::ibootpatchfinder64(const char * filename) :
     patchfinder64(true),
