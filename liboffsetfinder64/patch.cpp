@@ -16,12 +16,23 @@ patch::patch(loc_t location, const void *patch, size_t patchSize, void(*slidefun
     _slideme = (_slidefunc) ? true : false;
 }
 
-patch::patch(const patch& cpy) : _location(cpy._location), _patchSize(cpy._patchSize){
+patch::patch(const patch& cpy) noexcept : _location(cpy._location), _patchSize(cpy._patchSize){
     _patch = malloc(_patchSize);
     memcpy((void*)_patch, cpy._patch, _patchSize);
     _slidefunc = cpy._slidefunc;
     _slideme = cpy._slideme;
 }
+
+patch &patch::operator=(const patch& cpy){
+    _location = cpy._location;
+    _patchSize = cpy._patchSize;
+    _patch = malloc(_patchSize);
+    memcpy((void*)_patch, cpy._patch, _patchSize);
+    _slidefunc = cpy._slidefunc;
+    _slideme = cpy._slideme;
+    return *this;
+}
+
 
 void patch::slide(uint64_t slide){
     if (!_slideme)

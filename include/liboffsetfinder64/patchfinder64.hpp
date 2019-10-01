@@ -38,9 +38,10 @@ namespace tihmstar {
             patchfinder64(bool freeBuf);
             ~patchfinder64();
             
-            const void *buf() { return _buf;};
-            loc_t find_entry() { return _entrypoint;};
-            loc_t find_base() { return _base; };
+            const void *buf() { return _buf;}
+            size_t bufSize() { return _bufSize;}
+            loc_t find_entry() { return _entrypoint;}
+            loc_t find_base() { return _base; }
             
             loc_t findstr(std::string str, bool hasNullTerminator);
             loc_t find_bof(loc_t pos);

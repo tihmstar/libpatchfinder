@@ -8,7 +8,7 @@
 
 #include "ibootpatchfinder64.hpp"
 #include "all_liboffsetfinder.hpp"
-#include <libgeneral/macros.h>
+#include <liboffsetfinder64/libgeneral/macros.h>
 #include "OFexception.hpp"
 
 using namespace std;

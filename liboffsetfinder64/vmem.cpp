@@ -7,7 +7,7 @@
 //
 
 #include "vmem.hpp"
-#include <libgeneral/macros.h>
+#include <liboffsetfinder64/libgeneral/macros.h>
 #include "OFexception.hpp"
 #include <string.h>
 

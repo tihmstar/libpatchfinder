@@ -347,10 +347,10 @@
 					"EXPECTIONNAME='OFexception'",
 				);
 				HEADER_SEARCH_PATHS = (
-					/usr/local/include,
 					/usr/local/opt/openssl/include,
 					"$(SRCROOT)/include",
 					"$(SRCROOT)/external/libgeneral/include",
+					/usr/local/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/lib,
@@ -368,10 +368,10 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					/usr/local/include,
 					/usr/local/opt/openssl/include,
 					"$(SRCROOT)/include",
 					"$(SRCROOT)/external/libgeneral/include",
+					/usr/local/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/lib,

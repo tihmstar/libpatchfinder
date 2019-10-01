@@ -18,6 +18,7 @@ int main(int argc, const char * argv[]) {
     
     ibootpatchfinder64 ibp(argv[1]);
     
+    auto asd = ibp.get_boot_arg_patch("-asd");
     
     printf("done\n");
     return 0;
