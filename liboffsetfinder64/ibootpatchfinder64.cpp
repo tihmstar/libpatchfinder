@@ -68,8 +68,8 @@ bool ibootpatchfinder64::has_recovery_console(){
 
 std::vector<patch> ibootpatchfinder64::get_boot_arg_patch(const char *bootargs){
     std::vector<patch> patches;
-    loc_t default_boot_args_str_loc = NULL;
-    loc_t default_boot_args_xref = NULL;
+    loc_t default_boot_args_str_loc = 0;
+    loc_t default_boot_args_xref = 0;
 
     assure(default_boot_args_str_loc = _vmem->memstr(DEFAULT_BOOTARGS_STR));
     debug("default_boot_args_str_loc=%p\n",default_boot_args_str_loc);
@@ -78,7 +78,7 @@ std::vector<patch> ibootpatchfinder64::get_boot_arg_patch(const char *bootargs){
     debug("default_boot_args_xref=%p\n",default_boot_args_xref);
 
     if (strlen(bootargs) > strlen(DEFAULT_BOOTARGS_STR)) {
-        loc_t cert_str_loc = NULL;
+        loc_t cert_str_loc = 0;
         debug("Relocating boot-args string...\n");
 
         /* Find the "Reliance on this cert..." string. */

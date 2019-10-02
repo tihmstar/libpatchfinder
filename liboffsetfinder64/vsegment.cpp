@@ -36,7 +36,7 @@ bool vsegment::isInRange(loc_t p){
 }
 
 loc_t vsegment::memmem(const void *little, size_t little_len){
-    loc_t rt = NULL;
+    loc_t rt = 0;
     if ((rt = (loc_t)::memmem(_buf, _size, little, little_len))) {
         rt = rt - (loc_t)_buf + _vaddr;
     }
