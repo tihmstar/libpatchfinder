@@ -14,7 +14,7 @@
 
 namespace tihmstar{
     namespace offsetfinder64{
-        typedef uint8_t* loc_t;
+        typedef uint64_t loc_t;
         typedef uint64_t offset_t;
     }
 }

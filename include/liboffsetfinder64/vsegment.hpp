@@ -30,8 +30,6 @@ namespace tihmstar{
             loc_t _vaddr;
             offset_t _curpos;
 
-            vsegment(const vsegment &cpy, offset_t curpos); //copy constructor
-
         public:
             vsegment(void *buf, size_t size, loc_t vmemAddr, int perms);
             vsegment(const vsegment &cpy); //copy constructor

@@ -24,11 +24,6 @@ vsegment::vsegment(const vsegment &cpy) : _buf(cpy._buf), _size(cpy._size), _vad
     //
 }
 
-vsegment::vsegment(const vsegment &cpy, offset_t curpos) : _buf(cpy._buf), _size(cpy._size), _vaddr(cpy._vaddr), _perms(cpy._perms),_curpos(curpos)
-{
-    //
-}
-
 vsegment::vsegment(const vsegment &cpy, loc_t pos) : _buf(cpy._buf), _size(cpy._size), _vaddr(cpy._vaddr), _perms(cpy._perms),_curpos(0)
 {
     assure(isInRange(pos));
@@ -43,7 +38,7 @@ bool vsegment::isInRange(loc_t p){
 loc_t vsegment::memmem(const void *little, size_t little_len){
     loc_t rt = NULL;
     if ((rt = (loc_t)::memmem(_buf, _size, little, little_len))) {
-        rt = rt - _buf + _vaddr;
+        rt = rt - (loc_t)_buf + _vaddr;
     }
     return rt;
 }

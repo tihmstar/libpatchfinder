@@ -18,7 +18,8 @@ int main(int argc, const char * argv[]) {
     
     ibootpatchfinder64 ibp(argv[1]);
     
-    auto asd = ibp.get_boot_arg_patch("-asd");
+    ibp.get_unlock_nvram_patch();
+    
     
     printf("done\n");
     return 0;

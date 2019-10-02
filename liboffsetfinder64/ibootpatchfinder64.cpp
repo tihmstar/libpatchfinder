@@ -167,13 +167,52 @@ std::vector<patch> ibootpatchfinder64::get_cmd_handler_patch(const char *cmd_han
     
     loc_t handler_str_loc = _vmem->memmem(handler_str.c_str(), handler_str.size());
     debug("handler_str_loc=%p\n",handler_str_loc);
-
+    
     handler_str_loc++;
-
+    
     loc_t tableref = _vmem->memmem(&handler_str_loc, sizeof(handler_str_loc));
     debug("tableref=%p\n",tableref);
+    
+    patches.push_back({tableref+8,&ptr,8});
+    
+    return patches;
+}
 
-    patches.push_back({tableref+8,&ptr,sizeof(ptr)});
+std::vector<patch> ibootpatchfinder64::get_unlock_nvram_patch(){
+    std::vector<patch> patches;
+
+    loc_t debug_uarts_str = findstr("debug-uarts", true);
+    debug("debug_uarts_str=%p\n",debug_uarts_str);
+
+    loc_t debug_uarts_ref = _vmem->memmem(&debug_uarts_str, sizeof(debug_uarts_str));
+    debug("debug_uarts_ref=%p\n",debug_uarts_ref);
+
+    loc_t setenv_whitelist = debug_uarts_ref;
+    
+    while (_vmem->deref(setenv_whitelist-=8));
+    setenv_whitelist+=8;
+    debug("setenv_whitelist=%p\n",setenv_whitelist);
+
+    loc_t blacklist1_func = find_literal_ref(setenv_whitelist);
+    debug("blacklist1_func=%p\n",blacklist1_func);
+    
+    loc_t blacklist1_func_top = find_bof(blacklist1_func);
+    debug("blacklist1_func_top=%p\n",blacklist1_func_top);
+
+    patches.push_back({blacklist1_func_top,"\x00\x00\x80\xD2"/* movz x0, #0x0*/"\xC0\x03\x5F\xD6"/*ret*/,8});
+    
+    loc_t env_whitelist = setenv_whitelist;
+    while (_vmem->deref(env_whitelist+=8));
+    env_whitelist+=8;
+    debug("env_whitelist=%p\n",env_whitelist);
+
+    loc_t blacklist2_func = find_literal_ref(env_whitelist);
+    debug("blacklist2_func=%p\n",blacklist2_func);
+
+    loc_t blacklist2_func_top = find_bof(blacklist2_func);
+    debug("blacklist2_func_top=%p\n",blacklist2_func_top);
+    
+    patches.push_back({blacklist2_func_top,"\x00\x00\x80\xD2"/* movz x0, #0x0*/"\xC0\x03\x5F\xD6"/*ret*/,8});
 
     return patches;
 }

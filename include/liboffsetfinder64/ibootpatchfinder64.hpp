@@ -30,6 +30,8 @@ namespace tihmstar {
             std::vector<patch> get_boot_arg_patch(const char *bootargs);
             std::vector<patch> get_debug_enabled_patch();
             std::vector<patch> get_cmd_handler_patch(const char *cmd_handler_str, uint64_t ptr);
+            std::vector<patch> get_unlock_nvram_patch();
+            
             
             std::vector<patch> get_sigcheck_patch();
             
