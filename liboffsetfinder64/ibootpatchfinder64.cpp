@@ -214,6 +214,18 @@ std::vector<patch> ibootpatchfinder64::get_unlock_nvram_patch(){
     
     patches.push_back({blacklist2_func_top,"\x00\x00\x80\xD2"/* movz x0, #0x0*/"\xC0\x03\x5F\xD6"/*ret*/,8});
 
+    
+    loc_t com_apple_system = findstr("com.apple.System.", true);
+    debug("com_apple_system=%p\n",com_apple_system);
+
+    loc_t com_apple_system_xref = find_literal_ref(com_apple_system);
+    debug("com_apple_system_xref=%p\n",com_apple_system_xref);
+
+    loc_t func3top = find_bof(com_apple_system_xref);
+    debug("func3top=%p\n",func3top);
+
+    patches.push_back({func3top,"\x00\x00\x80\xD2"/* movz x0, #0x0*/"\xC0\x03\x5F\xD6"/*ret*/,8});
+
     return patches;
 }
 

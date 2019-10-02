@@ -41,7 +41,7 @@ patchfinder64::~patchfinder64(){
 #pragma mark patchfinder
 
 loc_t patchfinder64::findstr(std::string str, bool hasNullTerminator){
-    return _vmem->memmem(str.c_str(), str.size()-(hasNullTerminator == 0));
+    return _vmem->memmem(str.c_str(), str.size()+(hasNullTerminator));
 }
 
 loc_t patchfinder64::find_bof(loc_t pos){
