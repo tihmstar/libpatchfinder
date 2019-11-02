@@ -5,5 +5,7 @@ includedir=@includedir@
 
 Name: liboffsetfinder64
 Description: an offsetfinder for 64bit ARM
+
+Version: @VERSION_COMMIT_COUNT@
 Libs: -L${libdir} -loffsetfinder64
 Cflags: -I${includedir}
