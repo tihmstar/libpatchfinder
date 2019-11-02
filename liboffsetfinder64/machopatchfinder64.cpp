@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include <libgeneral/macros.h>
 #ifdef HAVE_IMG4TOOL
 #include <img4tool/img4tool.hpp>
 #endif //HAVE_IMG4TOOL
