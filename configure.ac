@@ -32,8 +32,29 @@ CFLAGS+=" -std=c11"
 CXXFLAGS+=" -D EXPECTIONNAME=OFexception"
 
 # Checks for libraries.
-PKG_CHECK_MODULES(libimg4tool, libimg4tool >= 155)
+IMG4TOOL_REQUIRES_STR="libimg4tool >= 155"
+PKG_CHECK_MODULES(libimg4tool, $IMG4TOOL_REQUIRES_STR, have_img4tool=yes, have_img4tool=no)
 
+AC_ARG_WITH([img4tool],
+            [AS_HELP_STRING([--without-img4tool],
+            [do not build with img4tool @<:@default=yes@:>@])],
+            [with_img4tool=no],
+            [with_img4tool=yes])
+
+if test "x$with_img4tool" == "xyes"; then
+  if test "x$have_img4tool" = "xyes"; then
+    AC_DEFINE(HAVE_IMG4TOOL, 1, [Define if you have img4tool])
+    AC_SUBST([img4tool_requires], [$IMG4TOOL_REQUIRES_STR])
+    AC_SUBST(libimg4tool_CFLAGS)
+    AC_SUBST(libimg4tool_LIBS)
+  else
+    echo "*** Note: img4tool has been disabled ***"
+  fi
+else
+  if test "x$with_img4tool" == "xyes"; then
+    AC_MSG_ERROR([requested building with img4tool, but library could not be found])
+  fi
+fi
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h stdint.h stdlib.h string.h unistd.h])
@@ -50,7 +71,8 @@ echo "
 Configuration for $PACKAGE-$VERSION:
 -------------------------------------------
 
-  install prefix ..........: $prefix"
+  install prefix ..........: $prefix
+  have img4tool ...........: $with_img4tool"
 
 echo "  compiler ................: ${CC}
 

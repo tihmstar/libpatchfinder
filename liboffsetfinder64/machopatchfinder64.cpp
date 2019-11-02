@@ -12,7 +12,9 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#ifdef HAVE_IMG4TOOL
 #include <img4tool/img4tool.hpp>
+#endif //HAVE_IMG4TOOL
 
 using namespace tihmstar::offsetfinder64;
 
@@ -124,15 +126,19 @@ machopatchfinder64::machopatchfinder64(const char *filename) :
     struct stat fs = {0};
     int fd = 0;
     bool didConstructSuccessfully = false;
+#ifdef HAVE_IMG4TOOL
     img4tool::ASN1DERElement *img4tmp = NULL;
+#endif //HAVE_IMG4TOOL
     cleanup([&]{
         if (fd>0) close(fd);
         if (!didConstructSuccessfully) {
             safeFreeConst(_buf);
         }
+#ifdef HAVE_IMG4TOOL
         if (img4tmp) {
             delete img4tmp;
         }
+#endif //HAVE_IMG4TOOL
     })
     
     assure((fd = open(filename, O_RDONLY)) != -1);
@@ -140,13 +146,14 @@ machopatchfinder64::machopatchfinder64(const char *filename) :
     assure((_buf = (uint8_t*)malloc( _bufSize = fs.st_size)));
     assure(read(fd,(void*)_buf,_bufSize)==_bufSize);
     
+    
+#ifdef HAVE_IMG4TOOL
     //check if feedfacf, fat, compressed (lzfse/lzss), img4, im4p
     try {
         img4tmp = new img4tool::ASN1DERElement(_buf,_bufSize);
     } catch (...) {
         //
     }
-    
     if (img4tmp) {
         if (img4tool::isIMG4(*img4tmp)) {
             *img4tmp = img4tool::getIM4PFromIMG4(*img4tmp);
@@ -161,6 +168,9 @@ machopatchfinder64::machopatchfinder64(const char *filename) :
             memcpy((void*)_buf, img4tmp->buf(), _bufSize);
         }
     }
+#else
+    printf("Warning: compiled without img4tool, extracting from IMG4/IM4P disabled!\n");
+#endif //HAVE_IMG4TOOL
     
     if (*(uint32_t*)_buf == 0xbebafeca || *(uint32_t*)_buf == 0xcafebabe) {
         bool swap = *(uint32_t*)_buf == 0xbebafeca;
