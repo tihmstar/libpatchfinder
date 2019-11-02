@@ -13,7 +13,7 @@
 using namespace tihmstar::offsetfinder64;
 
 
-vsegment::vsegment(void *buf, size_t size, loc_t vaddr, int perms) : _buf((uint8_t*)buf), _size(size), _vaddr(vaddr), _perms(perms),_curpos(0)
+vsegment::vsegment(const void *buf, size_t size, loc_t vaddr, int perms) : _buf((const uint8_t*)buf), _size(size), _vaddr(vaddr), _perms(perms),_curpos(0)
 {
     //
 }

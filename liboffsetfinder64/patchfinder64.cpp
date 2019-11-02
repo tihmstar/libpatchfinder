@@ -34,7 +34,7 @@ patchfinder64::patchfinder64(bool freeBuf) :
 
 patchfinder64::~patchfinder64(){
     if (_vmem) delete _vmem;
-    if (_freeBuf) safeFree(_buf);
+    if (_freeBuf) safeFreeConst(_buf);
 }
 
 

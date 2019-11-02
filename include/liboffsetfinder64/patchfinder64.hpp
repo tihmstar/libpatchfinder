@@ -28,7 +28,7 @@ namespace tihmstar {
         class patchfinder64 {
         protected:
             bool _freeBuf;
-            uint8_t *_buf;
+            const uint8_t *_buf;
             size_t _bufSize;
             offsetfinder64::loc_t _entrypoint;
             offsetfinder64::loc_t _base;

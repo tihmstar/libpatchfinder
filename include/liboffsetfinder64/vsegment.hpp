@@ -25,13 +25,13 @@ namespace tihmstar{
             };
         private:
             int _perms;
-            uint8_t *_buf; //noalloc
+            const uint8_t *_buf; //noalloc
             size_t _size;
             loc_t _vaddr;
             offset_t _curpos;
 
         public:
-            vsegment(void *buf, size_t size, loc_t vmemAddr, int perms);
+            vsegment(const void *buf, size_t size, loc_t vmemAddr, int perms);
             vsegment(const vsegment &cpy); //copy constructor
             vsegment(const vsegment &cpy, loc_t pos); //copy constructor
 

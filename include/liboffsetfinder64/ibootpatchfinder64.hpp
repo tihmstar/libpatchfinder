@@ -23,7 +23,8 @@ namespace tihmstar {
             uint32_t _vers;
         public:
             ibootpatchfinder64(const char *filename);
-            
+            ibootpatchfinder64(const void *buffer, size_t bufSize);
+
             bool has_kernel_load();
             bool has_recovery_console();
 

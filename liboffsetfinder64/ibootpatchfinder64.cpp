@@ -24,7 +24,7 @@ using namespace tihmstar::offsetfinder64;
 
 ibootpatchfinder64::ibootpatchfinder64(const char * filename) :
     patchfinder64(true),
-    _vers(0)
+    _vers(0) //is filled during construction
 {
     struct stat fs = {0};
     int fd = 0;
@@ -32,14 +32,14 @@ ibootpatchfinder64::ibootpatchfinder64(const char * filename) :
     cleanup([&]{
         if (fd>0) close(fd);
         if (!didConstructSuccessfully) {
-            safeFree(_buf);
+            safeFreeConst(_buf);
         }
     })
     
     assure((fd = open(filename, O_RDONLY)) != -1);
     assure(!fstat(fd, &fs));
     assure((_buf = (uint8_t*)malloc( _bufSize = fs.st_size)));
-    assure(read(fd,_buf,_bufSize)==_bufSize);
+    assure(read(fd,(void*)_buf,_bufSize)==_bufSize);
     
     assure(_bufSize > 0x1000);
     
@@ -57,12 +57,33 @@ ibootpatchfinder64::ibootpatchfinder64(const char * filename) :
     didConstructSuccessfully = true;
 }
 
+ibootpatchfinder64::ibootpatchfinder64(const void *buffer, size_t bufSize) :
+    patchfinder64(false),
+    _vers(0) //is filled during construction
+{
+    _bufSize = bufSize;
+    _buf = (uint8_t*)buffer;
+    assure(_bufSize > 0x1000);
+    
+    assure(!strncmp((char*)&_buf[IBOOT_VERS_STR_OFFSET], "iBoot", sizeof("iBoot")-1));
+    retassure(*(uint32_t*)&_buf[0] == 0x90000000, "invalid magic");
+    
+    _entrypoint = _base = (loc_t)*(uint64_t*)&_buf[iBOOT_BASE_OFFSET];
+    
+    _vmem = new vmem({{_buf,_bufSize,_base, vsegment::vmprot::kVMPROTREAD | vsegment::vmprot::kVMPROTWRITE | vsegment::vmprot::kVMPROTEXEC}});
+    
+    retassure(_vers = atoi((char*)&_buf[IBOOT_VERS_STR_OFFSET+6]), "No iBoot version found!\n");
+    
+    debug("iBoot-%d inputted\n", _vers);
+}
+
+
 bool ibootpatchfinder64::has_kernel_load(){
-    return (bool) (_vmem->memstr(KERNELCACHE_PREP_STRING) != NULL);
+    return (bool) (_vmem->memstr(KERNELCACHE_PREP_STRING) != 0);
 }
 
 bool ibootpatchfinder64::has_recovery_console(){
-    return (bool) (_vmem->memstr(ENTERING_RECOVERY_CONSOLE) != NULL);
+    return (bool) (_vmem->memstr(ENTERING_RECOVERY_CONSOLE) != 0);
 }
 
 

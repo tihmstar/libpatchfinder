@@ -127,14 +127,14 @@ machopatchfinder64::machopatchfinder64(const char *filename) :
     cleanup([&]{
         if (fd>0) close(fd);
         if (!didConstructSuccessfully) {
-            safeFree(_buf);
+            safeFreeConst(_buf);
         }
     })
     
     assure((fd = open(filename, O_RDONLY)) != -1);
     assure(!fstat(fd, &fs));
     assure((_buf = (uint8_t*)malloc( _bufSize = fs.st_size)));
-    assure(read(fd,_buf,_bufSize)==_bufSize);
+    assure(read(fd,(void*)_buf,_bufSize)==_bufSize);
     
     //check if feedfacf, fat, compressed (lzfse/lzss), img4, im4p
     img4tmp = (char*)_buf;
@@ -154,7 +154,7 @@ machopatchfinder64::machopatchfinder64(const char *filename) :
             }
         }
         if (extracted) {
-            free(_buf);
+            free((void*)_buf);
             _buf = (uint8_t*)extracted;extracted = NULL;
         }
     }
@@ -192,7 +192,7 @@ machopatchfinder64::machopatchfinder64(const char *filename) :
     
         if (tryfat) {
             printf("got fat macho with first slice at %u\n", (uint32_t) (tryfat - _buf));
-            free(_buf);
+            free((void*)_buf);
             _buf = tryfat;tryfat = NULL;
         } else {
             printf("got fat macho but failed to parse\n");
@@ -208,8 +208,8 @@ machopatchfinder64::machopatchfinder64(const char *filename) :
 
 
 loc_t machopatchfinder64::find_sym(const char *sym){
-    uint8_t *psymtab = _buf + getSymtab()->symoff;
-    uint8_t *pstrtab = _buf + getSymtab()->stroff;
+    const uint8_t *psymtab = _buf + getSymtab()->symoff;
+    const uint8_t *pstrtab = _buf + getSymtab()->stroff;
     
     struct nlist_64 *entry = (struct nlist_64 *)psymtab;
     for (uint32_t i = 0; i < getSymtab()->nsyms; i++, entry++)
