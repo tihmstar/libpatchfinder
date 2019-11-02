@@ -78,12 +78,20 @@ ibootpatchfinder64::ibootpatchfinder64(const void *buffer, size_t bufSize) :
 }
 
 
-bool ibootpatchfinder64::has_kernel_load(){
-    return (bool) (_vmem->memstr(KERNELCACHE_PREP_STRING) != 0);
+bool ibootpatchfinder64::has_kernel_load() noexcept{
+    try {
+        return (bool) (_vmem->memstr(KERNELCACHE_PREP_STRING) != 0);
+    } catch (...) {
+        return 0;
+    }
 }
 
-bool ibootpatchfinder64::has_recovery_console(){
-    return (bool) (_vmem->memstr(ENTERING_RECOVERY_CONSOLE) != 0);
+bool ibootpatchfinder64::has_recovery_console() noexcept{
+    try {
+        return (bool) (_vmem->memstr(ENTERING_RECOVERY_CONSOLE) != 0);
+    } catch (...) {
+        return 0;
+    }
 }
 
 
