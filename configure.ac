@@ -5,8 +5,7 @@ AC_CANONICAL_SYSTEM
 AC_CANONICAL_HOST
 AM_PROG_LIBTOOL
 
-AM_INIT_AUTOMAKE
-AC_CONFIG_SRCDIR([config.h.in])
+AM_INIT_AUTOMAKE([subdir-objects])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIRS([m4])
 
@@ -33,6 +32,8 @@ CFLAGS+=" -std=c11"
 CXXFLAGS+=" -D EXPECTIONNAME=OFexception"
 
 # Checks for libraries.
+PKG_CHECK_MODULES(libimg4tool, libimg4tool >= 155)
+
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h stdint.h stdlib.h string.h unistd.h])
@@ -41,7 +42,18 @@ LT_INIT
 
 AC_CONFIG_FILES([Makefile
                  include/Makefile
-                 liboffsetfinder64.pc
                  liboffsetfinder64/Makefile
-		 liboffsetfinder64.pc])
+		             liboffsetfinder64.pc])
 AC_OUTPUT
+
+echo "
+Configuration for $PACKAGE-$VERSION:
+-------------------------------------------
+
+  install prefix ..........: $prefix"
+
+echo "  compiler ................: ${CC}
+
+  Now type 'make' to build $PACKAGE-$VERSION,
+  and then 'make install' for installation.
+"

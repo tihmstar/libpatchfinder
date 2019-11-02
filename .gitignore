@@ -24,3 +24,6 @@ test-driver
 *.la
 .libs
 .deps
+Build
+*.xcworkspace
+xcuserdata
