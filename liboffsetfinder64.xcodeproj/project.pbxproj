@@ -20,7 +20,8 @@
 		8739798D233FCBA1001DCF6D /* patch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87397982233FCBA0001DCF6D /* patch.cpp */; };
 		8739798E233FCBA1001DCF6D /* patchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87397985233FCBA0001DCF6D /* patchfinder64.cpp */; };
 		8739798F233FCBA1001DCF6D /* vsegment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87397986233FCBA0001DCF6D /* vsegment.cpp */; };
-		873979A2233FCBF0001DCF6D /* exception.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 873979A1233FCBF0001DCF6D /* exception.cpp */; };
+		87AB3F2D2371FA4C0019FB5F /* libgeneral.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 87AB3F2C2371FA4C0019FB5F /* libgeneral.0.dylib */; };
+		87AB3F2E2371FA4C0019FB5F /* libgeneral.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 87AB3F2C2371FA4C0019FB5F /* libgeneral.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -31,6 +32,7 @@
 			dstSubfolderSpec = 10;
 			files = (
 				42313343236D9DE2005AFE8D /* libimg4tool.0.dylib in Embed Libraries */,
+				87AB3F2E2371FA4C0019FB5F /* libgeneral.0.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -64,7 +66,6 @@
 		87397984233FCBA0001DCF6D /* all_liboffsetfinder.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = all_liboffsetfinder.hpp; sourceTree = "<group>"; };
 		87397985233FCBA0001DCF6D /* patchfinder64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = patchfinder64.cpp; sourceTree = "<group>"; };
 		87397986233FCBA0001DCF6D /* vsegment.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vsegment.cpp; sourceTree = "<group>"; };
-		873979A1233FCBF0001DCF6D /* exception.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = exception.cpp; path = external/libgeneral/libgeneral/exception.cpp; sourceTree = SOURCE_ROOT; };
 		873979AD233FCCF3001DCF6D /* kernelpatchfinder64.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = kernelpatchfinder64.hpp; path = include/liboffsetfinder64/kernelpatchfinder64.hpp; sourceTree = SOURCE_ROOT; };
 		873979AE233FCCF3001DCF6D /* patchfinder64.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = patchfinder64.hpp; path = include/liboffsetfinder64/patchfinder64.hpp; sourceTree = SOURCE_ROOT; };
 		873979AF233FCCF3001DCF6D /* insn.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = insn.hpp; path = include/liboffsetfinder64/insn.hpp; sourceTree = SOURCE_ROOT; };
@@ -75,6 +76,7 @@
 		873979B4233FCCF3001DCF6D /* vmem.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = vmem.hpp; path = include/liboffsetfinder64/vmem.hpp; sourceTree = SOURCE_ROOT; };
 		873979B5233FCCF3001DCF6D /* ibootpatchfinder64.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = ibootpatchfinder64.hpp; path = include/liboffsetfinder64/ibootpatchfinder64.hpp; sourceTree = SOURCE_ROOT; };
 		873979B6233FCCF3001DCF6D /* vsegment.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = vsegment.hpp; path = include/liboffsetfinder64/vsegment.hpp; sourceTree = SOURCE_ROOT; };
+		87AB3F2C2371FA4C0019FB5F /* libgeneral.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libgeneral.0.dylib; path = ../../../../usr/local/lib/libgeneral.0.dylib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,6 +87,7 @@
 				42313342236D9DE2005AFE8D /* libimg4tool.0.dylib in Frameworks */,
 				870E967020077AC70043690C /* libcrypto.1.0.0.dylib in Frameworks */,
 				870E9666200779B00043690C /* libplist.3.dylib in Frameworks */,
+				87AB3F2D2371FA4C0019FB5F /* libgeneral.0.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -94,6 +97,7 @@
 		870E9664200779AF0043690C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				87AB3F2C2371FA4C0019FB5F /* libgeneral.0.dylib */,
 				42313341236D9DE2005AFE8D /* libimg4tool.0.dylib */,
 				870E966F20077AC70043690C /* libcrypto.1.0.0.dylib */,
 				870E966B20077A220043690C /* Security.framework */,
@@ -125,7 +129,6 @@
 			isa = PBXGroup;
 			children = (
 				87397984233FCBA0001DCF6D /* all_liboffsetfinder.hpp */,
-				87397999233FCBBF001DCF6D /* external */,
 				873979B0233FCCF3001DCF6D /* common.h */,
 				873979B2233FCCF3001DCF6D /* OFexception.hpp */,
 				873979B1233FCCF3001DCF6D /* patch.hpp */,
@@ -147,22 +150,6 @@
 				87397980233FCBA0001DCF6D /* main.cpp */,
 			);
 			path = liboffsetfinder64;
-			sourceTree = "<group>";
-		};
-		87397999233FCBBF001DCF6D /* external */ = {
-			isa = PBXGroup;
-			children = (
-				873979A0233FCBE1001DCF6D /* libgeneral */,
-			);
-			path = external;
-			sourceTree = "<group>";
-		};
-		873979A0233FCBE1001DCF6D /* libgeneral */ = {
-			isa = PBXGroup;
-			children = (
-				873979A1233FCBF0001DCF6D /* exception.cpp */,
-			);
-			path = libgeneral;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -226,7 +213,6 @@
 				8739798C233FCBA1001DCF6D /* vmem.cpp in Sources */,
 				8739798E233FCBA1001DCF6D /* patchfinder64.cpp in Sources */,
 				8739798D233FCBA1001DCF6D /* patch.cpp in Sources */,
-				873979A2233FCBF0001DCF6D /* exception.cpp in Sources */,
 				87397988233FCBA1001DCF6D /* insn.cpp in Sources */,
 				87397989233FCBA1001DCF6D /* ibootpatchfinder64.cpp in Sources */,
 				8739798A233FCBA1001DCF6D /* machopatchfinder64.cpp in Sources */,

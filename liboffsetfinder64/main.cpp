@@ -18,7 +18,7 @@ int main(int argc, const char * argv[]) {
     
     ibootpatchfinder64 ibp(argv[1]);
     
-    ibp.get_unlock_nvram_patch();
+    ibp.get_freshnonce_patch();
     
     
     printf("done\n");

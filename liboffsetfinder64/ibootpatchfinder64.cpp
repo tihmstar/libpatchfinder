@@ -94,6 +94,61 @@ bool ibootpatchfinder64::has_recovery_console() noexcept{
     }
 }
 
+std::vector<patch> ibootpatchfinder64::get_sigcheck_patch(){
+    std::vector<patch> patches;
+    loc_t img4str = findstr("IMG4", true);
+    debug("img4str=%p\n",img4str);
+
+    loc_t img4strref = find_literal_ref(img4str);
+    debug("img4strref=%p\n",img4strref);
+
+    loc_t f1top = find_bof(img4strref);
+    debug("f1top=%p\n",f1top);
+
+    loc_t f1topref = find_branch_ref(f1top,1);
+    debug("f1topref=%p\n",f1topref);
+
+    loc_t f2top = find_bof(f1topref);
+    debug("f2top=%p\n",f2top);
+
+    vmem iter(*_vmem,f2top);
+
+    loc_t adr_x3 = 0;
+    loc_t adr_x2 = 0;
+
+    while (true) {
+        if (++iter == insn::adr && iter().rd() == 2){
+            adr_x2 = iter;
+        }else if (iter() == insn::adr && iter().rd() == 3){
+            adr_x3 = iter;
+        }else if (iter() == insn::bl){
+            if (adr_x2 && adr_x3) {
+                break;
+            }else{
+                adr_x2 = 0;
+                adr_x3 = 0;
+            }
+        }
+    }
+    
+    assure(adr_x2);
+    iter = adr_x2;
+    
+    loc_t callback = (loc_t)_vmem->deref((loc_t)iter().imm());
+    debug("callback=%p\n",callback);
+
+    iter = callback;
+    
+    while (++iter != insn::ret);
+    
+    loc_t ret = iter;
+    debug("ret=%p\n",ret);
+
+    const char p[] ="\x00\x00\x80\xD2" /*mov x0,0*/ "\xC0\x03\x5F\xD6" /*ret*/;
+    patches.push_back({ret,p,sizeof(p)-1});
+    
+    return patches;
+}
 
 std::vector<patch> ibootpatchfinder64::get_boot_arg_patch(const char *bootargs){
     std::vector<patch> patches;
@@ -258,59 +313,95 @@ std::vector<patch> ibootpatchfinder64::get_unlock_nvram_patch(){
     return patches;
 }
 
-
-std::vector<patch> ibootpatchfinder64::get_sigcheck_patch(){
+std::vector<patch> ibootpatchfinder64::get_nvram_nosave_patch(){
     std::vector<patch> patches;
-    loc_t img4str = findstr("IMG4", true);
-    debug("img4str=%p\n",img4str);
 
-    loc_t img4strref = find_literal_ref(img4str);
-    debug("img4strref=%p\n",img4strref);
+    loc_t saveenv_str = findstr("saveenv", true);
+    debug("saveenv_str=%p\n",saveenv_str);
 
-    loc_t f1top = find_bof(img4strref);
-    debug("f1top=%p\n",f1top);
+    loc_t saveenv_ref = _vmem->memmem(&saveenv_str, sizeof(saveenv_str));
+    debug("saveenv_ref=%p\n",saveenv_ref);
 
-    loc_t f1topref = find_branch_ref(f1top,1);
-    debug("f1topref=%p\n",f1topref);
+    loc_t saveenv_cmd_func_pos = _vmem->deref(saveenv_ref+8);
+    debug("saveenv_cmd_func_pos=%p\n",saveenv_cmd_func_pos);
 
-    loc_t f2top = find_bof(f1topref);
-    debug("f2top=%p\n",f2top);
+    vmem saveenv_func(*_vmem,saveenv_cmd_func_pos);
+    
+    assure(saveenv_func() == insn::b);
+    
+    loc_t nvram_save_func = saveenv_func().imm();
+    debug("nvram_save_func=%p\n",nvram_save_func);
+    
+    patches.push_back({nvram_save_func,"\xC0\x03\x5F\xD6"/*ret*/,4});
+    return patches;
+}
 
-    vmem iter(*_vmem,f2top);
+std::vector<patch> ibootpatchfinder64::get_nvram_noremove_patch(){
+    std::vector<patch> patches;
 
-    loc_t adr_x3 = 0;
-    loc_t adr_x2 = 0;
+    auto nosave_patches = get_nvram_nosave_patch();
+    loc_t nvram_save_func = nosave_patches.at(0)._location;
+    debug("nvram_save_func=%p\n",nvram_save_func);
 
-    while (true) {
-        if (++iter == insn::adr && iter().rd() == 2){
-            adr_x2 = iter;
-        }else if (iter() == insn::adr && iter().rd() == 3){
-            adr_x3 = iter;
-        }else if (iter() == insn::bl){
-            if (adr_x2 && adr_x3) {
-                break;
-            }else{
-                adr_x2 = 0;
-                adr_x3 = 0;
+    loc_t bootcommand_str = findstr("boot-command", true);
+    debug("bootcommand_str=%p\n",bootcommand_str);
+    
+    loc_t remove_env_func = 0;
+    
+    for (int i=0;; i++) {
+        loc_t bootcommand_ref = find_literal_ref(bootcommand_str,i);
+        debug("[%d] bootcommand_ref=%p\n",i,bootcommand_ref);
+        vmem iter(*_vmem,bootcommand_ref);
+        
+        for (int z=0; z<4; z++) {
+            while (++iter != insn::bl);
+            
+            if (z == 0) { //this is the func where "boot-command" is passed as an argument
+                remove_env_func = iter().imm();
+                continue;
+            }
+            
+            if (iter().imm() == nvram_save_func) { //after we unset an environment var, we usually do save_nvram within the next 3 functions
+                goto found;
             }
         }
     }
-    
-    assure(adr_x2);
-    iter = adr_x2;
-    
-    loc_t callback = (loc_t)_vmem->deref((loc_t)iter().imm());
-    debug("callback=%p\n",callback);
+    reterror("failed to find remove_env_func!"); //NOTREACHED
+found:
+    debug("remove_env_func=%p\n",remove_env_func);
 
-    iter = callback;
-    
-    while (++iter != insn::ret);
-    
-    loc_t ret = iter;
-    debug("ret=%p\n",ret);
+    patches.push_back({remove_env_func,"\xC0\x03\x5F\xD6"/*ret*/,4});
+    return patches;
+}
 
-    const char p[] ="\x00\x00\x80\xD2" /*mov x0,0*/ "\xC0\x03\x5F\xD6" /*ret*/;
-    patches.push_back({ret,p,sizeof(p)-1});
+std::vector<patch> ibootpatchfinder64::get_freshnonce_patch(){
+    std::vector<patch> patches;
+
+    loc_t noncevar_str = findstr("com.apple.System.boot-nonce", true);
+    debug("noncevar_str=%p\n",noncevar_str);
+
+    loc_t noncevar_ref = find_literal_ref(noncevar_str);
+    debug("noncevar_ref=%p\n",noncevar_ref);
+
+    loc_t noncefun1 = find_bof(noncevar_ref);
+    debug("noncefun1=%p\n",noncefun1);
+
+    loc_t noncefun1_blref = find_branch_ref(noncefun1);
+    debug("noncefun1_blref=%p\n",noncefun1_blref);
+
+    loc_t noncefun2 = find_bof(noncefun1_blref);
+    debug("noncefun2=%p\n",noncefun2);
+
+    loc_t noncefun2_blref = find_branch_ref(noncefun2);
+    debug("noncefun2_blref=%p\n",noncefun2_blref);
+
+    vmem iter(*_vmem,noncefun2_blref);
     
+    assure((--iter).supertype() == insn::sut_branch_imm);
+
+    loc_t branchloc = iter;
+    debug("branchloc=%p\n",branchloc);
+
+    patches.push_back({branchloc,"\x1F\x20\x03\xD5"/*nop*/,4});
     return patches;
 }

@@ -28,13 +28,46 @@ namespace tihmstar {
             bool has_kernel_load() noexcept;
             bool has_recovery_console() noexcept;
 
+            /*
+                disable IM4M value validation (BNCH, ECID ...)
+             */
+            std::vector<patch> get_sigcheck_patch();
+            
+            /*
+               make kernel boot with these bootargs
+             */
             std::vector<patch> get_boot_arg_patch(const char *bootargs);
+            
+            /*
+                //
+             */
             std::vector<patch> get_debug_enabled_patch();
+            
+            /*
+               make an iBoot command jump to a specific address
+             */
             std::vector<patch> get_cmd_handler_patch(const char *cmd_handler_str, uint64_t ptr);
+
+            /*
+                allows reading and writing any nvram variable
+             */
             std::vector<patch> get_unlock_nvram_patch();
             
+            /*
+                makes saveenv function do nothing
+             */
+            std::vector<patch> get_nvram_nosave_patch();
+
+            /*
+                disable unsetting environment variables
+             */
+            std::vector<patch> get_nvram_noremove_patch();
             
-            std::vector<patch> get_sigcheck_patch();
+            /*
+                get a fresh nonce every time we need a nonce
+             */
+            std::vector<patch> get_freshnonce_patch();
+            
             
         };
     };
