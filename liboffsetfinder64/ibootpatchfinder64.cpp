@@ -73,8 +73,11 @@ std::vector<patch> ibootpatchfinder64::get_boot_arg_patch(const char *bootargs){
     loc_t default_boot_args_xref = 0;
 
     default_boot_args_str_loc = _vmem->memstr(DEFAULT_BOOTARGS_STR);
-    if(!default_boot_args_str_loc)
-        assure(default_boot_args_str_loc = _vmem->memstr(DEFAULT_BOOTARGS_STR_13));
+    if(!default_boot_args_str_loc){
+        debug("DEFAULT_BOOTARGS_STR not found, trying fallback to DEFAULT_BOOTARGS_STR_13\n");
+        default_boot_args_str_loc = _vmem->memstr(DEFAULT_BOOTARGS_STR_13);
+    }
+    assure(default_boot_args_str_loc);
     debug("default_boot_args_str_loc=%p\n",default_boot_args_str_loc);
    
     assure(default_boot_args_xref = find_literal_ref(default_boot_args_str_loc));
