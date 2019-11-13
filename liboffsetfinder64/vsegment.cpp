@@ -9,6 +9,7 @@
 #include "vsegment.hpp"
 #include "OFexception.hpp"
 #include <libgeneral/macros.h>
+#include <string.h>
 
 using namespace tihmstar::offsetfinder64;
 
