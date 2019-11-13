@@ -20,6 +20,7 @@ using namespace tihmstar::offsetfinder64;
 #define ENTERING_RECOVERY_CONSOLE "Entering recovery mode, starting command prompt"
 #define DEBUG_ENABLED_DTRE_VAR_STR "debug-enabled"
 #define DEFAULT_BOOTARGS_STR "rd=md0 nand-enable-reformat=1 -progress"
+#define DEFAULT_BOOTARGS_STR_13 "rd=md0 -progress -restore"
 #define CERT_STR "Apple Inc.1"
 
 ibootpatchfinder64::ibootpatchfinder64(const char * filename) :
@@ -155,7 +156,12 @@ std::vector<patch> ibootpatchfinder64::get_boot_arg_patch(const char *bootargs){
     loc_t default_boot_args_str_loc = 0;
     loc_t default_boot_args_xref = 0;
 
-    assure(default_boot_args_str_loc = _vmem->memstr(DEFAULT_BOOTARGS_STR));
+    default_boot_args_str_loc = _vmem->memstr(DEFAULT_BOOTARGS_STR);
+    if(!default_boot_args_str_loc){
+        debug("DEFAULT_BOOTARGS_STR not found, trying fallback to DEFAULT_BOOTARGS_STR_13\n");
+        default_boot_args_str_loc = _vmem->memstr(DEFAULT_BOOTARGS_STR_13);
+    }
+    assure(default_boot_args_str_loc);
     debug("default_boot_args_str_loc=%p\n",default_boot_args_str_loc);
    
     assure(default_boot_args_xref = find_literal_ref(default_boot_args_str_loc));
