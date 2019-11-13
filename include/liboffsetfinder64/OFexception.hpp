@@ -9,8 +9,8 @@
 #ifndef OFexception_h
 #define OFexception_h
 
-#include <liboffsetfinder64/libgeneral/macros.h>
-#include <liboffsetfinder64/libgeneral/exception.hpp>
+#include <libgeneral/macros.h>
+#include <libgeneral/exception.hpp>
 
 namespace tihmstar {
     class OFexception : public tihmstar::exception{

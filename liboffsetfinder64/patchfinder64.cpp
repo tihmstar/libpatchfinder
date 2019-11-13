@@ -8,7 +8,7 @@
 
 #include "patchfinder64.hpp"
 
-#include <liboffsetfinder64/libgeneral/macros.h>
+#include <libgeneral/macros.h>
 #include "all_liboffsetfinder.hpp"
 #include <string.h>
 
