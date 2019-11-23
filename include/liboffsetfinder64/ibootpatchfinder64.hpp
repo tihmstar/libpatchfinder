@@ -67,7 +67,13 @@ namespace tihmstar {
                 get a fresh nonce every time we need a nonce
              */
             std::vector<patch> get_freshnonce_patch();
-            
+
+            /*
+                DEVICE2HOST transfers are set addr=getenv("loadaddr");size=getenv("filesize")
+                            instead of add=getenv("cmd-results");size=strlen(getenv("cmd-results"))+1
+             */
+            std::vector<patch> get_readback_loadaddr_patch();
+
             
         };
     };

@@ -50,6 +50,14 @@ insn::insn(loc_t pc, enum type t, enum subtype subt, int64_t imm, uint8_t rd, ui
                 }
             }
             break;
+        case bl:
+            {
+                _opcode |= SET_BITS(0b100101, 26);
+                imm -= (uint64_t)pc;
+                imm >>=2;
+                _opcode |= imm & ((1<<26)-1);
+                break;
+            }
             
         default:
             reterror("opcode generation not implemented");

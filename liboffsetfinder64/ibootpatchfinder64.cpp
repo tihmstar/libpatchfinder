@@ -411,3 +411,61 @@ std::vector<patch> ibootpatchfinder64::get_freshnonce_patch(){
     patches.push_back({branchloc,"\x1F\x20\x03\xD5"/*nop*/,4});
     return patches;
 }
+
+std::vector<patch> ibootpatchfinder64::get_readback_loadaddr_patch(){
+    std::vector<patch> patches;
+
+    loc_t cmd_results_str = findstr("cmd-results", true);
+    debug("cmd_results_str=%p\n",cmd_results_str);
+
+    loc_t cmd_results_ref = find_literal_ref(cmd_results_str);
+    debug("cmd_results_ref=%p\n",cmd_results_ref);
+
+    loc_t loadaddr_str = findstr("loadaddr", true);
+    debug("loadaddr_str=%p\n",loadaddr_str);
+
+    loc_t file_size_str = findstr("filesize", true);
+    debug("file_size_str=%p\n",file_size_str);
+
+    debug("Pointing cmd_results_ref to %p...\n", loadaddr_str);
+    {
+        insn pins(cmd_results_ref, insn::adr, insn::st_general, (int64_t)loadaddr_str, 0, 0, 0, 0);
+        uint32_t opcode = pins.opcode();
+        patches.push_back({(loc_t)pins.pc(), &opcode, 4});
+    }
+
+    vmem iter(*_vmem,cmd_results_ref);
+
+    while (++iter != insn::bl);
+    
+    loc_t getenvFunc = iter().imm();
+    debug("getenvFunc=%p\n",getenvFunc);
+    ++iter;
+    ++iter;
+
+    debug("Loading file_size_str to x0\n");
+    loc_t loadArgLoc = iter;
+    debug("loadArgLoc=%p\n",loadArgLoc);
+    {
+        insn pins(loadArgLoc, insn::adr, insn::st_general, (int64_t)file_size_str, 0, 0, 0, 0);
+        uint32_t opcode = pins.opcode();
+        patches.push_back({(loc_t)pins.pc(), &opcode, 4});
+    }
+
+    debug("Calling getenv\n");
+    ++iter;
+    loc_t callGentenvLoc = iter;
+    debug("callGentenvLoc=%p\n",callGentenvLoc);
+    {
+        insn pins(callGentenvLoc, insn::bl, insn::st_general, (int64_t)getenvFunc, 0, 0, 0, 0);
+        uint32_t opcode = pins.opcode();
+        patches.push_back({(loc_t)pins.pc(), &opcode, 4});
+    }
+    
+    while (++iter != insn::bl);
+    
+    loc_t strlenloc = iter;
+    debug("strlenloc=%p\n",strlenloc);
+    patches.push_back({strlenloc,"\x1F\x20\x03\xD5"/*nop*/"\x1F\x20\x03\xD5"/*nop*/,8});    
+    return patches;
+}

@@ -18,7 +18,7 @@ int main(int argc, const char * argv[]) {
     
     ibootpatchfinder64 ibp(argv[1]);
     
-    ibp.get_freshnonce_patch();
+    ibp.get_readback_loadaddr_patch();
     
     
     printf("done\n");
