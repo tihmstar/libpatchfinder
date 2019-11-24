@@ -6,6 +6,7 @@
 //  Copyright © 2019 tihmstar. All rights reserved.
 //
 
+#include <algorithm>
 #include "vmem.hpp"
 #include <libgeneral/macros.h>
 #include "OFexception.hpp"
