@@ -5,6 +5,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
+    - name: Install libgeneral
+      run: |
+        git clone https://github.com/tihmstar/libgeneral.git
+        cd libgeneral
+        ./autogen.sh
+        make
+        sudo make install
     - name: autogen
       run: ./autogen.sh
     - name: make
