@@ -37,7 +37,7 @@ namespace tihmstar{
 
             
             bool isInRange(loc_t p);
-            loc_t memmem(const void *little, size_t little_len);
+            loc_t memmem(const void *little, size_t little_len, loc_t startLoc = 0);
             
             //iterator operator
             insn operator+(int i);
@@ -52,6 +52,7 @@ namespace tihmstar{
             loc_t base() const {return _vaddr;}
             size_t size() const {return _size;}
             int perm() const {return _perms;}
+            const void *memoryForLoc(loc_t loc);
 
             //deref operator
             uint64_t pc();

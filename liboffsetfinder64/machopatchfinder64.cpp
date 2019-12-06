@@ -120,6 +120,53 @@ void machopatchfinder64::loadSegments(){
     printf("\n");
 }
 
+void machopatchfinder64::init(){
+    if (*(uint32_t*)_buf == 0xbebafeca || *(uint32_t*)_buf == 0xcafebabe) {
+        bool swap = *(uint32_t*)_buf == 0xbebafeca;
+    
+        uint8_t* tryfat = [=]() -> uint8_t* {
+            // just select first slice
+            uint32_t* kdata32 = (uint32_t*) _buf;
+            uint32_t narch = kdata32[1];
+            if (swap) narch = ntohl(narch);
+    
+            if (narch != 1) {
+                printf("expected 1 arch in fat file, got %u\n", narch);
+                return NULL;
+            }
+    
+            uint32_t offset = kdata32[2 + 2];
+            if (swap) offset = ntohl(offset);
+    
+            if (offset != sizeof(uint32_t)*(2 + 5)) {
+                printf("wat, file offset not sizeof(fat_header) + sizeof(fat_arch)?!\n");
+            }
+    
+            uint32_t filesize = kdata32[2 + 3];
+            if (swap) filesize = ntohl(filesize);
+    
+            uint8_t *ret = (uint8_t*) malloc(filesize);
+            if (ret != NULL) {
+                memcpy(ret, _buf + offset, filesize);
+            }
+            return ret;
+        }();
+    
+        if (tryfat) {
+            printf("got fat macho with first slice at %u\n", (uint32_t) (tryfat - _buf));
+            free((void*)_buf);
+            _buf = tryfat;tryfat = NULL;
+        } else {
+            printf("got fat macho but failed to parse\n");
+        }
+    }
+    
+    assure(*(uint32_t*)_buf == 0xfeedfacf);
+    
+    loadSegments();
+}
+
+
 machopatchfinder64::machopatchfinder64(const char *filename) :
     patchfinder64(true),
     __symtab(NULL)
@@ -165,58 +212,26 @@ machopatchfinder64::machopatchfinder64(const char *filename) :
             assure(img4tmp->ownsBuffer());
             free((void*)_buf);
             
-            assure(_buf = (uint8_t*)malloc(_bufSize = img4tmp->size()));
-            memcpy((void*)_buf, img4tmp->buf(), _bufSize);
+            assure(_buf = (uint8_t*)malloc(_bufSize = img4tmp->payloadSize()));
+            memcpy((void*)_buf, img4tmp->payload(), _bufSize);
         }
     }
 #else
     printf("Warning: compiled without img4tool, extracting from IMG4/IM4P disabled!\n");
 #endif //HAVE_IMG4TOOL
-    
-    if (*(uint32_t*)_buf == 0xbebafeca || *(uint32_t*)_buf == 0xcafebabe) {
-        bool swap = *(uint32_t*)_buf == 0xbebafeca;
-    
-        uint8_t* tryfat = [=]() -> uint8_t* {
-            // just select first slice
-            uint32_t* kdata32 = (uint32_t*) _buf;
-            uint32_t narch = kdata32[1];
-            if (swap) narch = ntohl(narch);
-    
-            if (narch != 1) {
-                printf("expected 1 arch in fat file, got %u\n", narch);
-                return NULL;
-            }
-    
-            uint32_t offset = kdata32[2 + 2];
-            if (swap) offset = ntohl(offset);
-    
-            if (offset != sizeof(uint32_t)*(2 + 5)) {
-                printf("wat, file offset not sizeof(fat_header) + sizeof(fat_arch)?!\n");
-            }
-    
-            uint32_t filesize = kdata32[2 + 3];
-            if (swap) filesize = ntohl(filesize);
-    
-            uint8_t *ret = (uint8_t*) malloc(filesize);
-            if (ret != NULL) {
-                memcpy(ret, _buf + offset, filesize);
-            }
-            return ret;
-        }();
-    
-        if (tryfat) {
-            printf("got fat macho with first slice at %u\n", (uint32_t) (tryfat - _buf));
-            free((void*)_buf);
-            _buf = tryfat;tryfat = NULL;
-        } else {
-            printf("got fat macho but failed to parse\n");
-        }
-    }
-    
-    assure(*(uint32_t*)_buf == 0xfeedfacf);
-    
-    loadSegments();
+
+    init();
+
     didConstructSuccessfully = true;
+}
+
+machopatchfinder64::machopatchfinder64(const void *buffer, size_t bufSize) :
+patchfinder64(false),
+__symtab(NULL)
+{
+    _bufSize = bufSize;
+    _buf = (uint8_t*)buffer;
+    init();
 }
 
 

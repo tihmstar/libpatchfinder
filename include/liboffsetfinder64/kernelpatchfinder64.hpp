@@ -17,8 +17,11 @@ namespace tihmstar {
             
         public:
             kernelpatchfinder64(const char *filename);
+            kernelpatchfinder64(const void *buffer, size_t bufSize);
             
             loc_t find_syscall0();
+
+            std::vector<patch> get_MarijuanARM_patch();
 
             
             //        /*------------------------ v0rtex -------------------------- */

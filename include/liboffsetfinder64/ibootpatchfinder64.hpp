@@ -69,10 +69,16 @@ namespace tihmstar {
             std::vector<patch> get_freshnonce_patch();
 
             /*
-                DEVICE2HOST transfers are set addr=getenv("loadaddr");size=getenv("filesize")
+                DEVICE2HOST transfers are set addr=getenv("loadaddr")+getenv("filesize");size=0x800000
                             instead of add=getenv("cmd-results");size=strlen(getenv("cmd-results"))+1
              */
             std::vector<patch> get_readback_loadaddr_patch();
+
+            /*
+                replace "memboot" command with "memload",
+                which will load dtre from NAND to getenv("loadaddr")
+             */
+            std::vector<patch> get_memload_patch();
 
             
         };

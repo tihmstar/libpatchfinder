@@ -336,6 +336,7 @@
 					"DEBUG=1",
 					"$(inherited)",
 					"EXPECTIONNAME='OFexception'",
+					"HAVE_IMG4TOOL=1",
 				);
 				HEADER_SEARCH_PATHS = (
 					/usr/local/opt/openssl/include,

@@ -36,9 +36,14 @@ bool vsegment::isInRange(loc_t p){
     return (p - _vaddr) < _size;
 }
 
-loc_t vsegment::memmem(const void *little, size_t little_len){
+loc_t vsegment::memmem(const void *little, size_t little_len, loc_t startLoc){
     loc_t rt = 0;
-    if ((rt = (loc_t)::memmem(_buf, _size, little, little_len))) {
+    offset_t startOffset = 0;
+    if (startLoc) {
+        startOffset = startLoc - _vaddr;
+        assure(startOffset < _size);
+    }
+    if ((rt = (loc_t)::memmem(_buf+startOffset, _size-startOffset, little, little_len))) {
         rt = rt - (loc_t)_buf + _vaddr;
     }
     return rt;
@@ -96,6 +101,12 @@ vsegment &vsegment::operator=(loc_t p){
 }
 
 #pragma mark deref operator
+                    
+const void *vsegment::memoryForLoc(loc_t loc){
+    assure(isInRange(loc));
+    return loc - _vaddr + _buf;
+}
+
 
 uint64_t vsegment::pc(){
     return (uint64_t)(_vaddr+_curpos);

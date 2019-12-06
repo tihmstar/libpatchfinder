@@ -64,9 +64,11 @@ uint64_t vmem::deref(loc_t pos){
     retcustomerror(out_of_range, "pos not in segments");
 }
 
-loc_t vmem::memmem(const void *little, size_t little_len){
+loc_t vmem::memmem(const void *little, size_t little_len, loc_t startLoc){
     for (auto &seg : _segments) {
-        if (loc_t rt = seg.memmem(little, little_len)) {
+        if (startLoc && !seg.isInRange(startLoc))
+            continue;
+        if (loc_t rt = seg.memmem(little, little_len, startLoc)) {
             return rt;
         }
     }
@@ -217,6 +219,17 @@ vmem &vmem::operator=(loc_t pos){
 int vmem::curPerm() const{
     return _segments.at(_segNum).perm();
 }
+                    
+const void *vmem::memoryForLoc(loc_t loc){
+    for (int i=0; i<_segments.size(); i++) {
+        auto &seg = _segments.at(i);
+        if (seg.isInRange(loc)) {
+            return seg.memoryForLoc(loc);
+        }
+    }
+    retcustomerror(out_of_range, "loc not within vmem");
+}
+
 
 vsegment vmem::curSeg(){
     return _segments.at(_segNum);

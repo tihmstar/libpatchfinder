@@ -41,7 +41,8 @@ namespace tihmstar{
                 b,
                 nop,
                 and_,
-                csel
+                csel,
+                mov
             };
             enum subtype{
                 st_general,
@@ -74,6 +75,7 @@ namespace tihmstar{
         private:
             uint32_t _opcode;
             uint64_t _pc;
+            type _type;
             
         public:
             insn(uint32_t opcode, uint64_t pc);
@@ -100,6 +102,7 @@ namespace tihmstar{
             static bool is_str(uint32_t i);
             static bool is_stp(uint32_t i);
             static bool is_movz(uint32_t i);
+            static bool is_mov(uint32_t i);
             static bool is_bcond(uint32_t i);
             static bool is_b(uint32_t i);
             static bool is_nop(uint32_t i);

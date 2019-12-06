@@ -13,16 +13,44 @@ using namespace tihmstar;
 using namespace offsetfinder64;
 
 
-kernelpatchfinder64::kernelpatchfinder64(const char *filename) :
-    machopatchfinder64(filename)
+kernelpatchfinder64::kernelpatchfinder64(const char *filename)
+    : machopatchfinder64(filename)
 {
     //
 }
+
+kernelpatchfinder64::kernelpatchfinder64(const void *buffer, size_t bufSize)
+    : machopatchfinder64(buffer,bufSize)
+{
+    //
+}
+
 
 loc_t kernelpatchfinder64::find_syscall0(){
     constexpr char sig_syscall_3[] = "\x06\x00\x00\x00\x03\x00\x0c\x00";
     loc_t sys3 = _vmem->memmem(sig_syscall_3, sizeof(sig_syscall_3)-1);
     return sys3 - (3 * 0x18) + 0x8;
+}
+
+
+std::vector<patch> kernelpatchfinder64::get_MarijuanARM_patch(){
+    std::vector<patch> patches;
+    constexpr char release_arm[] = "RELEASE_ARM";
+    constexpr char marijuanarm[] = "MarijuanARM";
+
+    loc_t strloc = -1;
+    while ((strloc = _vmem->memmem(release_arm, sizeof(release_arm)-1, strloc+1))) {
+        patches.push_back({strloc,marijuanarm,sizeof(marijuanarm)-1});
+    }
+
+    //everything is fine as long as we found at least one instance
+    /*
+     Note: this check is redundant, since the first time strloc is 0 so the whole space is searched
+        and an error is thrown if no occurence is found, but it feels bad to just assume that so there is another check here.
+     */
+    retassure(patches.size(), "Not a single instance of %s was found",release_arm);
+    
+    return patches;
 }
 
 

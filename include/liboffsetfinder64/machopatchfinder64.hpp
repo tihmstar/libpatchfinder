@@ -23,12 +23,15 @@ namespace tihmstar {
             void loadSegments();
             __attribute__((always_inline)) struct symtab_command *getSymtab();
             
+            void init();
+            
         public:
             machopatchfinder64(const char *filename);
-            
+            machopatchfinder64(const void *buffer, size_t bufSize);
+
             bool haveSymbols() { return __symtab != NULL;};
             loc_t find_sym(const char *sym);
-
+            
         };
         
     };

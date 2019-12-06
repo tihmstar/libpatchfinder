@@ -40,6 +40,11 @@ patchfinder64::~patchfinder64(){
 
 #pragma mark patchfinder
 
+const void *patchfinder64::memoryForLoc(loc_t loc){
+    return _vmem->memoryForLoc(loc);
+}
+
+
 loc_t patchfinder64::findstr(std::string str, bool hasNullTerminator){
     return _vmem->memmem(str.c_str(), str.size()+(hasNullTerminator));
 }
@@ -82,7 +87,6 @@ uint64_t patchfinder64::find_register_value(loc_t where, int reg, loc_t startAdd
     uint64_t value[32] = {0};
     
     for (;(loc_t)functop.pc() < where;++functop) {
-        
         switch (functop().type()) {
             case offsetfinder64::insn::adrp:
                 value[functop().rd()] = functop().imm();
@@ -99,6 +103,15 @@ uint64_t patchfinder64::find_register_value(loc_t where, int reg, loc_t startAdd
             case offsetfinder64::insn::ldr:
                 //                printf("%p: LDR X%d, [X%d, 0x%llx]\n", (void*)functop.pc(), functop.rt(), functop.rn(), (uint64_t)functop.imm());
                 value[functop().rt()] = value[functop().rn()] + functop().imm(); // XXX address, not actual value
+                break;
+            case offsetfinder64::insn::movz:
+                value[functop().rd()] = functop().imm();
+                break;
+            case offsetfinder64::insn::movk:
+                value[functop().rd()] |= functop().imm();
+                break;
+            case offsetfinder64::insn::mov:
+                value[functop().rd()] = value[functop().other()];
                 break;
             default:
                 break;
@@ -146,22 +159,46 @@ loc_t patchfinder64::find_literal_ref(loc_t pos, int ignoreTimes){
     return 0;
 }
 
-loc_t patchfinder64::find_branch_ref(loc_t pos, int ignoreTimes){
+loc_t patchfinder64::find_call_ref(loc_t pos, int ignoreTimes){
     vmem bl(*_vmem);
-    try {
-        if (bl() == insn::bl) goto isBL;
-        while (true){
-            while (++bl != insn::bl);
-        isBL:
-            if (bl().imm() == (uint64_t)pos && --ignoreTimes <0)
-                return bl;
-        }
-    } catch (tihmstar::out_of_range &e) {
-        return 0;
+    if (bl() == insn::bl) goto isBL;
+    while (true){
+        while (++bl != insn::bl);
+    isBL:
+        if (bl().imm() == (uint64_t)pos && --ignoreTimes <0)
+            return bl;
     }
-    return 0;
+    reterror("call reference not found");
 }
 
 
+loc_t patchfinder64::find_branch_ref(loc_t pos, int limit, int ignoreTimes){
+    vmem brnch(*_vmem, pos);
+
+    if (limit < 0 ) {
+        while (true) {
+            while ((--brnch).supertype() != insn::supertype::sut_branch_imm){
+                limit +=4;
+                retassure(limit < 0, "search limit reached");
+            }
+            if (brnch().imm() == pos){
+                if (ignoreTimes--  <=0)
+                    return brnch;
+            }
+        }
+    }else{
+        while (true) {
+           while ((++brnch).supertype() != insn::supertype::sut_branch_imm){
+               limit -=4;
+               retassure(limit > 0, "search limit reached");
+           }
+           if (brnch().imm() == pos){
+               if (ignoreTimes--  <=0)
+                   return brnch;
+           }
+        }
+    }
+    reterror("branchref not found");
+}
 
 //

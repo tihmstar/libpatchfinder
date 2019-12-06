@@ -13,13 +13,14 @@
 using namespace tihmstar::offsetfinder64;
 
 
-insn::insn(uint32_t opcode, uint64_t pc) : _opcode(opcode), _pc(pc){
+insn::insn(uint32_t opcode, uint64_t pc) : _opcode(opcode), _pc(pc), _type(unknown){
     //
 }
 
 insn::insn(loc_t pc, enum type t, enum subtype subt, int64_t imm, uint8_t rd, uint8_t rn, uint8_t rt, uint8_t other) :
     _pc((uint64_t)pc),
-    _opcode(0)
+    _opcode(0),
+    _type(t)
 {
     switch (t) {
         case adr:
@@ -37,17 +38,14 @@ insn::insn(loc_t pc, enum type t, enum subtype subt, int64_t imm, uint8_t rd, ui
                 _opcode |= SET_BITS(BIT_RANGE(diff,2,19), 5);
             }
             break;
-        case movz:
+        case mov:
             {
-                if (subt == st_register) {
-                    _opcode |= SET_BITS(0b0101010, 24) | SET_BITS(1, 31);
-                    _opcode |= (rd % (1<<5));
-                    _opcode |= SET_BITS(other & 0b11111, 16) ;
-                    _opcode |= SET_BITS(rn & 0b11111, 5) ;
-                    _opcode |= SET_BITS(imm & 0b111111, 10) ;
-                }else{
-                    reterror("not implemented");
-                }
+                assure(subt == st_register);
+                _opcode |= SET_BITS(0b0101010, 24) | SET_BITS(1, 31);
+                _opcode |= (rd % (1<<5));
+                _opcode |= SET_BITS(other & 0b11111, 16) ;
+                _opcode |= SET_BITS(rn & 0b11111, 5) ;
+                _opcode |= SET_BITS(imm & 0b111111, 10) ;
             }
             break;
         case bl:
@@ -58,7 +56,33 @@ insn::insn(loc_t pc, enum type t, enum subtype subt, int64_t imm, uint8_t rd, ui
                 _opcode |= imm & ((1<<26)-1);
                 break;
             }
-            
+        case movz:
+            {
+                assure(subt == st_immediate);
+                _opcode |= SET_BITS(0b10100101, 23) | SET_BITS(1, 31);//64bit val (x regs, not w regs)
+                _opcode |= (rd % (1<<5));
+                _opcode |= SET_BITS(imm & ((1<<16)-1), 5);
+                _opcode |= SET_BITS(other & 0b11, 21); //set shift here
+            }
+            break;
+        case movk:
+            {
+                assure(subt == st_immediate);
+                _opcode |= SET_BITS(0b11100101, 23) | SET_BITS(1, 31);//64bit val (x regs, not w regs)
+                _opcode |= (rd % (1<<5));
+                _opcode |= SET_BITS(imm & ((1<<16)-1), 5);
+                _opcode |= SET_BITS(other & 0b11, 21); //set shift here
+            }
+            break;
+        case b:
+            {
+                assure(subt == st_immediate);
+                _opcode |= SET_BITS(0b000101, 26);
+                imm -= (pc+4);
+                imm >>=2;
+                _opcode |= imm & ((1<<27)-1);
+            }
+            break;
         default:
             reterror("opcode generation not implemented");
     }
@@ -264,7 +288,11 @@ bool insn::is_stp(uint32_t i){
 }
 
 bool insn::is_movz(uint32_t i){
-    return (BIT_RANGE(i, 23, 30) == 0b10100101) || ((BIT_RANGE(i, 24, 30) == 0b0101010) && (BIT_AT(i, 21) == 0));
+    return (BIT_RANGE(i, 23, 30) == 0b10100101);
+}
+
+bool insn::is_mov(uint32_t i){
+    return (BIT_RANGE(i, 24, 30) == 0b0101010) && (BIT_AT(i, 21) == 0);
 }
 
 bool insn::is_bcond(uint32_t i){
@@ -292,78 +320,87 @@ uint64_t insn::pc(){
 }
 
 enum insn::type insn::type(){
-    if (is_adrp(_opcode))
-        return adrp;
+    if (_type != unknown) {
+        return _type;
+    }
+    else if (is_adrp(_opcode))
+        return _type = adrp;
     else if (is_adr(_opcode))
-        return adr;
+        return _type = adr;
     else if (is_add(_opcode))
-        return add;
+        return _type = add;
     else if (is_sub(_opcode))
-        return sub;
+        return _type = sub;
     else if (is_bl(_opcode))
-        return bl;
+        return _type = bl;
     else if (is_cbz(_opcode))
-        return cbz;
+        return _type = cbz;
     else if (is_ret(_opcode))
-        return ret;
+        return _type = ret;
     else if (is_tbnz(_opcode))
-        return tbnz;
+        return _type = tbnz;
     else if (is_br(_opcode))
-        return br;
+        return _type = br;
     else if (is_ldr(_opcode))
-        return ldr;
+        return _type = ldr;
     else if (is_cbnz(_opcode))
-        return cbnz;
+        return _type = cbnz;
     else if (is_movk(_opcode))
-        return movk;
+        return _type = movk;
     else if (is_orr(_opcode))
-        return orr;
+        return _type = orr;
     else if (is_and(_opcode))
-        return and_;
+        return _type = and_;
     else if (is_tbz(_opcode))
-        return tbz;
+        return _type = tbz;
     else if (is_ldxr(_opcode))
-        return ldxr;
+        return _type = ldxr;
     else if (is_ldrb(_opcode))
-        return ldrb;
+        return _type = ldrb;
     else if (is_str(_opcode))
-        return str;
+        return _type = str;
     else if (is_stp(_opcode))
-        return stp;
+        return _type = stp;
     else if (is_movz(_opcode))
-        return movz;
+        return _type = movz;
     else if (is_bcond(_opcode))
-        return bcond;
+        return _type = bcond;
     else if (is_b(_opcode))
-        return b;
+        return _type = b;
     else if (is_nop(_opcode))
-        return nop;
+        return _type = nop;
     else if (is_csel(_opcode))
-        return csel;
+        return _type = csel;
+    else if (is_mov(_opcode))
+        return _type = mov;
 
     return unknown;
 }
 
 enum insn::subtype insn::subtype(){
-    if (is_ldr(_opcode)) {
-        if ((((_opcode>>22) | (1 << 8)) == 0b1111100001) && BIT_RANGE(_opcode, 10, 11) == 0b10)
-            return st_register;
-        else if (_opcode>>31)
+    switch (type()) {
+        case ldr:
+            if ((((_opcode>>22) | (1 << 8)) == 0b1111100001) && BIT_RANGE(_opcode, 10, 11) == 0b10)
+                return st_register;
+            else if (_opcode>>31)
+                return st_immediate;
+            else
+                return st_literal;
+            break;
+        case ldrb:
+            if (BIT_RANGE(_opcode, 21, 31) == 0b00111000011 && BIT_RANGE(_opcode, 10, 11) == 0b10)
+                return st_register;
+            else
+                return st_immediate;
+            break;
+        case movz:
+        case movk:
             return st_immediate;
-        else
-            return st_literal;
-    }else if (is_ldrb(_opcode)){
-        if (BIT_RANGE(_opcode, 21, 31) == 0b00111000011 && BIT_RANGE(_opcode, 10, 11) == 0b10)
+        case mov:
             return st_register;
-        else
-            return st_immediate;
-    }else if (is_movz(_opcode)){
-        if ((BIT_RANGE(_opcode, 24, 30) == 0b0101010) && (BIT_AT(_opcode, 21) == 0))
-            return st_register;
-        else
-            return st_immediate;
+        default:
+            return st_general;
     }
-    return st_general;
 }
 
 enum insn::supertype insn::supertype(){
@@ -399,12 +436,13 @@ int64_t insn::imm(){
             return _pc + (signExtend64(_opcode % (1<<26), 25) << 2); //untested
         case cbz:
         case cbnz:
-        case tbnz:
         case bcond:
             return _pc + (signExtend64(BIT_RANGE(_opcode, 5, 23), 19)<<2); //untested
+        case tbnz:
+            return _pc + (signExtend64(BIT_RANGE(_opcode, 5, 18), 13)<<2); //untested
         case movk:
         case movz:
-            return BIT_RANGE(_opcode, 5, 20);
+            return BIT_RANGE(_opcode, 5, 20) << (BIT_RANGE(_opcode, 21, 22) * 16);
         case ldr:
             if(subtype() != st_immediate){
                 reterror("can't get imm value of ldr that has non immediate subtype");
@@ -466,6 +504,7 @@ uint8_t insn::rd(){
         case orr:
         case and_:
         case movz:
+        case mov:
         case csel:
             return (_opcode % (1<<5));
 
@@ -492,6 +531,7 @@ uint8_t insn::rn(){
         case ldr:
         case stp:
         case csel:
+        case mov:
             return BIT_RANGE(_opcode, 5, 9);
 
         default:
@@ -540,11 +580,8 @@ uint8_t insn::other(){
                 reterror("ldrb must be st_register for this to be defined!");
         case csel:
             return BIT_RANGE(_opcode, 16, 20);
-        case movz:
-            if (subtype() == st_register)
-                return BIT_RANGE(_opcode, 16, 20);
-            else
-                reterror("ERROR: unimplemented!");
+        case mov:
+            return BIT_RANGE(_opcode, 16, 20);
         default:
             reterror("failed to get other");
             break;

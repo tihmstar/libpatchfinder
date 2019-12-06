@@ -43,12 +43,16 @@ namespace tihmstar {
             loc_t find_entry() { return _entrypoint;}
             loc_t find_base() { return _base; }
             
+            const void *memoryForLoc(loc_t loc);
+
+            
             loc_t findstr(std::string str, bool hasNullTerminator);
             loc_t find_bof(loc_t pos);
             uint64_t find_register_value(loc_t where, int reg, loc_t startAddr = 0);
             loc_t find_literal_ref(loc_t pos, int ignoreTimes = 0);
-            loc_t find_branch_ref(loc_t pos, int ignoreTimes = 0);
-            
+            loc_t find_call_ref(loc_t pos, int ignoreTimes = 0);
+            loc_t find_branch_ref(loc_t pos, int limit, int ignoreTimes = 0);
+
         };
         
     };
