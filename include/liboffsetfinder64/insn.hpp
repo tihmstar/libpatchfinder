@@ -57,7 +57,8 @@ namespace tihmstar{
             };
             enum supertype{
                 sut_general,
-                sut_branch_imm
+                sut_branch_imm,
+                sut_memory //load or store
             };
             enum cond{
                 NE = 000,

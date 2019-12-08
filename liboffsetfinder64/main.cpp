@@ -32,7 +32,7 @@ int main(int argc, const char * argv[]) {
     
     kernelpatchfinder64 kpf(argv[1]);
     
-    auto patches = kpf.get_task_conversion_eval_patch();
+    auto patches = kpf.get_disable_codesigning_patch();
     
     
     

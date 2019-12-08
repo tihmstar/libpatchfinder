@@ -34,6 +34,13 @@ loc_t kernelpatchfinder64::find_syscall0(){
     return sys3 - (3 * 0x18) + 0x8;
 }
 
+loc_t kernelpatchfinder64::find_function_for_syscall(int syscall){
+    loc_t syscallTable = find_syscall0();
+    loc_t tableEntry = (syscallTable + 3*(syscall-1)*sizeof(uint64_t));
+    return _vmem->deref(tableEntry);
+}
+
+
 loc_t kernelpatchfinder64::find_kerneltask(){
     loc_t strloc = findstr("current_task() == kernel_task", true);
     debug("strloc=%p\n",strloc);
@@ -174,7 +181,7 @@ std::vector<patch> kernelpatchfinder64::get_task_conversion_eval_patch(){
                             ) {
                             
                             loc_t ccmpPos = iter2;
-                            printf("%s: patchloc=%p\n",__FUNCTION__,(void*)ccmpPos);
+                            debug("%s: patchloc=%p\n",__FUNCTION__,(void*)ccmpPos);
                             insn pins = insn::new_register_ccmp(iter2, iter2().condition(), iter2().special(), iter2().rn(), iter2().rn());
                             uint32_t opcode = pins.opcode();
                             patches.push_back({(loc_t)pins.pc(), &opcode, 4});
@@ -189,6 +196,13 @@ std::vector<patch> kernelpatchfinder64::get_task_conversion_eval_patch(){
         continue;
     }
     
+    return patches;
+}
+
+std::vector<patch> kernelpatchfinder64::get_disable_codesigning_patch(){
+    std::vector<patch> patches;
+    
+    reterror("todo implement");
     return patches;
 }
 

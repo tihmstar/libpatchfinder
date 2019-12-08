@@ -45,8 +45,8 @@ const void *patchfinder64::memoryForLoc(loc_t loc){
 }
 
 
-loc_t patchfinder64::findstr(std::string str, bool hasNullTerminator){
-    return _vmem->memmem(str.c_str(), str.size()+(hasNullTerminator));
+loc_t patchfinder64::findstr(std::string str, bool hasNullTerminator, loc_t startAddr){
+    return _vmem->memmem(str.c_str(), str.size()+(hasNullTerminator), startAddr);
 }
 
 loc_t patchfinder64::find_bof(loc_t pos){
@@ -123,33 +123,45 @@ uint64_t patchfinder64::find_register_value(loc_t where, int reg, loc_t startAdd
 loc_t patchfinder64::find_literal_ref(loc_t pos, int ignoreTimes){
     vmem adrp(*_vmem);
     
-    uint8_t rd = 0xff;
-    uint64_t imm = 0;
-    
     try {
         for (;;++adrp){
             if (adrp() == insn::adr) {
                 if (adrp().imm() == (uint64_t)pos){
                     if (ignoreTimes) {
                         ignoreTimes--;
-                        rd = 0xff;
-                        imm = 0;
                         continue;
                     }
                     return (loc_t)adrp.pc();
                 }
-            }else if (adrp() == insn::adrp) {
+            }
+            
+            if (adrp() == insn::adrp) {
+                uint8_t rd = 0xff;
+                uint64_t imm = 0;
                 rd = adrp().rd();
                 imm = adrp().imm();
-            }else if (adrp() == insn::add && rd == adrp().rd()){
-                if (imm + adrp().imm() == (int64_t)pos){
-                    if (ignoreTimes) {
-                        ignoreTimes--;
-                        rd = 0xff;
-                        imm = 0;
-                        continue;
+                
+                vmem iter(*_vmem,adrp);
+
+                for (int i=0; i<10; i++) {
+                    ++iter;
+                    if (iter() == insn::add && rd == iter().rd()){
+                        if (imm + iter().imm() == (int64_t)pos){
+                            if (ignoreTimes) {
+                                ignoreTimes--;
+                                break;
+                            }
+                            return (loc_t)iter.pc();
+                        }
+                    }else if (iter().supertype() == insn::sut_memory && iter().subtype() == insn::st_immediate && rd == iter().rn()){
+                        if (imm + iter().imm() == (int64_t)pos){
+                            if (ignoreTimes) {
+                                ignoreTimes--;
+                                break;
+                            }
+                            return (loc_t)iter.pc();
+                        }
                     }
-                    return (loc_t)adrp.pc();
                 }
             }
         }

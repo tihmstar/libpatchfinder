@@ -376,6 +376,12 @@ enum insn::supertype insn::supertype(){
         case b:
             return sut_branch_imm;
 
+        case ldr:
+        case ldrb:
+        case ldxr:
+        case str:
+        case stp:
+            return sut_memory;
         default:
             return sut_general;
     }
