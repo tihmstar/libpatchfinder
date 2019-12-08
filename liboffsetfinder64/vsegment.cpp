@@ -108,11 +108,11 @@ const void *vsegment::memoryForLoc(loc_t loc){
 }
 
 
-uint64_t vsegment::pc(){
+uint64_t vsegment::pc() const{
     return (uint64_t)(_vaddr+_curpos);
 }
 
-uint32_t vsegment::value(loc_t p){
+uint32_t vsegment::value(loc_t p) const{
     offset_t off = (p - _vaddr);
     customassure(off < _size, out_of_range); //check for off being at least 1 byte
     if (off <= _size-4) {
@@ -128,7 +128,7 @@ uint32_t vsegment::value(loc_t p){
     return ret;
 }
 
-uint64_t vsegment::doublevalue(loc_t p){
+uint64_t vsegment::doublevalue(loc_t p) const{
     offset_t off = (p - _vaddr);
     customassure(off < _size, out_of_range); //check for off being at least 1 byte
     if (off <= _size-8) {
@@ -144,11 +144,11 @@ uint64_t vsegment::doublevalue(loc_t p){
     return ret;
 }
 
-uint32_t vsegment::value(){
+uint32_t vsegment::value() const{
     return *(uint32_t*)(_buf+_curpos);
 }
 
-uint64_t vsegment::doublevalue(){
+uint64_t vsegment::doublevalue() const{
     if (_curpos <= _size-8) {
         return *(uint64_t*)(_buf+_curpos);
     }
@@ -165,6 +165,6 @@ insn vsegment::operator()(){
     return ::insn(value(),pc());
 }
 
-vsegment::operator loc_t(){
+vsegment::operator loc_t() const{
     return (loc_t)pc();
 }

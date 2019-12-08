@@ -72,7 +72,7 @@ loc_t vmem::memmem(const void *little, size_t little_len, loc_t startLoc){
             return rt;
         }
     }
-    return NULL;
+    retcustomerror(not_found,"memmem failed to find \"%*s\"",little_len,little);
 }
 
 loc_t vmem::memstr(const char *little){
@@ -81,10 +81,10 @@ loc_t vmem::memstr(const char *little){
             return rt;
         }
     }
-    return NULL;
+    retcustomerror(not_found,"memstr failed to find \"%s\"",little);
 }
 
-bool vmem::isInRange(loc_t pos){
+bool vmem::isInRange(loc_t pos) noexcept{
     for (auto &seg : _segments) {
         if (seg.isInRange(pos)) {
             return true;
@@ -235,6 +235,11 @@ vsegment vmem::curSeg(){
     return _segments.at(_segNum);
 }
 
+const vsegment vmem::curSeg() const{
+    return _segments.at(_segNum);
+}
+
+                    
 #pragma mark deref operator
 uint64_t vmem::pc(){
     return curSeg().pc();
@@ -265,6 +270,6 @@ insn vmem::operator()(){
     return getinsn();
 }
 
-vmem::operator loc_t(){
+vmem::operator loc_t() const{
     return (loc_t)curSeg();
 }

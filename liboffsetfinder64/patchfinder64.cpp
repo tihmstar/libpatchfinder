@@ -54,7 +54,7 @@ loc_t patchfinder64::find_bof(loc_t pos){
 
 
     //find stp x29, x30, [sp, ...]
-    while (functop() != insn::stp || functop().other() != 30 || functop().rn() != 31) --functop;
+    while (functop() != insn::stp || functop().rt2() != 30 || functop().rn() != 31) --functop;
 
     try {
         //if there are more stp before, then this wasn't functop
@@ -111,7 +111,7 @@ uint64_t patchfinder64::find_register_value(loc_t where, int reg, loc_t startAdd
                 value[functop().rd()] |= functop().imm();
                 break;
             case offsetfinder64::insn::mov:
-                value[functop().rd()] = value[functop().other()];
+                value[functop().rd()] = value[functop().rm()];
                 break;
             default:
                 break;

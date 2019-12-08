@@ -21,8 +21,10 @@ namespace tihmstar {
             
             loc_t find_syscall0();
 
-            std::vector<patch> get_MarijuanARM_patch();
+            loc_t find_kerneltask();
 
+            std::vector<patch> get_MarijuanARM_patch();            
+            std::vector<patch> get_task_conversion_eval_patch();
             
             //        /*------------------------ v0rtex -------------------------- */
             //        offsetfinder64::loc_t find_zone_map();

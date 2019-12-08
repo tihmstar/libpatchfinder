@@ -32,6 +32,13 @@ namespace tihmstar {
         out_of_range(int code, const char * filename, const char *err...)
             : OFexception(code, filename, err){};
     };
+
+    class not_found : public OFexception{
+    public:
+    not_found(int code, const char * filename, const char * error ...)
+        : OFexception(code,filename,error) {};
+    };
+
     
     class symbol_not_found : public OFexception{
     public:

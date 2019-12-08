@@ -14,6 +14,7 @@ using namespace std;
 using namespace tihmstar::offsetfinder64;
 typedef uint64_t kptr_t;
 
+
 int main(int argc, const char * argv[]) {
     
 //    ibootpatchfinder64 ibp(argv[1]);
@@ -31,7 +32,10 @@ int main(int argc, const char * argv[]) {
     
     kernelpatchfinder64 kpf(argv[1]);
     
-    auto patches = kpf.get_MarijuanARM_patch();
+    auto patches = kpf.get_task_conversion_eval_patch();
+    
+    
+    
     
     printf("done\n");
     return 0;

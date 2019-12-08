@@ -7,6 +7,8 @@
 //
 
 #include "kernelpatchfinder64.hpp"
+#include "all_liboffsetfinder.hpp"
+
 
 using namespace std;
 using namespace tihmstar;
@@ -32,6 +34,56 @@ loc_t kernelpatchfinder64::find_syscall0(){
     return sys3 - (3 * 0x18) + 0x8;
 }
 
+loc_t kernelpatchfinder64::find_kerneltask(){
+    loc_t strloc = findstr("current_task() == kernel_task", true);
+    debug("strloc=%p\n",strloc);
+    
+    loc_t strref = find_literal_ref(strloc);
+    debug("strref=%p\n",strref);
+
+    loc_t bof = find_bof(strref);
+    debug("bof=%p\n",bof);
+    
+    vmem iter(*_vmem,bof);
+
+    loc_t kernel_task = 0;
+    
+    do{
+        if (++iter == insn::mrs) {
+            if (iter().special() == insn::systemreg::tpidr_el1) {
+                uint8_t xreg = iter().rt();
+                uint8_t kernelreg = (uint8_t)-1;
+                
+                vmem iter2(iter,(loc_t)iter);
+                
+                for (int i=0; i<5; i++) {
+                    switch ((++iter2).type()) {
+                        case insn::adrp:
+                            kernel_task = iter2().imm();
+                            kernelreg = iter2().rd();
+                            break;
+                        case insn::ldr:
+                            if (kernelreg == iter2().rt()) {
+                                kernel_task += iter2().imm();
+                            }
+                            break;
+                        case insn::cmp:
+                            if ((kernelreg == iter2().rm() && xreg == iter2().rn())
+                                || (xreg == iter2().rm() && kernelreg == iter2().rn())) {
+                                return kernel_task;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                kernel_task = 0;
+            }
+        }
+    }while (iter < strref);
+    reterror("failed to find kernel_task");
+}
+
 
 std::vector<patch> kernelpatchfinder64::get_MarijuanARM_patch(){
     std::vector<patch> patches;
@@ -49,6 +101,93 @@ std::vector<patch> kernelpatchfinder64::get_MarijuanARM_patch(){
         and an error is thrown if no occurence is found, but it feels bad to just assume that so there is another check here.
      */
     retassure(patches.size(), "Not a single instance of %s was found",release_arm);
+    
+    return patches;
+}
+
+std::vector<patch> kernelpatchfinder64::get_task_conversion_eval_patch(){
+    std::vector<patch> patches;
+
+    /*
+     if (caller == kernel_task) {
+         return KERN_SUCCESS;
+     }
+
+     if (caller == victim) {
+         return KERN_SUCCESS;
+     }
+     */
+    
+    /* -> This inlines to -> */
+    
+    /*
+     mrs        x8, tpidr_el1
+     ldr        x8, [x8, #0x368]
+     ldr        x21, [x21, #0x68]
+     adrp       x9, #0xfffffff008895000 ; 0xfffffff008895200@PAGE
+     ldr        x9, [x9, #0x200] ; 0xfffffff008895200@PAGEOFF, kernel_task
+     cmp        x8, x21
+     ccmp       x9, x8, #0x4
+     b.ne       loc_fffffff0075f1c54
+     */
+    
+    /*
+     patch:
+     ccmp       x9, x8, #0x4
+     to:
+     ccmp       x8, x8, #0x4
+     */
+    
+    loc_t kernel_task = find_kerneltask();
+    debug("kernel_task=%p\n",kernel_task);
+
+    vmem iter(*_vmem);
+    
+    while (true) {
+        try {
+            ++iter;
+        } catch (out_of_range &e) {
+            break;
+        }
+        
+        if (iter() == insn::mrs && iter().special() == insn::systemreg::tpidr_el1) {
+            vmem iter2(iter,(loc_t)iter);
+            uint8_t regtpidr = iter().rt();
+            uint8_t regkernel_task = (uint8_t)-1;
+            loc_t kernel_task_val = 0;
+                        
+            for (int i=0; i<10; i++) {
+                switch ((++iter2).type()) {
+                    case insn::ldr:
+                        if (iter2().rt() == regkernel_task) {
+                            kernel_task_val += iter2().imm();
+                        }
+                        break;
+                    case insn::adrp:
+                        kernel_task_val = iter2().imm();
+                        regkernel_task = iter2().rd();
+                        break;
+                    case insn::ccmp:
+                        if (iter2().special() == 0x4 &&
+                                ((regkernel_task == iter2().rm() && regtpidr == iter2().rn())
+                                 || (regtpidr == iter2().rm() && regkernel_task == iter2().rn()))
+                            ) {
+                            
+                            loc_t ccmpPos = iter2;
+                            printf("%s: patchloc=%p\n",__FUNCTION__,(void*)ccmpPos);
+                            insn pins = insn::new_register_ccmp(iter2, iter2().condition(), iter2().special(), iter2().rn(), iter2().rn());
+                            uint32_t opcode = pins.opcode();
+                            patches.push_back({(loc_t)pins.pc(), &opcode, 4});
+                            goto loop_continue;
+                        }
+                    default:
+                        break;
+                }
+            }
+        }
+    loop_continue:
+        continue;
+    }
     
     return patches;
 }
