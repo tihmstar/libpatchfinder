@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <arpa/inet.h>
 
 #include <libgeneral/macros.h>
 #ifdef HAVE_IMG4TOOL
