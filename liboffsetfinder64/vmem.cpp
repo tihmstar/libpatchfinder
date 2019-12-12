@@ -10,6 +10,7 @@
 #include <libgeneral/macros.h>
 #include "OFexception.hpp"
 #include <string.h>
+#include <algorithm>
 
 using namespace tihmstar::offsetfinder64;
 
