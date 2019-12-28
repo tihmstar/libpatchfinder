@@ -28,6 +28,7 @@ namespace tihmstar{
                 sub,
                 br,
                 ldr,
+                ldrh,
                 cbnz,
                 movk,
                 orr,
@@ -35,6 +36,7 @@ namespace tihmstar{
                 ldxr,
                 ldrb,
                 str,
+                strb,
                 stp,
                 movz,
                 bcond,
@@ -100,6 +102,7 @@ namespace tihmstar{
             static bool is_tbnz(uint32_t i);
             static bool is_br(uint32_t i);
             static bool is_ldr(uint32_t i);
+            static bool is_ldrh(uint32_t i);
             static bool is_cbnz(uint32_t i);
             static bool is_movk(uint32_t i);
             static bool is_orr(uint32_t i);
@@ -108,6 +111,7 @@ namespace tihmstar{
             static bool is_ldxr(uint32_t i);
             static bool is_ldrb(uint32_t i);
             static bool is_str(uint32_t i);
+            static bool is_strb(uint32_t i);
             static bool is_stp(uint32_t i);
             static bool is_movz(uint32_t i);
             static bool is_mov(uint32_t i);
@@ -146,10 +150,11 @@ namespace tihmstar{
             static insn new_register_mov(loc_t pc, int64_t imm, uint8_t rd, uint8_t rn, uint8_t rm);
             static insn new_register_ccmp(loc_t pc, cond condition, uint8_t flags, uint8_t rn, uint8_t rm);
 
-            static insn new_immediatel_bl(loc_t pc, int64_t imm);
-            static insn new_immediatel_b(loc_t pc, int64_t imm);
-            static insn new_immediatel_movz(loc_t pc, int64_t imm, uint8_t rd, uint8_t rm);
-            static insn new_immediatel_movk(loc_t pc, int64_t imm, uint8_t rd, uint8_t rm);
+            static insn new_immediate_bl(loc_t pc, int64_t imm);
+            static insn new_immediate_b(loc_t pc, int64_t imm);
+            static insn new_immediate_movz(loc_t pc, int64_t imm, uint8_t rd, uint8_t rm);
+            static insn new_immediate_movk(loc_t pc, int64_t imm, uint8_t rd, uint8_t rm);
+            static insn new_immediate_ldr(loc_t pc, int64_t imm, uint8_t rn, uint8_t rt);
         };
     };
 };

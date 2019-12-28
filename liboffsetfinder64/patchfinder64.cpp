@@ -164,6 +164,31 @@ loc_t patchfinder64::find_literal_ref(loc_t pos, int ignoreTimes){
                     }
                 }
             }
+            
+            if (adrp() == insn::movz) {
+                uint8_t rd = 0xff;
+                uint64_t imm = 0;
+                rd = adrp().rd();
+                imm = adrp().imm();
+
+                vmem iter(*_vmem,adrp);
+
+                for (int i=0; i<10; i++) {
+                    ++iter;
+                    if (iter() == insn::movk && rd == iter().rd()){
+                        imm |= iter().imm();
+                        if (imm == (int64_t)pos){
+                            if (ignoreTimes) {
+                                ignoreTimes--;
+                                break;
+                            }
+                            return (loc_t)iter.pc();
+                        }
+                    }else if (iter() == insn::movz && rd == iter().rd()){
+                        break;
+                    }
+                }
+            }
         }
     } catch (tihmstar::out_of_range &e) {
         return 0;

@@ -47,7 +47,18 @@ namespace tihmstar {
                make an iBoot command jump to a specific address
              */
             std::vector<patch> get_cmd_handler_patch(const char *cmd_handler_str, uint64_t ptr);
+            
+            /*
+             replace "bgcolor" with command: "memcpy <dst> <src> <size>"
+             */
+            std::vector<patch> replace_bgcolor_with_memcpy();
 
+            /*
+                
+             */
+            std::vector<patch> get_ra1nra1n_patch();
+
+            
             /*
                 allows reading and writing any nvram variable
              */
@@ -68,17 +79,17 @@ namespace tihmstar {
              */
             std::vector<patch> get_freshnonce_patch();
 
-            /*
-                DEVICE2HOST transfers are set addr=getenv("loadaddr")+getenv("filesize");size=0x800000
-                            instead of add=getenv("cmd-results");size=strlen(getenv("cmd-results"))+1
-             */
-            std::vector<patch> get_readback_loadaddr_patch();
-
-            /*
-                replace "memboot" command with "memload",
-                which will load dtre from NAND to getenv("loadaddr")
-             */
-            std::vector<patch> get_memload_patch();
+//            /*
+//                DEVICE2HOST transfers are set addr=getenv("loadaddr")+getenv("filesize");size=0x800000
+//                            instead of add=getenv("cmd-results");size=strlen(getenv("cmd-results"))+1
+//             */
+//            std::vector<patch> get_readback_loadaddr_patch();
+//
+//            /*
+//                replace "memboot" command with "memload",
+//                which will load dtre from NAND to getenv("loadaddr")
+//             */
+//            std::vector<patch> get_memload_patch();
 
             
         };

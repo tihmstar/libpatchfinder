@@ -10,9 +10,8 @@
 #define machopatchfinder64_hpp
 
 #include <liboffsetfinder64/patchfinder64.hpp>
-#include <mach-o/loader.h>
-#include <mach-o/nlist.h>
 
+struct symtab_command;
 namespace tihmstar {
     namespace offsetfinder64 {
         

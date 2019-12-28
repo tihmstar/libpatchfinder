@@ -174,6 +174,13 @@ bool insn::is_ldr(uint32_t i){
     return (((i>>22) | 0b0100000000) == 0b1111100001 && ((i>>10) % 4)) || ((i>>22 | 0b0100000000) == 0b1111100101) || ((i>>23) == 0b00011000);
 }
 
+bool insn::is_ldrh(uint32_t i){
+    return ((BIT_RANGE(i, 21, 31) == 0b01000011) && (BIT_RANGE(i, 10, 11) == 0b10)) /* register*/
+        || ((BIT_RANGE(i, 21, 31) == 0b01111000010)
+            && ((BIT_RANGE(i, 10, 11) == 0b01) /* imm post-index*/ || (BIT_RANGE(i, 10, 11) == 0b11) /* imm pre-index*/ ))
+        || (BIT_RANGE(i, 22, 31) == 0b0111100101) /*unsigned offset */;
+}
+
 bool insn::is_cbnz(uint32_t i){
     return BIT_RANGE(i, 24, 30) == 0b0110101;
 }
@@ -208,6 +215,14 @@ bool insn::is_ldrb(uint32_t i){
 bool insn::is_str(uint32_t i){
 #warning TODO redo this! currently only recognises STR (immediate)
     return (BIT_RANGE(i, 22, 29) == 0b11100100) && (i >> 31);
+}
+
+bool insn::is_strb(uint32_t i){
+    return ((BIT_RANGE(i, 21, 31) == 0b00111000001) && (BIT_RANGE(i, 10, 11) == 0b10) /* register*/)
+        /* immediate */
+        || ((BIT_RANGE(i, 21, 31) == 0b00111000000)
+                && ((BIT_RANGE(i, 10, 11) == 0b01) || (BIT_RANGE(i, 10, 11) == 0b11)))
+        || (BIT_RANGE(i, 22, 31) == 0b0011100100); /* unsigned offset */
 }
 
 bool insn::is_stp(uint32_t i){
@@ -284,6 +299,8 @@ enum insn::type insn::type(){
         _type = br;
     else if (is_ldr(_opcode))
         _type = ldr;
+    else if (is_ldrh(_opcode))
+        _type = ldrh;
     else if (is_cbnz(_opcode))
         _type = cbnz;
     else if (is_movk(_opcode))
@@ -300,6 +317,8 @@ enum insn::type insn::type(){
         _type = ldrb;
     else if (is_str(_opcode))
         _type = str;
+    else if (is_strb(_opcode))
+        _type = strb;
     else if (is_stp(_opcode))
         _type = stp;
     else if (is_movz(_opcode))
@@ -326,6 +345,12 @@ enum insn::type insn::type(){
 
 enum insn::subtype insn::subtype(){
     switch (type()) {
+        case ldrh:
+            if (((BIT_RANGE(_opcode, 21, 31) == 0b01000011) && (BIT_RANGE(_opcode, 10, 11) == 0b10))) {
+                return st_register;
+            }else{
+                return st_immediate;
+            }
         case ldr:
             if ((((_opcode>>22) | (1 << 8)) == 0b1111100001) && BIT_RANGE(_opcode, 10, 11) == 0b10)
                 return st_register;
@@ -340,6 +365,12 @@ enum insn::subtype insn::subtype(){
             else
                 return st_immediate;
             break;
+        case strb:
+            if ((BIT_RANGE(_opcode, 21, 31) == 0b00111000001) && (BIT_RANGE(_opcode, 10, 11) == 0b10) /* register*/) {
+                return st_register;
+            }else{
+                return st_immediate;
+            }
         case subs:
             if (BIT_RANGE(_opcode, 21, 30) == 0x1101011001 /* register_extended */) {
                 return st_register_extended;
@@ -377,9 +408,11 @@ enum insn::supertype insn::supertype(){
             return sut_branch_imm;
 
         case ldr:
+        case ldrh:
         case ldrb:
         case ldxr:
         case str:
+        case strb:
         case stp:
             return sut_memory;
         default:
@@ -423,6 +456,27 @@ int64_t insn::imm(){
             }else{
                 // Signed Offset
                 return signExtend64(BIT_RANGE(_opcode, 12, 21), 9); //untested
+            }
+        case strb:
+            if(subtype() != st_immediate){
+                reterror("can't get imm value of ldr that has non immediate subtype");
+                break;
+            }
+            if ((BIT_RANGE(_opcode, 22, 31) == 0b0011100100) /* unsigned offset */) {
+                return BIT_RANGE(_opcode, 12, 20);
+            }else{
+                return BIT_RANGE(_opcode, 10, 21);
+            }
+        case ldrh:
+            if(subtype() != st_immediate){
+                reterror("can't get imm value of ldr that has non immediate subtype");
+                break;
+            }
+            if (((BIT_RANGE(_opcode, 21, 31) == 0b01111000010)
+                 && ((BIT_RANGE(_opcode, 10, 11) == 0b01) /* imm post-index*/ || (BIT_RANGE(_opcode, 10, 11) == 0b11) /* imm pre-index*/ ))){
+                return BIT_RANGE(_opcode, 12, 20);
+            }else{
+                return BIT_RANGE(_opcode, 10, 21) << BIT_RANGE(_opcode, 30, 31);
             }
         case ldrb:
             if (st_immediate) {
@@ -499,7 +553,9 @@ uint8_t insn::rn(){
         case ldxr:
         case ldrb:
         case str:
+        case strb:
         case ldr:
+        case ldrh:
         case stp:
         case csel:
         case mov:
@@ -524,7 +580,9 @@ uint8_t insn::rt(){
         case ldxr:
         case ldrb:
         case str:
+        case strb:
         case ldr:
+        case ldrh:
         case stp:
         case mrs:
             return (_opcode % (1<<5));
@@ -628,7 +686,7 @@ insn insn::new_register_mov(loc_t pc, int64_t imm, uint8_t rd, uint8_t rn, uint8
     return ret;
 }
 
-insn insn::new_immediatel_bl(loc_t pc, int64_t imm){
+insn insn::new_immediate_bl(loc_t pc, int64_t imm){
     insn ret(0,pc);
     
     ret._opcode |= SET_BITS(0b100101, 26);
@@ -639,18 +697,18 @@ insn insn::new_immediatel_bl(loc_t pc, int64_t imm){
     return ret;
 }
 
-insn insn::new_immediatel_b(loc_t pc, int64_t imm){
+insn insn::new_immediate_b(loc_t pc, int64_t imm){
     insn ret(0,pc);
     
     ret._opcode |= SET_BITS(0b000101, 26);
-    imm -= (pc+4);
+    imm -= pc;
     imm >>=2;
     ret._opcode |= imm & ((1<<27)-1);
     
     return ret;
 }
 
-insn insn::new_immediatel_movz(loc_t pc, int64_t imm, uint8_t rd, uint8_t rm){
+insn insn::new_immediate_movz(loc_t pc, int64_t imm, uint8_t rd, uint8_t rm){
     insn ret(0,pc);
 
     ret._opcode |= SET_BITS(0b10100101, 23) | SET_BITS(1, 31);//64bit val (x regs, not w regs)
@@ -661,7 +719,7 @@ insn insn::new_immediatel_movz(loc_t pc, int64_t imm, uint8_t rd, uint8_t rm){
     return ret;
 }
 
-insn insn::new_immediatel_movk(loc_t pc, int64_t imm, uint8_t rd, uint8_t rm){
+insn insn::new_immediate_movk(loc_t pc, int64_t imm, uint8_t rd, uint8_t rm){
     insn ret(0,pc);
 
     ret._opcode |= SET_BITS(0b11100101, 23) | SET_BITS(1, 31);//64bit val (x regs, not w regs)
@@ -669,6 +727,21 @@ insn insn::new_immediatel_movk(loc_t pc, int64_t imm, uint8_t rd, uint8_t rm){
     ret._opcode |= SET_BITS(imm & ((1<<16)-1), 5);
     ret._opcode |= SET_BITS(rm & 0b11, 21); //set shift here
     
+    return ret;
+}
+
+insn insn::new_immediate_ldr(loc_t pc, int64_t imm, uint8_t rn, uint8_t rt){
+    insn ret(0,pc);
+    
+    ret._opcode |= SET_BITS(0b1111100101, 22);
+    imm >>= (ret._opcode >> 30);
+    imm %= (1 << 11);
+    imm <<= 10;
+    ret._opcode |= imm;
+    
+    ret._opcode |= SET_BITS(rn % (1<< 4), 5);
+    ret._opcode |= SET_BITS(rt % (1<< 4), 0);
+
     return ret;
 }
 

@@ -6,12 +6,18 @@
 //  Copyright © 2019 tihmstar. All rights reserved.
 //
 
+#include <libgeneral/macros.h>
+
 #include "machopatchfinder64.hpp"
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
+
+#include <mach-o/loader.h>
+#include <mach-o/nlist.h>
+
 
 #include <libgeneral/macros.h>
 #ifdef HAVE_IMG4TOOL
