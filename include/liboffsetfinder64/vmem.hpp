@@ -42,6 +42,9 @@ namespace tihmstar{
             vmem &operator-=(int i);
             vmem &operator=(loc_t p);
             
+            void nextSeg();
+            void prevSeg();
+
             //segment info functions
             int curPerm() const;
             offsetfinder64::vsegment curSeg();

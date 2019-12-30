@@ -54,13 +54,13 @@ loc_t vsegment::memmem(const void *little, size_t little_len, loc_t startLoc){
 insn vsegment::operator+(int i){
     if (i<0) return this->operator-(-i);
     retcustomassure(_curpos + 4*i < _size-4, out_of_range, "overflow");
-    return vsegment(*this,_curpos+4*i).getinsn();
+    return vsegment(*this,_vaddr+_curpos+4*i).getinsn();
 }
 
 insn vsegment::operator-(int i){
     if (i<0) return this->operator+(-i);
     retcustomassure(_curpos >= 4*i, out_of_range, "underflow");
-    return vsegment(*this,_curpos-4*i).getinsn();
+    return vsegment(*this,_vaddr+_curpos-4*i).getinsn();
 }
 
 insn vsegment::operator++(){

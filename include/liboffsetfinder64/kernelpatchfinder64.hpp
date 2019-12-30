@@ -20,14 +20,24 @@ namespace tihmstar {
             kernelpatchfinder64(const void *buffer, size_t bufSize);
             
             loc_t find_syscall0();
+            loc_t find_machtrap_table();
             loc_t find_function_for_syscall(int syscall);
+            loc_t find_function_for_machtrap(int trapcall);
 
             loc_t find_kerneltask();
 
             std::vector<patch> get_MarijuanARM_patch();            
             std::vector<patch> get_task_conversion_eval_patch();
+            std::vector<patch> get_vm_fault_internal_patch();
 
-            std::vector<patch> get_disable_codesigning_patch();
+            std::vector<patch> get_trustcache_true_patch();
+
+            std::vector<patch> get_mount_patch();
+
+            std::vector<patch> get_tfp0_patch();
+
+            
+//            std::vector<patch> get_disable_codesigning_patch();
 
             
             //        /*------------------------ v0rtex -------------------------- */

@@ -175,7 +175,7 @@ insn vmem::myop_plus(int i, uint32_t segNum){
 }
 
 insn vmem::myop_minus(int i, uint32_t segNum){
-    if (i<0) return myop_minus(-i,segNum);
+    if (i<0) return myop_plus(-i,segNum);
     try {
         return _segments.at(segNum) - i;
     } catch (tihmstar::out_of_range &e) {
@@ -214,6 +214,16 @@ vmem &vmem::operator=(loc_t pos){
         }
     }
     retcustomerror(out_of_range, "pos not within vmem");
+}
+
+void vmem::nextSeg(){
+    retcustomassure(_segNum+1<_segments.size(), out_of_range, "overflow reached end of vmem");
+    _segNum++;
+}
+
+void vmem::prevSeg(){
+    retcustomassure(_segNum>0, out_of_range, "undeflow reached end of vmem");
+    _segNum--;
 }
 
 #pragma mark segment info functions

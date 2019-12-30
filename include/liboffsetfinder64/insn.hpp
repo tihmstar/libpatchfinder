@@ -48,7 +48,8 @@ namespace tihmstar{
                 mrs,
                 subs,
                 cmp = subs,
-                ccmp
+                ccmp,
+                madd
             };
             enum subtype{
                 st_general,
@@ -122,6 +123,7 @@ namespace tihmstar{
             static bool is_mrs(uint32_t i);
             static bool is_subs(uint32_t i);
             static bool is_ccmp(uint32_t i);
+            static bool is_madd(uint32_t i);
 
         public:
             uint32_t opcode();

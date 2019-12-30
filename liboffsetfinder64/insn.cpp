@@ -266,6 +266,9 @@ bool insn::is_ccmp(uint32_t i){
     return (BIT_RANGE(i, 21, 30) == 0b1111010010)/* register */;
 }
 
+bool insn::is_madd(uint32_t i){
+    return (BIT_RANGE(i, 21, 30) == 0b0011011000) && (BIT_AT(i, 15) == 0);
+}
 
 uint32_t insn::opcode(){
     return _opcode;
@@ -339,6 +342,8 @@ enum insn::type insn::type(){
         _type = subs;
     else if (is_ccmp(_opcode))
         _type = ccmp;
+    else if (is_madd(_opcode))
+        _type = madd;
 
     return _type;
 }
@@ -433,6 +438,7 @@ int64_t insn::imm(){
             return _pc + signExtend64((BIT_RANGE(_opcode, 5, 23)<<2) | (BIT_RANGE(_opcode, 29, 30)), 21);
         case add:
         case sub:
+        case subs:
             return BIT_RANGE(_opcode, 10, 21) << (((_opcode>>22)&1) * 12);
         case bl:
             return _pc + (signExtend64(_opcode % (1<<26), 25) << 2); //untested
@@ -493,12 +499,11 @@ int64_t insn::imm(){
             // Unsigned Offset
             return BIT_RANGE(_opcode, 10, 21) << (_opcode>>30);
         case orr:
-            return DecodeBitMasks(BIT_AT(_opcode, 22),BIT_RANGE(_opcode, 10, 15),BIT_RANGE(_opcode, 16,21), true).first;
         case and_:
         {
             int64_t val = DecodeBitMasks(BIT_AT(_opcode, 22),BIT_RANGE(_opcode, 10, 15),BIT_RANGE(_opcode, 16,21), true).first;
             if (!BIT_AT(_opcode, 31))
-                val |= (((uint64_t)1<<32)-1) << 32;
+                val = val & 0xffffffff;
             return val;
         }
         case tbz:
@@ -634,6 +639,9 @@ insn::cond insn::condition(){
 
 uint64_t insn::special(){
     switch (type()) {
+        case tbz:
+        case tbnz:
+            return BIT_RANGE(_opcode, 19, 23);
         case mrs:
             return BIT_RANGE(_opcode, 5, 19);
         case ccmp:
