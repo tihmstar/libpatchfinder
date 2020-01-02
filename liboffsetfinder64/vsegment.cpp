@@ -14,18 +14,20 @@
 using namespace tihmstar::offsetfinder64;
 
 
-vsegment::vsegment(const void *buf, size_t size, loc_t vaddr, int perms) : _buf((const uint8_t*)buf), _size(size), _vaddr(vaddr), _perms(perms),_curpos(0)
+vsegment::vsegment(const void *buf, size_t size, loc_t vaddr, int perms, std::string segname)
+: _buf((const uint8_t*)buf), _size(size), _vaddr(vaddr), _perms(perms),_curpos(0), _segname(segname)
 {
     //
 }
 
 
-vsegment::vsegment(const vsegment &cpy) : _buf(cpy._buf), _size(cpy._size), _vaddr(cpy._vaddr), _perms(cpy._perms),_curpos(cpy._curpos)
+vsegment::vsegment(const vsegment &cpy)
+: _buf(cpy._buf), _size(cpy._size), _vaddr(cpy._vaddr), _perms(cpy._perms),_curpos(cpy._curpos), _segname(cpy._segname)
 {
     //
 }
 
-vsegment::vsegment(const vsegment &cpy, loc_t pos) : _buf(cpy._buf), _size(cpy._size), _vaddr(cpy._vaddr), _perms(cpy._perms),_curpos(0)
+vsegment::vsegment(const vsegment &cpy, loc_t pos) : _buf(cpy._buf), _size(cpy._size), _vaddr(cpy._vaddr), _perms(cpy._perms),_curpos(0), _segname(cpy._segname)
 {
     assure(isInRange(pos));
     _curpos = pos - _vaddr;

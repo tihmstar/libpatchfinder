@@ -102,7 +102,10 @@ uint64_t patchfinder64::find_register_value(loc_t where, int reg, loc_t startAdd
                 break;
             case offsetfinder64::insn::ldr:
                 //                printf("%p: LDR X%d, [X%d, 0x%llx]\n", (void*)functop.pc(), functop.rt(), functop.rn(), (uint64_t)functop.imm());
-                value[functop().rt()] = value[functop().rn()] + functop().imm(); // XXX address, not actual value
+                value[functop().rt()] = value[functop().rn()];
+                if (functop().subtype() == insn::st_immediate) {
+                    value[functop().rt()] += functop().imm(); // XXX address, not actual value
+                }
                 break;
             case offsetfinder64::insn::movz:
                 value[functop().rd()] = functop().imm();
@@ -120,8 +123,8 @@ uint64_t patchfinder64::find_register_value(loc_t where, int reg, loc_t startAdd
     return value[reg];
 }
 
-loc_t patchfinder64::find_literal_ref(loc_t pos, int ignoreTimes){
-    vmem adrp(*_vmem);
+loc_t patchfinder64::find_literal_ref(loc_t pos, int ignoreTimes, loc_t startPos){
+    vmem adrp(*_vmem, startPos);
     
     try {
         for (;;++adrp){

@@ -12,6 +12,7 @@
 #include <liboffsetfinder64/common.h>
 #include <stdio.h>
 #include <liboffsetfinder64/insn.hpp>
+#include <iostream>
 
 namespace tihmstar{
     namespace offsetfinder64{
@@ -29,9 +30,10 @@ namespace tihmstar{
             size_t _size;
             loc_t _vaddr;
             offset_t _curpos;
+            std::string _segname;
 
         public:
-            vsegment(const void *buf, size_t size, loc_t vmemAddr, int perms);
+            vsegment(const void *buf, size_t size, loc_t vmemAddr, int perms, std::string segname = "");
             vsegment(const vsegment &cpy); //copy constructor
             vsegment(const vsegment &cpy, loc_t pos); //copy constructor
 
@@ -52,6 +54,7 @@ namespace tihmstar{
             loc_t base() const {return _vaddr;}
             size_t size() const {return _size;}
             int perm() const {return _perms;}
+            std::string segname() {return _segname;}
             const void *memoryForLoc(loc_t loc);
 
             //deref operator

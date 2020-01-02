@@ -14,10 +14,13 @@
 namespace tihmstar {
     namespace offsetfinder64 {
         class kernelpatchfinder64 : public machopatchfinder64{
+            std::vector<std::pair<loc_t, loc_t>> _usedNops;
             
         public:
             kernelpatchfinder64(const char *filename);
             kernelpatchfinder64(const void *buffer, size_t bufSize);
+            
+            loc_t findnops(uint16_t nopCnt, bool useNops = true);
             
             loc_t find_syscall0();
             loc_t find_machtrap_table();
@@ -36,9 +39,11 @@ namespace tihmstar {
 
             std::vector<patch> get_tfp0_patch();
 
-            
-//            std::vector<patch> get_disable_codesigning_patch();
+            std::vector<patch> get_amfi_patch(bool doApplyPatch = true); //don't use up nop space by multiple patches if this is set to true
 
+            std::vector<patch> get_get_task_allow_patch();
+
+            
             
             //        /*------------------------ v0rtex -------------------------- */
             //        offsetfinder64::loc_t find_zone_map();

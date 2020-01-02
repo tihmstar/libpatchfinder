@@ -79,7 +79,7 @@ void machopatchfinder64::loadSegments(){
     for (uint32_t i=0; i<mh->ncmds; i++, lcmd = (struct load_command *)((uint8_t *)lcmd + lcmd->cmdsize)) {
         if (lcmd->cmd == LC_SEGMENT_64){
             struct segment_command_64* seg = (struct segment_command_64*)lcmd;
-            segments.push_back({_buf+seg->fileoff,seg->filesize, (loc_t)seg->vmaddr, seg->maxprot});
+            segments.push_back({_buf+seg->fileoff,seg->filesize, (loc_t)seg->vmaddr, seg->maxprot, seg->segname});
             if (i==0){
                 _base = (loc_t)seg->vmaddr; //first segment is base. Is this correct??
             }

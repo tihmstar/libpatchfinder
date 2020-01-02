@@ -250,6 +250,16 @@ const vsegment vmem::curSeg() const{
     return _segments.at(_segNum);
 }
 
+const vsegment vmem::segmentForLoc(loc_t loc){
+    for (int i=0; i<_segments.size(); i++) {
+        auto &seg = _segments.at(i);
+        if (seg.isInRange(loc)) {
+            return seg;
+        }
+    }
+    retcustomerror(out_of_range, "loc not within vmem");
+}
+
                     
 #pragma mark deref operator
 uint64_t vmem::pc(){

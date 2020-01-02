@@ -36,8 +36,9 @@ int main(int argc, const char * argv[]) {
     
     kernelpatchfinder64 kpf(argv[1]);
     
-    auto patches = kpf.get_task_conversion_eval_patch();
-    
+    kpf.get_mount_patch();
+//    kpf.get_get_task_allow_patch();
+
     
     
     

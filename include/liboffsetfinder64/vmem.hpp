@@ -49,6 +49,7 @@ namespace tihmstar{
             int curPerm() const;
             offsetfinder64::vsegment curSeg();
             const offsetfinder64::vsegment curSeg() const;
+            const offsetfinder64::vsegment segmentForLoc(loc_t loc);
             const void *memoryForLoc(loc_t loc);
 
             
