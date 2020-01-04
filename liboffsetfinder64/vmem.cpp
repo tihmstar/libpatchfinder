@@ -73,7 +73,7 @@ loc_t vmem::memmem(const void *little, size_t little_len, loc_t startLoc){
             return rt;
         }
     }
-    retcustomerror(not_found,"memmem failed to find \"%*s\"",little_len,little);
+    retcustomerror(not_found,"memmem failed to find needle");
 }
 
 loc_t vmem::memstr(const char *little){

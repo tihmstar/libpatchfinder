@@ -34,9 +34,18 @@ int main(int argc, const char * argv[]) {
 //    }
 //
     
-    kernelpatchfinder64 kpf(argv[1]);
+    const char *little = "asdasd";
+    size_t little_len = 4;
+    printf("memmem failed to find \"%.*s\"\n",little_len,little);
     
-    kpf.get_mount_patch();
+    
+    kernelpatchfinder64 kpf(argv[1]);
+    try {
+        kpf.get_MarijuanARM_patch();
+    } catch (tihmstar::exception &e) {
+        
+        printf("");
+    }
 //    kpf.get_get_task_allow_patch();
 
     
