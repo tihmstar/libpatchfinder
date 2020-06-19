@@ -20,5 +20,7 @@ cd liboffsetfinder64
 ## Now you can build and install it:
 
 ./autogen.sh
+
 make
+
 sudo make install
