@@ -10,17 +10,17 @@
 #define offsetfinder64_hpp
 
 #include <string>
-#include <stdint.h>
 #include <vector>
 #include <functional>
 
+#include <stdint.h>
 #include <stdlib.h>
+
+#include <libinsn/vmem.hpp>
+
 #include <liboffsetfinder64/common.h>
-#include <liboffsetfinder64/insn.hpp>
 #include <liboffsetfinder64/OFexception.hpp>
 #include <liboffsetfinder64/patch.hpp>
-#include <liboffsetfinder64/vmem.hpp>
-#include <functional>
 
 namespace tihmstar {
     namespace offsetfinder64{
@@ -32,7 +32,7 @@ namespace tihmstar {
             size_t _bufSize;
             offsetfinder64::loc_t _entrypoint;
             offsetfinder64::loc_t _base;
-            offsetfinder64::vmem *_vmem;
+            tihmstar::libinsn::vmem *_vmem;
             
         public:
             patchfinder64(bool freeBuf);

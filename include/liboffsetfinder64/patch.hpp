@@ -9,10 +9,10 @@
 #ifndef patch_hpp
 #define patch_hpp
 
-#include <liboffsetfinder64/common.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <liboffsetfinder64/common.h>
 
 namespace tihmstar {
     namespace offsetfinder64{

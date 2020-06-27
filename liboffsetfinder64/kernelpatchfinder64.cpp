@@ -6,13 +6,15 @@
 //  Copyright © 2019 tihmstar. All rights reserved.
 //
 
+#include <libinsn/vmem.hpp>
+
 #include "kernelpatchfinder64.hpp"
 #include "all_liboffsetfinder.hpp"
-
 
 using namespace std;
 using namespace tihmstar;
 using namespace offsetfinder64;
+using namespace libinsn;
 
 
 kernelpatchfinder64::kernelpatchfinder64(const char *filename)
@@ -568,6 +570,35 @@ std::vector<patch> kernelpatchfinder64::get_get_task_allow_patch(){
 
     return patches;
 };
+
+std::vector<patch> kernelpatchfinder64::get_apfs_snapshot_patch(){
+    std::vector<patch> patches;
+
+    loc_t os_update_str = findstr("com.apple.os.update-",true);
+    debug("os_update_str=%p\n",os_update_str);
+    
+    patches.push_back({os_update_str,"x",1});
+
+    
+//    //apfs_snap_vnop_rename patch
+//    
+//    loc_t apfs_snap_vnop_rename_str = findstr("apfs_snap_vnop_rename",true);
+//    debug("apfs_snap_vnop_rename_str=%p\n",apfs_snap_vnop_rename_str);
+//
+//    loc_t apfs_snap_vnop_rename_ref = find_literal_ref(apfs_snap_vnop_rename_str);
+//    debug("apfs_snap_vnop_rename_ref=%p\n",apfs_snap_vnop_rename_ref);
+//
+//    vmem iter(*_vmem,apfs_snap_vnop_rename_ref);
+//    
+//    while (--iter != insn::tbnz || iter().imm() != 6);
+//    
+//    constexpr char patch_nop[] = "\x1F\x20\x03\xD5";
+//    patches.push_back({iter,patch_nop,sizeof(patch_nop)-1});
+    
+    return patches;
+}
+
+
 
 //#pragma mark patchfinder64
 //

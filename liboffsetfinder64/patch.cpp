@@ -6,7 +6,7 @@
 //  Copyright © 2018 tihmstar. All rights reserved.
 //
 
-#include <liboffsetfinder64/patch.hpp>
+#include "patch.hpp"
 
 using namespace tihmstar::offsetfinder64;
 

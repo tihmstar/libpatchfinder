@@ -6,13 +6,15 @@
 //  Copyright © 2019 tihmstar. All rights reserved.
 //
 
+#include <libgeneral/macros.h>
+
 #include "ibootpatchfinder64.hpp"
 #include "all_liboffsetfinder.hpp"
-#include <libgeneral/macros.h>
 #include "OFexception.hpp"
 
 using namespace std;
 using namespace tihmstar::offsetfinder64;
+using namespace tihmstar::libinsn;
 
 #define IBOOT_VERS_STR_OFFSET 0x280
 #define iBOOT_BASE_OFFSET 0x318

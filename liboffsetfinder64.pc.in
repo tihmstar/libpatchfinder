@@ -6,7 +6,7 @@ includedir=@includedir@
 Name: liboffsetfinder64
 Description: an offsetfinder for 64bit ARM
 
-Requires: @img4tool_requires@ @libgeneral_requires@
+Requires: @img4tool_requires@ @libgeneral_requires@ @libinsn_requires@
 Version: @VERSION_COMMIT_COUNT@
-Libs: -L${libdir} -loffsetfinder64
+Libs: -L${libdir} -loffsetfinder64 -linsn
 Cflags: -I${includedir}

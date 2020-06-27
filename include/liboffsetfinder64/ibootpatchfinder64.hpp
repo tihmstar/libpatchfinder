@@ -9,13 +9,15 @@
 #ifndef ibootpatchfinder64_hpp
 #define ibootpatchfinder64_hpp
 
-#include <liboffsetfinder64/patchfinder64.hpp>
+#include <vector>
+
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+
+#include <liboffsetfinder64/patchfinder64.hpp>
 #include <liboffsetfinder64/patch.hpp>
-#include <vector>
 
 namespace tihmstar {
     namespace offsetfinder64 {

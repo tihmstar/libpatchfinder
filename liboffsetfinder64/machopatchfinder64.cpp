@@ -6,9 +6,7 @@
 //  Copyright © 2019 tihmstar. All rights reserved.
 //
 
-#include <libgeneral/macros.h>
 
-#include "machopatchfinder64.hpp"
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -18,13 +16,17 @@
 #include <mach-o/loader.h>
 #include <mach-o/nlist.h>
 
-
 #include <libgeneral/macros.h>
+#include <libinsn/vsegment.hpp>
+
 #ifdef HAVE_IMG4TOOL
 #include <img4tool/img4tool.hpp>
 #endif //HAVE_IMG4TOOL
 
+#include "machopatchfinder64.hpp"
+
 using namespace tihmstar::offsetfinder64;
+using namespace tihmstar::libinsn;
 
 #pragma mark macho external
 
@@ -73,7 +75,7 @@ __attribute__((always_inline)) struct symtab_command *machopatchfinder64::getSym
 }
 
 void machopatchfinder64::loadSegments(){
-    std::vector<offsetfinder64::vsegment> segments;
+    std::vector<vsegment> segments;
     struct mach_header_64 *mh = (struct mach_header_64*)_buf;
     struct load_command *lcmd = (struct load_command *)(mh + 1);
     for (uint32_t i=0; i<mh->ncmds; i++, lcmd = (struct load_command *)((uint8_t *)lcmd + lcmd->cmdsize)) {

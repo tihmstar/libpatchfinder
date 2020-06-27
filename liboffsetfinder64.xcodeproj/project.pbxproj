@@ -10,18 +10,17 @@
 		42313342236D9DE2005AFE8D /* libimg4tool.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 42313341236D9DE2005AFE8D /* libimg4tool.0.dylib */; };
 		42313343236D9DE2005AFE8D /* libimg4tool.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 42313341236D9DE2005AFE8D /* libimg4tool.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		870E9666200779B00043690C /* libplist.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 870E9665200779B00043690C /* libplist.3.dylib */; };
-		870E967020077AC70043690C /* libcrypto.1.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 870E966F20077AC70043690C /* libcrypto.1.0.0.dylib */; };
 		87397987233FCBA1001DCF6D /* kernelpatchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739797C233FCBA0001DCF6D /* kernelpatchfinder64.cpp */; };
-		87397988233FCBA1001DCF6D /* insn.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739797D233FCBA0001DCF6D /* insn.cpp */; };
 		87397989233FCBA1001DCF6D /* ibootpatchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739797E233FCBA0001DCF6D /* ibootpatchfinder64.cpp */; };
 		8739798A233FCBA1001DCF6D /* machopatchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739797F233FCBA0001DCF6D /* machopatchfinder64.cpp */; };
 		8739798B233FCBA1001DCF6D /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87397980233FCBA0001DCF6D /* main.cpp */; };
-		8739798C233FCBA1001DCF6D /* vmem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87397981233FCBA0001DCF6D /* vmem.cpp */; };
 		8739798D233FCBA1001DCF6D /* patch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87397982233FCBA0001DCF6D /* patch.cpp */; };
 		8739798E233FCBA1001DCF6D /* patchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87397985233FCBA0001DCF6D /* patchfinder64.cpp */; };
-		8739798F233FCBA1001DCF6D /* vsegment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87397986233FCBA0001DCF6D /* vsegment.cpp */; };
 		87AB3F2D2371FA4C0019FB5F /* libgeneral.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 87AB3F2C2371FA4C0019FB5F /* libgeneral.0.dylib */; };
 		87AB3F2E2371FA4C0019FB5F /* libgeneral.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 87AB3F2C2371FA4C0019FB5F /* libgeneral.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		87E6A5F524A759AF0081D457 /* libinsn.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 87E6A5F424A759AF0081D457 /* libinsn.0.dylib */; };
+		87E6A5F624A759AF0081D457 /* libinsn.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 87E6A5F424A759AF0081D457 /* libinsn.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		87E6A60824A765550081D457 /* kernelpatchfinder64iOS13.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87E6A60624A765550081D457 /* kernelpatchfinder64iOS13.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -32,6 +31,7 @@
 			dstSubfolderSpec = 10;
 			files = (
 				42313343236D9DE2005AFE8D /* libimg4tool.0.dylib in Embed Libraries */,
+				87E6A5F624A759AF0081D457 /* libinsn.0.dylib in Embed Libraries */,
 				87AB3F2E2371FA4C0019FB5F /* libgeneral.0.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
@@ -57,26 +57,24 @@
 		870E966F20077AC70043690C /* libcrypto.1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcrypto.1.0.0.dylib; path = ../../../../usr/local/Cellar/openssl/1.0.2n/lib/libcrypto.1.0.0.dylib; sourceTree = "<group>"; };
 		8719282D20067C84005144BB /* liboffsetfinder64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = liboffsetfinder64; sourceTree = BUILT_PRODUCTS_DIR; };
 		8739797C233FCBA0001DCF6D /* kernelpatchfinder64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kernelpatchfinder64.cpp; sourceTree = "<group>"; };
-		8739797D233FCBA0001DCF6D /* insn.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = insn.cpp; sourceTree = "<group>"; };
 		8739797E233FCBA0001DCF6D /* ibootpatchfinder64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ibootpatchfinder64.cpp; sourceTree = "<group>"; };
 		8739797F233FCBA0001DCF6D /* machopatchfinder64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = machopatchfinder64.cpp; sourceTree = "<group>"; };
 		87397980233FCBA0001DCF6D /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		87397981233FCBA0001DCF6D /* vmem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vmem.cpp; sourceTree = "<group>"; };
 		87397982233FCBA0001DCF6D /* patch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = patch.cpp; sourceTree = "<group>"; };
 		87397984233FCBA0001DCF6D /* all_liboffsetfinder.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = all_liboffsetfinder.hpp; sourceTree = "<group>"; };
 		87397985233FCBA0001DCF6D /* patchfinder64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = patchfinder64.cpp; sourceTree = "<group>"; };
-		87397986233FCBA0001DCF6D /* vsegment.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vsegment.cpp; sourceTree = "<group>"; };
 		873979AD233FCCF3001DCF6D /* kernelpatchfinder64.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = kernelpatchfinder64.hpp; path = include/liboffsetfinder64/kernelpatchfinder64.hpp; sourceTree = SOURCE_ROOT; };
 		873979AE233FCCF3001DCF6D /* patchfinder64.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = patchfinder64.hpp; path = include/liboffsetfinder64/patchfinder64.hpp; sourceTree = SOURCE_ROOT; };
-		873979AF233FCCF3001DCF6D /* insn.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = insn.hpp; path = include/liboffsetfinder64/insn.hpp; sourceTree = SOURCE_ROOT; };
 		873979B0233FCCF3001DCF6D /* common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = common.h; path = include/liboffsetfinder64/common.h; sourceTree = SOURCE_ROOT; };
 		873979B1233FCCF3001DCF6D /* patch.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = patch.hpp; path = include/liboffsetfinder64/patch.hpp; sourceTree = SOURCE_ROOT; };
 		873979B2233FCCF3001DCF6D /* OFexception.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = OFexception.hpp; path = include/liboffsetfinder64/OFexception.hpp; sourceTree = SOURCE_ROOT; };
 		873979B3233FCCF3001DCF6D /* machopatchfinder64.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = machopatchfinder64.hpp; path = include/liboffsetfinder64/machopatchfinder64.hpp; sourceTree = SOURCE_ROOT; };
-		873979B4233FCCF3001DCF6D /* vmem.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = vmem.hpp; path = include/liboffsetfinder64/vmem.hpp; sourceTree = SOURCE_ROOT; };
 		873979B5233FCCF3001DCF6D /* ibootpatchfinder64.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = ibootpatchfinder64.hpp; path = include/liboffsetfinder64/ibootpatchfinder64.hpp; sourceTree = SOURCE_ROOT; };
-		873979B6233FCCF3001DCF6D /* vsegment.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = vsegment.hpp; path = include/liboffsetfinder64/vsegment.hpp; sourceTree = SOURCE_ROOT; };
 		87AB3F2C2371FA4C0019FB5F /* libgeneral.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libgeneral.0.dylib; path = ../../../../usr/local/lib/libgeneral.0.dylib; sourceTree = "<group>"; };
+		87E6A5F424A759AF0081D457 /* libinsn.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libinsn.0.dylib; path = ../../../../usr/local/lib/libinsn.0.dylib; sourceTree = "<group>"; };
+		87E6A5F724A75A170081D457 /* libcrypto.1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcrypto.1.0.0.dylib; path = ../../../../usr/local/Cellar/openssl/1.0.2t/lib/libcrypto.1.0.0.dylib; sourceTree = "<group>"; };
+		87E6A60624A765550081D457 /* kernelpatchfinder64iOS13.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kernelpatchfinder64iOS13.cpp; sourceTree = "<group>"; };
+		87E6A60724A765550081D457 /* kernelpatchfinder64iOS13.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kernelpatchfinder64iOS13.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,9 +83,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				42313342236D9DE2005AFE8D /* libimg4tool.0.dylib in Frameworks */,
-				870E967020077AC70043690C /* libcrypto.1.0.0.dylib in Frameworks */,
 				870E9666200779B00043690C /* libplist.3.dylib in Frameworks */,
 				87AB3F2D2371FA4C0019FB5F /* libgeneral.0.dylib in Frameworks */,
+				87E6A5F524A759AF0081D457 /* libinsn.0.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -97,6 +95,8 @@
 		870E9664200779AF0043690C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				87E6A5F724A75A170081D457 /* libcrypto.1.0.0.dylib */,
+				87E6A5F424A759AF0081D457 /* libinsn.0.dylib */,
 				87AB3F2C2371FA4C0019FB5F /* libgeneral.0.dylib */,
 				42313341236D9DE2005AFE8D /* libimg4tool.0.dylib */,
 				870E966F20077AC70043690C /* libcrypto.1.0.0.dylib */,
@@ -133,18 +133,14 @@
 				873979B2233FCCF3001DCF6D /* OFexception.hpp */,
 				873979B1233FCCF3001DCF6D /* patch.hpp */,
 				87397982233FCBA0001DCF6D /* patch.cpp */,
-				873979AF233FCCF3001DCF6D /* insn.hpp */,
-				8739797D233FCBA0001DCF6D /* insn.cpp */,
-				873979B6233FCCF3001DCF6D /* vsegment.hpp */,
-				87397986233FCBA0001DCF6D /* vsegment.cpp */,
-				873979B4233FCCF3001DCF6D /* vmem.hpp */,
-				87397981233FCBA0001DCF6D /* vmem.cpp */,
 				873979AE233FCCF3001DCF6D /* patchfinder64.hpp */,
 				87397985233FCBA0001DCF6D /* patchfinder64.cpp */,
 				873979B3233FCCF3001DCF6D /* machopatchfinder64.hpp */,
 				8739797F233FCBA0001DCF6D /* machopatchfinder64.cpp */,
 				873979AD233FCCF3001DCF6D /* kernelpatchfinder64.hpp */,
 				8739797C233FCBA0001DCF6D /* kernelpatchfinder64.cpp */,
+				87E6A60724A765550081D457 /* kernelpatchfinder64iOS13.hpp */,
+				87E6A60624A765550081D457 /* kernelpatchfinder64iOS13.cpp */,
 				873979B5233FCCF3001DCF6D /* ibootpatchfinder64.hpp */,
 				8739797E233FCBA0001DCF6D /* ibootpatchfinder64.cpp */,
 				87397980233FCBA0001DCF6D /* main.cpp */,
@@ -210,14 +206,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8739798C233FCBA1001DCF6D /* vmem.cpp in Sources */,
+				87E6A60824A765550081D457 /* kernelpatchfinder64iOS13.cpp in Sources */,
 				8739798E233FCBA1001DCF6D /* patchfinder64.cpp in Sources */,
 				8739798D233FCBA1001DCF6D /* patch.cpp in Sources */,
-				87397988233FCBA1001DCF6D /* insn.cpp in Sources */,
 				87397989233FCBA1001DCF6D /* ibootpatchfinder64.cpp in Sources */,
 				8739798A233FCBA1001DCF6D /* machopatchfinder64.cpp in Sources */,
 				8739798B233FCBA1001DCF6D /* main.cpp in Sources */,
-				8739798F233FCBA1001DCF6D /* vsegment.cpp in Sources */,
 				87397987233FCBA1001DCF6D /* kernelpatchfinder64.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -347,7 +341,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/lib,
 					"$(SDKROOT)/usr/lib/system",
-					/usr/local/Cellar/openssl/1.0.2n/lib,
+					/usr/local/Cellar/openssl/1.0.2t/lib,
 					/usr/local/opt/openssl/lib,
 				);
 				OTHER_CFLAGS = "";
@@ -368,7 +362,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					/usr/local/lib,
 					"$(SDKROOT)/usr/lib/system",
-					/usr/local/Cellar/openssl/1.0.2n/lib,
+					/usr/local/Cellar/openssl/1.0.2t/lib,
 					/usr/local/opt/openssl/lib,
 				);
 				OTHER_CFLAGS = "";

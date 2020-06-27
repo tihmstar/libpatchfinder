@@ -6,15 +6,17 @@
 //  Copyright © 2018 tihmstar. All rights reserved.
 //
 
-#include "patchfinder64.hpp"
+#include <string.h>
 
 #include <libgeneral/macros.h>
+
 #include "all_liboffsetfinder.hpp"
-#include <string.h>
+#include "patchfinder64.hpp"
 
 using namespace std;
 using namespace tihmstar;
 using namespace offsetfinder64;
+using namespace libinsn;
 
 #pragma mark liboffsetfinder
 
@@ -70,6 +72,13 @@ loc_t patchfinder64::find_bof(loc_t pos){
     } catch (...) {
         //
     }
+
+    try {
+        //there might be a pacibsp
+        if (--functop != insn::pacibsp) ++functop;
+    } catch (...) {
+        //
+    }
     
     return functop;
 }
@@ -88,32 +97,32 @@ uint64_t patchfinder64::find_register_value(loc_t where, int reg, loc_t startAdd
     
     for (;(loc_t)functop.pc() < where;++functop) {
         switch (functop().type()) {
-            case offsetfinder64::insn::adrp:
+            case insn::adrp:
                 value[functop().rd()] = functop().imm();
                 //                printf("%p: ADRP X%d, 0x%llx\n", (void*)functop.pc(), functop.rd(), functop.imm());
                 break;
-            case offsetfinder64::insn::add:
+            case insn::add:
                 value[functop().rd()] = value[functop().rn()] + functop().imm();
                 //                printf("%p: ADD X%d, X%d, 0x%llx\n", (void*)functop.pc(), functop.rd(), functop.rn(), (uint64_t)functop.imm());
                 break;
-            case offsetfinder64::insn::adr:
+            case insn::adr:
                 value[functop().rd()] = functop().imm();
                 //                printf("%p: ADR X%d, 0x%llx\n", (void*)functop.pc(), functop.rd(), functop.imm());
                 break;
-            case offsetfinder64::insn::ldr:
+            case insn::ldr:
                 //                printf("%p: LDR X%d, [X%d, 0x%llx]\n", (void*)functop.pc(), functop.rt(), functop.rn(), (uint64_t)functop.imm());
                 value[functop().rt()] = value[functop().rn()];
                 if (functop().subtype() == insn::st_immediate) {
                     value[functop().rt()] += functop().imm(); // XXX address, not actual value
                 }
                 break;
-            case offsetfinder64::insn::movz:
+            case insn::movz:
                 value[functop().rd()] = functop().imm();
                 break;
-            case offsetfinder64::insn::movk:
+            case insn::movk:
                 value[functop().rd()] |= functop().imm();
                 break;
-            case offsetfinder64::insn::mov:
+            case insn::mov:
                 value[functop().rd()] = value[functop().rm()];
                 break;
             default:
