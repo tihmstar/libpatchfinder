@@ -23,6 +23,15 @@ jobs:
          if [ "$RUNNER_OS" == "Linux" ]; then
               sudo apt-get install -y libssl-dev libcurl4-openssl-dev libzip-dev
               
+              #install libplist-2.0 because libplist-dev is called "libplist v2.0.0"
+              git clone https://github.com/libimobiledevice/libplist
+              cd libplist
+              ./autogen.sh --without-cython --enable-static --disable-shared CFLAGS="-fPIC" CXXFLAGS="-fPIC"
+              make
+              sudo make install
+              cd ..
+              rm -rf libplist
+              
               wget https://opensource.apple.com/tarballs/cctools/cctools-927.0.2.tar.gz
               mkdir tmp
               tar -xvzf cctools-927.0.2.tar.gz -C tmp
