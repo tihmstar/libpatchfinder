@@ -11,11 +11,13 @@
 		42313343236D9DE2005AFE8D /* libimg4tool.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 42313341236D9DE2005AFE8D /* libimg4tool.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		870E9666200779B00043690C /* libplist.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 870E9665200779B00043690C /* libplist.3.dylib */; };
 		87397987233FCBA1001DCF6D /* kernelpatchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739797C233FCBA0001DCF6D /* kernelpatchfinder64.cpp */; };
-		87397989233FCBA1001DCF6D /* ibootpatchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739797E233FCBA0001DCF6D /* ibootpatchfinder64.cpp */; };
+		87397989233FCBA1001DCF6D /* ibootpatchfinder64_base.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739797E233FCBA0001DCF6D /* ibootpatchfinder64_base.cpp */; };
 		8739798A233FCBA1001DCF6D /* machopatchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739797F233FCBA0001DCF6D /* machopatchfinder64.cpp */; };
 		8739798B233FCBA1001DCF6D /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87397980233FCBA0001DCF6D /* main.cpp */; };
 		8739798D233FCBA1001DCF6D /* patch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87397982233FCBA0001DCF6D /* patch.cpp */; };
 		8739798E233FCBA1001DCF6D /* patchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87397985233FCBA0001DCF6D /* patchfinder64.cpp */; };
+		8791270D24D0788E0071283F /* ibootpatchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8791270B24D0788E0071283F /* ibootpatchfinder64.cpp */; };
+		8791271024D07C7A0071283F /* ibootpatchfinder64_iOS14.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8791270E24D07C7A0071283F /* ibootpatchfinder64_iOS14.cpp */; };
 		87AB3F2D2371FA4C0019FB5F /* libgeneral.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 87AB3F2C2371FA4C0019FB5F /* libgeneral.0.dylib */; };
 		87AB3F2E2371FA4C0019FB5F /* libgeneral.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 87AB3F2C2371FA4C0019FB5F /* libgeneral.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		87E6A5F524A759AF0081D457 /* libinsn.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 87E6A5F424A759AF0081D457 /* libinsn.0.dylib */; };
@@ -57,7 +59,7 @@
 		870E966F20077AC70043690C /* libcrypto.1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcrypto.1.0.0.dylib; path = ../../../../usr/local/Cellar/openssl/1.0.2n/lib/libcrypto.1.0.0.dylib; sourceTree = "<group>"; };
 		8719282D20067C84005144BB /* liboffsetfinder64 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = liboffsetfinder64; sourceTree = BUILT_PRODUCTS_DIR; };
 		8739797C233FCBA0001DCF6D /* kernelpatchfinder64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = kernelpatchfinder64.cpp; sourceTree = "<group>"; };
-		8739797E233FCBA0001DCF6D /* ibootpatchfinder64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ibootpatchfinder64.cpp; sourceTree = "<group>"; };
+		8739797E233FCBA0001DCF6D /* ibootpatchfinder64_base.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ibootpatchfinder64_base.cpp; sourceTree = "<group>"; };
 		8739797F233FCBA0001DCF6D /* machopatchfinder64.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = machopatchfinder64.cpp; sourceTree = "<group>"; };
 		87397980233FCBA0001DCF6D /* main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		87397982233FCBA0001DCF6D /* patch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = patch.cpp; sourceTree = "<group>"; };
@@ -70,6 +72,10 @@
 		873979B2233FCCF3001DCF6D /* OFexception.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = OFexception.hpp; path = include/liboffsetfinder64/OFexception.hpp; sourceTree = SOURCE_ROOT; };
 		873979B3233FCCF3001DCF6D /* machopatchfinder64.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = machopatchfinder64.hpp; path = include/liboffsetfinder64/machopatchfinder64.hpp; sourceTree = SOURCE_ROOT; };
 		873979B5233FCCF3001DCF6D /* ibootpatchfinder64.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = ibootpatchfinder64.hpp; path = include/liboffsetfinder64/ibootpatchfinder64.hpp; sourceTree = SOURCE_ROOT; };
+		8791270B24D0788E0071283F /* ibootpatchfinder64.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ibootpatchfinder64.cpp; sourceTree = "<group>"; };
+		8791270C24D0788E0071283F /* ibootpatchfinder64_base.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = ibootpatchfinder64_base.hpp; path = ../include/liboffsetfinder64/ibootpatchfinder64_base.hpp; sourceTree = "<group>"; };
+		8791270E24D07C7A0071283F /* ibootpatchfinder64_iOS14.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ibootpatchfinder64_iOS14.cpp; sourceTree = "<group>"; };
+		8791271124D096260071283F /* ibootpatchfinder64_iOS14.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = ibootpatchfinder64_iOS14.hpp; path = include/liboffsetfinder64/ibootpatchfinder64_iOS14.hpp; sourceTree = SOURCE_ROOT; };
 		87AB3F2C2371FA4C0019FB5F /* libgeneral.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libgeneral.0.dylib; path = ../../../../usr/local/lib/libgeneral.0.dylib; sourceTree = "<group>"; };
 		87E6A5F424A759AF0081D457 /* libinsn.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libinsn.0.dylib; path = ../../../../usr/local/lib/libinsn.0.dylib; sourceTree = "<group>"; };
 		87E6A5F724A75A170081D457 /* libcrypto.1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcrypto.1.0.0.dylib; path = ../../../../usr/local/Cellar/openssl/1.0.2t/lib/libcrypto.1.0.0.dylib; sourceTree = "<group>"; };
@@ -142,7 +148,11 @@
 				87E6A60724A765550081D457 /* kernelpatchfinder64iOS13.hpp */,
 				87E6A60624A765550081D457 /* kernelpatchfinder64iOS13.cpp */,
 				873979B5233FCCF3001DCF6D /* ibootpatchfinder64.hpp */,
-				8739797E233FCBA0001DCF6D /* ibootpatchfinder64.cpp */,
+				8791270B24D0788E0071283F /* ibootpatchfinder64.cpp */,
+				8791270C24D0788E0071283F /* ibootpatchfinder64_base.hpp */,
+				8739797E233FCBA0001DCF6D /* ibootpatchfinder64_base.cpp */,
+				8791271124D096260071283F /* ibootpatchfinder64_iOS14.hpp */,
+				8791270E24D07C7A0071283F /* ibootpatchfinder64_iOS14.cpp */,
 				87397980233FCBA0001DCF6D /* main.cpp */,
 			);
 			path = liboffsetfinder64;
@@ -208,10 +218,12 @@
 			files = (
 				87E6A60824A765550081D457 /* kernelpatchfinder64iOS13.cpp in Sources */,
 				8739798E233FCBA1001DCF6D /* patchfinder64.cpp in Sources */,
+				8791271024D07C7A0071283F /* ibootpatchfinder64_iOS14.cpp in Sources */,
 				8739798D233FCBA1001DCF6D /* patch.cpp in Sources */,
-				87397989233FCBA1001DCF6D /* ibootpatchfinder64.cpp in Sources */,
+				87397989233FCBA1001DCF6D /* ibootpatchfinder64_base.cpp in Sources */,
 				8739798A233FCBA1001DCF6D /* machopatchfinder64.cpp in Sources */,
 				8739798B233FCBA1001DCF6D /* main.cpp in Sources */,
+				8791270D24D0788E0071283F /* ibootpatchfinder64.cpp in Sources */,
 				87397987233FCBA1001DCF6D /* kernelpatchfinder64.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -333,9 +345,8 @@
 					"HAVE_IMG4TOOL=1",
 				);
 				HEADER_SEARCH_PATHS = (
-					/usr/local/opt/openssl/include,
 					"$(SRCROOT)/include",
-					"$(SRCROOT)/external/libgeneral/include",
+					/usr/local/opt/openssl/include,
 					/usr/local/include,
 				);
 				LIBRARY_SEARCH_PATHS = (
@@ -354,9 +365,8 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					/usr/local/opt/openssl/include,
 					"$(SRCROOT)/include",
-					"$(SRCROOT)/external/libgeneral/include",
+					/usr/local/opt/openssl/include,
 					/usr/local/include,
 				);
 				LIBRARY_SEARCH_PATHS = (

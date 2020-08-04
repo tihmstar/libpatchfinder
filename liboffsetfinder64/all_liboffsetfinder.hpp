@@ -21,13 +21,8 @@ static uint64_t SET_BITS(uint64_t v, int begin) { return ((v)<<(begin));}
 #define BIT_RANGE(v,begin,end) ( ((v)>>(begin)) % (1 << ((end)-(begin)+1)) )
 #define BIT_AT(v,pos) ( (v >> pos) % 2 )
 #define SET_BITS(v, begin) (((v)<<(begin)))
-
 #endif
 
-#ifdef DEBUG
-#define debug(a...) printf(a)
-#else
-#define debug(a...)
-#endif
+
 
 #endif /* all_liboffsetfinder_h */

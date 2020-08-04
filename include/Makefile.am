@@ -4,4 +4,6 @@ nobase_dist_include_HEADERS = liboffsetfinder64/common.h \
 															liboffsetfinder64/patchfinder64.hpp \
 															liboffsetfinder64/machopatchfinder64.hpp \
 															liboffsetfinder64/kernelpatchfinder64.hpp \
-															liboffsetfinder64/ibootpatchfinder64.hpp
+															liboffsetfinder64/ibootpatchfinder64.hpp \
+															liboffsetfinder64/ibootpatchfinder64_base.hpp \
+															liboffsetfinder64/ibootpatchfinder64_iOS14.hpp

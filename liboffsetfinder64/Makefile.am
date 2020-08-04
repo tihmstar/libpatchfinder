@@ -9,5 +9,7 @@ liboffsetfinder64_la_SOURCES = 	patch.cpp \
 																patchfinder64.cpp \
 																machopatchfinder64.cpp \
 																ibootpatchfinder64.cpp \
+																ibootpatchfinder64_base.cpp \
+																ibootpatchfinder64_iOS14.cpp \
 																kernelpatchfinder64.cpp \
 																kernelpatchfinder64iOS13.cpp
