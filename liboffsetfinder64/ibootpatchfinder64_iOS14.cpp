@@ -152,3 +152,43 @@ loc_t ibootpatchfinder64_iOS14::find_iBoot_logstr(uint64_t loghex, int skip, uin
     
     return 0;
 }
+
+std::vector<patch> ibootpatchfinder64_iOS14::get_disable_wxn_patch(){
+    std::vector<patch> patches;
+    
+    vmem iter(*_vmem);
+    
+    while (true) {
+        while (++iter != insn::msr || iter().special() != insn::sctlr_el1 || iter().rt() != 0);
+        
+        for (int i=0; i<10; i++) {
+            if (++iter == insn::mov && iter().rd() == 1 && iter().rm() == 0){
+                goto found_place;
+            }
+            if (iter() == insn::ret) break;
+        }
+        continue;
+        
+        found_place:
+        break;
+    }
+
+    loc_t  msr_sctlr_el1 = iter;
+    debug("msr_sctlr_el1=%p",msr_sctlr_el1);
+
+    while (++iter == insn::orr) {
+        if (iter().imm() == 0x80000) {
+            goto found_patch;
+        }
+    }
+    reterror("failed to find loc");
+    
+found_patch:
+    loc_t  patchloc = iter;
+    debug("patchloc=%p",patchloc);
+    
+    //and        x0, x0, #0xfffffffffff7ffff
+    patches.push_back({(loc_t)iter.pc(), "\x00\xF8\x6C\x92", 4});
+
+    return patches;
+}

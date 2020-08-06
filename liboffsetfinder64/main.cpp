@@ -22,11 +22,11 @@ int main(int argc, const char * argv[]) {
         delete ibpf;
     });
     
-    auto asd = ibpf->get_boot_arg_patch("-v serial=3");
-    
-    loc_t dsa = ibpf->find_iBoot_logstr(0xdce7b01f6ef60a3);
-    printf("dsa=%p\n",dsa);
-    
+//    auto asd = ibpf->get_boot_arg_patch("-v serial=3");
+//
+//    loc_t dsa = ibpf->find_iBoot_logstr(0xdce7b01f6ef60a3);
+
+    ibpf->get_disable_wxn_patch();
     
     printf("done\n");
     return 0;

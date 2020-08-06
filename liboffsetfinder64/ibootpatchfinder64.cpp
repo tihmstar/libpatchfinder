@@ -133,7 +133,10 @@ std::vector<patch> ibootpatchfinder64::get_change_reboot_to_fsboot_patch(){
     reterror("not implemented by provider");
 }
 
-
 loc_t ibootpatchfinder64::find_iBoot_logstr(uint64_t loghex, int skip, uint64_t shortdec){
+    reterror("not implemented by provider");
+}
+
+std::vector<patch> ibootpatchfinder64::get_disable_wxn_patch(){
     reterror("not implemented by provider");
 }
