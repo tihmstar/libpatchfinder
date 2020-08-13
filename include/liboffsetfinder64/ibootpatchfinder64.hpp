@@ -96,11 +96,18 @@ namespace tihmstar {
 
             virtual loc_t find_iBoot_logstr(uint64_t loghex, int skip = 0, uint64_t shortdec = 0);
             
+            
+            virtual uint32_t get_el1_pagesize();
+            
             /*
-                set SCTLR_EL1_WXN to 0
+                maps iBoot block writable      at 0x2000000
+                maps loadaddr block executable at 0x4000000
+             
              */
-            virtual std::vector<patch> get_disable_wxn_patch();
+            
+            virtual std::vector<patch> get_rw_and_x_mappings_patch_el1();
 
+            
         };
     };
 };

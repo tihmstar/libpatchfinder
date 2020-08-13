@@ -250,4 +250,138 @@ loc_t patchfinder64::find_branch_ref(loc_t pos, int limit, int ignoreTimes){
     reterror("branchref not found");
 }
 
+loc_t patchfinder64::findnops(uint16_t nopCnt, bool useNops){
+    uint32_t *needle = NULL;
+    cleanup([&]{
+        safeFree(needle);
+    });
+    loc_t pos = 0;
+    needle = (uint32_t *)malloc(nopCnt*4);
+    
+    for (uint16_t i=0; i<nopCnt; i++) {
+        needle[i] = *(uint32_t*)"\x1F\x20\x03\xD5";
+    }
+
+    
+    pos = -4;
+nextNops:
+    pos = _vmem->memmem(needle, nopCnt*4,pos+4);
+    std::pair<loc_t, loc_t> range(pos,pos+4*nopCnt);
+    
+    for (auto &r : _usedNops) {
+        if (r.first > range.first && r.first < range.second) goto nextNops; //used range inside found range
+        if (range.first > r.first && range.first < r.second) goto nextNops; //found range inside used range
+    }
+
+    if (useNops) {
+        _usedNops.push_back(range);
+    }
+    
+    return pos;
+}
+
+uint32_t patchfinder64::pageshit_for_pagesize(uint32_t pagesize){
+    uint32_t pageshift = 0;
+    while (pagesize>>=1) pageshift++;
+    return pageshift;
+}
+
+
+uint64_t patchfinder64::pte_vma_to_index(uint32_t pagesize, uint8_t level, uint64_t address){
+    switch (pagesize) {
+        case 0x1000: //4K
+            switch (level) {
+                case 0:
+                    return BIT_RANGE(address, 39, 47);
+                case 1:
+                    return BIT_RANGE(address, 30, 38);
+                case 2:
+                    return BIT_RANGE(address, 21, 29);
+                case 3:
+                    return BIT_RANGE(address, 12, 20);
+                default:
+                    reterror("[4K] bad level=%d",level);
+            }
+            break;
+        case 0x4000: //16K
+            switch (level) {
+                case 0:
+                    return BIT_AT(address, 47);
+                case 1:
+                    return BIT_RANGE(address, 36, 46);
+                case 2:
+                    return BIT_RANGE(address, 25, 35);
+                case 3:
+                    return BIT_RANGE(address, 14, 24);
+                default:
+                    reterror("[16K] bad level=%d",level);
+            }
+            break;
+        case 0x10000: //64K
+            switch (level) {
+                case 1:
+                    return BIT_RANGE(address, 42, 51);
+                case 2:
+                    return BIT_RANGE(address, 29, 41);
+                case 3:
+                    return BIT_RANGE(address, 16, 28);
+                default:
+                    reterror("[64K] bad level=%d",level);
+            }
+            break;
+        default:
+            reterror("bad pagesize");
+    }
+}
+
+uint64_t patchfinder64::pte_index_to_vma(uint32_t pagesize, uint8_t level, uint64_t index){
+    switch (pagesize) {
+        case 0x1000: //4K
+            switch (level) {
+                case 0:
+                    return (index << 39) & ((1UL<<(47+1))-1);
+                case 1:
+                    return (index << 30) & ((1UL<<(38+1))-1);
+                case 2:
+                    return (index << 21) & ((1UL<<(29+1))-1);
+                case 3:
+                    return (index << 12) & ((1UL<<(20+1))-1);
+                default:
+                    reterror("[4K] bad level=%d",level);
+            }
+            break;
+        case 0x4000: //16K
+            switch (level) {
+                case 0:
+                    return (index << 47) & ((1UL<<(47+1))-1);
+                case 1:
+                    return (index << 36) & ((1UL<<(46+1))-1);
+                case 2:
+                    return (index << 25) & ((1UL<<(35+1))-1);
+                case 3:
+                    return (index << 14) & ((1UL<<(24+1))-1);
+                default:
+                    reterror("[16K] bad level=%d",level);
+            }
+            break;
+        case 0x10000: //64K
+            switch (level) {
+                case 1:
+                    return (index << 42) & ((1UL<<(51+1))-1);
+                case 2:
+                    return (index << 29) & ((1UL<<(41+1))-1);
+                case 3:
+                    return (index << 16) & ((1UL<<(28+1))-1);
+                default:
+                    reterror("[64K] bad level=%d",level);
+            }
+            break;
+        default:
+            reterror("bad pagesize");
+    }
+}
+
+
+
+
 //

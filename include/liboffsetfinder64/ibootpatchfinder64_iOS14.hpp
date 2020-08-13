@@ -25,8 +25,10 @@ namespace tihmstar {
 
             virtual loc_t find_iBoot_logstr(uint64_t loghex, int skip = 0, uint64_t shortdec = 0) override;
 
-            virtual std::vector<patch> get_disable_wxn_patch() override;
-
+            virtual uint32_t get_el1_pagesize() override;
+            
+            virtual std::vector<patch> get_rw_and_x_mappings_patch_el1() override;
+            
         };
     };
 };

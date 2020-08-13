@@ -13,15 +13,11 @@
 
 namespace tihmstar {
     namespace offsetfinder64 {
-        class kernelpatchfinder64 : public machopatchfinder64{
-            std::vector<std::pair<loc_t, loc_t>> _usedNops;
-            
+        class kernelpatchfinder64 : public machopatchfinder64{            
         public:
             kernelpatchfinder64(const char *filename);
             kernelpatchfinder64(const void *buffer, size_t bufSize);
-            
-            loc_t findnops(uint16_t nopCnt, bool useNops = true);
-            
+                        
             loc_t find_syscall0();
             loc_t find_machtrap_table();
             loc_t find_function_for_syscall(int syscall);

@@ -26,7 +26,15 @@ int main(int argc, const char * argv[]) {
 //
 //    loc_t dsa = ibpf->find_iBoot_logstr(0xdce7b01f6ef60a3);
 
-    ibpf->get_disable_wxn_patch();
+    auto patches = ibpf->get_rw_and_x_mappings_patch_el1();
+    
+    for (auto p : patches) {
+        printf(": Applying patch=%p : ",(void*)p._location);
+        for (int i=0; i<p._patchSize; i++) {
+            printf("%02x",((uint8_t*)p._patch)[i]);
+        }
+        printf("\n");
+    }
     
     printf("done\n");
     return 0;

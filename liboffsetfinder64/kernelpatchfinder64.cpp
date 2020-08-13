@@ -29,37 +29,6 @@ kernelpatchfinder64::kernelpatchfinder64(const void *buffer, size_t bufSize)
     //
 }
 
-loc_t kernelpatchfinder64::findnops(uint16_t nopCnt, bool useNops){
-    uint32_t *needle = NULL;
-    cleanup([&]{
-        safeFree(needle);
-    });
-    loc_t pos = 0;
-    needle = (uint32_t *)malloc(nopCnt*4);
-    
-    for (uint16_t i=0; i<nopCnt; i++) {
-        needle[i] = *(uint32_t*)"\x1F\x20\x03\xD5";
-    }
-
-    
-    pos = -4;
-nextNops:
-    pos = _vmem->memmem(needle, nopCnt*4,pos+4);
-    std::pair<loc_t, loc_t> range(pos,pos+4*nopCnt);
-    
-    for (auto &r : _usedNops) {
-        if (r.first > range.first && r.first < range.second) goto nextNops; //used range inside found range
-        if (range.first > r.first && range.first < r.second) goto nextNops; //found range inside used range
-    }
-
-    if (useNops) {
-        _usedNops.push_back(range);
-    }
-    
-    return pos;
-}
-
-
 loc_t kernelpatchfinder64::find_syscall0(){
     constexpr char sig_syscall_3[] = "\x06\x00\x00\x00\x03\x00\x0c\x00";
     loc_t sys3 = _vmem->memmem(sig_syscall_3, sizeof(sig_syscall_3)-1);

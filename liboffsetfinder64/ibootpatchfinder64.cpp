@@ -137,6 +137,10 @@ loc_t ibootpatchfinder64::find_iBoot_logstr(uint64_t loghex, int skip, uint64_t 
     reterror("not implemented by provider");
 }
 
-std::vector<patch> ibootpatchfinder64::get_disable_wxn_patch(){
+uint32_t ibootpatchfinder64::get_el1_pagesize(){
+    reterror("not implemented by provider");
+}
+
+std::vector<patch> ibootpatchfinder64::get_rw_and_x_mappings_patch_el1(){
     reterror("not implemented by provider");
 }
