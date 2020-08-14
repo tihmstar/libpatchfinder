@@ -163,7 +163,10 @@ void machopatchfinder64::init(){
     
         if (tryfat) {
             printf("got fat macho with first slice at %u\n", (uint32_t) (tryfat - _buf));
-            free((void*)_buf);
+            if (_freeBuf) {
+                free((void*)_buf);
+            }
+            _freeBuf = true;
             _buf = tryfat;tryfat = NULL;
         } else {
             printf("got fat macho but failed to parse\n");
