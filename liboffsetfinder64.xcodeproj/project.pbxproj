@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		42313342236D9DE2005AFE8D /* libimg4tool.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 42313341236D9DE2005AFE8D /* libimg4tool.0.dylib */; };
 		42313343236D9DE2005AFE8D /* libimg4tool.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 42313341236D9DE2005AFE8D /* libimg4tool.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		870E9666200779B00043690C /* libplist.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 870E9665200779B00043690C /* libplist.3.dylib */; };
 		87397987233FCBA1001DCF6D /* kernelpatchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739797C233FCBA0001DCF6D /* kernelpatchfinder64.cpp */; };
 		87397989233FCBA1001DCF6D /* ibootpatchfinder64_base.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739797E233FCBA0001DCF6D /* ibootpatchfinder64_base.cpp */; };
 		8739798A233FCBA1001DCF6D /* machopatchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739797F233FCBA0001DCF6D /* machopatchfinder64.cpp */; };
@@ -23,6 +22,8 @@
 		87E6A5F524A759AF0081D457 /* libinsn.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 87E6A5F424A759AF0081D457 /* libinsn.0.dylib */; };
 		87E6A5F624A759AF0081D457 /* libinsn.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 87E6A5F424A759AF0081D457 /* libinsn.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		87E6A60824A765550081D457 /* kernelpatchfinder64iOS13.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87E6A60624A765550081D457 /* kernelpatchfinder64iOS13.cpp */; };
+		87F6063C25681108008FA4D0 /* libplist-2.0.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 87F6063B25681108008FA4D0 /* libplist-2.0.3.dylib */; };
+		87F6063D25681108008FA4D0 /* libplist-2.0.3.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 87F6063B25681108008FA4D0 /* libplist-2.0.3.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -35,6 +36,7 @@
 				42313343236D9DE2005AFE8D /* libimg4tool.0.dylib in Embed Libraries */,
 				87E6A5F624A759AF0081D457 /* libinsn.0.dylib in Embed Libraries */,
 				87AB3F2E2371FA4C0019FB5F /* libgeneral.0.dylib in Embed Libraries */,
+				87F6063D25681108008FA4D0 /* libplist-2.0.3.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -81,6 +83,7 @@
 		87E6A5F724A75A170081D457 /* libcrypto.1.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcrypto.1.0.0.dylib; path = ../../../../usr/local/Cellar/openssl/1.0.2t/lib/libcrypto.1.0.0.dylib; sourceTree = "<group>"; };
 		87E6A60624A765550081D457 /* kernelpatchfinder64iOS13.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kernelpatchfinder64iOS13.cpp; sourceTree = "<group>"; };
 		87E6A60724A765550081D457 /* kernelpatchfinder64iOS13.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kernelpatchfinder64iOS13.hpp; sourceTree = "<group>"; };
+		87F6063B25681108008FA4D0 /* libplist-2.0.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libplist-2.0.3.dylib"; path = "../../../../usr/local/lib/libplist-2.0.3.dylib"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,9 +92,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				42313342236D9DE2005AFE8D /* libimg4tool.0.dylib in Frameworks */,
-				870E9666200779B00043690C /* libplist.3.dylib in Frameworks */,
 				87AB3F2D2371FA4C0019FB5F /* libgeneral.0.dylib in Frameworks */,
 				87E6A5F524A759AF0081D457 /* libinsn.0.dylib in Frameworks */,
+				87F6063C25681108008FA4D0 /* libplist-2.0.3.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,6 +104,7 @@
 		870E9664200779AF0043690C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				87F6063B25681108008FA4D0 /* libplist-2.0.3.dylib */,
 				87E6A5F724A75A170081D457 /* libcrypto.1.0.0.dylib */,
 				87E6A5F424A759AF0081D457 /* libinsn.0.dylib */,
 				87AB3F2C2371FA4C0019FB5F /* libgeneral.0.dylib */,

@@ -94,6 +94,22 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_sigcheck_patch(){
     }
 
     
+    {
+        /* always production patch*/
+        for (uint64_t demoteReg : {0x3F500000UL,0x3F500000UL,0x3F500000UL,0x481BC000UL,0x481BC000UL,0x20E02A000UL,0x2102BC000UL,0x2102BC000UL,0x2352BC000UL}) {
+            loc_t demoteRef = find_literal_ref(demoteReg);
+            if (demoteRef) {
+                vmem iter(*_vmem,demoteRef);
+
+                while (++iter != insn::and_);
+                assure((uint32_t)iter().imm() == 1);
+                demoteRef = iter;
+                debug("demoteRef=%p\n",demoteRef);
+                patches.push_back({demoteRef,"\x20\x00\x80\xD2" /*mov x0, 0*/,4});
+            }
+        }
+    }
+    
     return patches;
 }
 

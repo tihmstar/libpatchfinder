@@ -26,7 +26,7 @@ int main(int argc, const char * argv[]) {
 //
 //    loc_t dsa = ibpf->find_iBoot_logstr(0xdce7b01f6ef60a3);
 
-    auto patches = ibpf->get_rw_and_x_mappings_patch_el1();
+    auto patches = ibpf->get_sigcheck_patch();
     
     for (auto p : patches) {
         printf(": Applying patch=%p : ",(void*)p._location);
