@@ -260,3 +260,16 @@ loc_t machopatchfinder64::find_sym(const char *sym){
     retcustomerror(symbol_not_found,sym);
     return 0;//never reached
 }
+
+std::string machopatchfinder64::sym_for_addr(loc_t addr){
+    const uint8_t *psymtab = _buf + getSymtab()->symoff;
+    const uint8_t *pstrtab = _buf + getSymtab()->stroff;
+    
+    struct nlist_64 *entry = (struct nlist_64 *)psymtab;
+    for (uint32_t i = 0; i < getSymtab()->nsyms; i++, entry++)
+        if (addr == (loc_t)entry->n_value) {
+            return (const char*)(pstrtab + entry->n_un.n_strx);
+        }
+
+    retcustomerror(symbol_not_found,"No symbol for address=0x%016llx",addr);
+}

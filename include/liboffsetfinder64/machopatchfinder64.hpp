@@ -29,6 +29,8 @@ namespace tihmstar {
 
             bool haveSymbols() { return __symtab != NULL;};
             loc_t find_sym(const char *sym);
+            std::string sym_for_addr(loc_t addr);
+            
             
         };
         
