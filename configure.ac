@@ -33,7 +33,7 @@ CXXFLAGS+=" -D EXPECTIONNAME=OFexception"
 
 # Checks for libraries.
 IMG4TOOL_REQUIRES_STR="libimg4tool >= 192"
-LIBGENERAL_REQUIRES_STR="libgeneral >= 32"
+LIBGENERAL_REQUIRES_STR="libgeneral >= 39"
 LIBINSN_REQUIRES_STR="libinsn >= 24"
 PKG_CHECK_MODULES(libimg4tool, $IMG4TOOL_REQUIRES_STR, have_img4tool=yes, have_img4tool=no)
 PKG_CHECK_MODULES(libgeneral, $LIBGENERAL_REQUIRES_STR)
