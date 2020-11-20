@@ -208,8 +208,8 @@ loc_t patchfinder64::find_literal_ref(loc_t pos, int ignoreTimes, loc_t startPos
     return 0;
 }
 
-loc_t patchfinder64::find_call_ref(loc_t pos, int ignoreTimes){
-    vmem bl(*_vmem);
+loc_t patchfinder64::find_call_ref(loc_t pos, int ignoreTimes, loc_t startPos){
+    vmem bl(*_vmem, startPos);
     if (bl() == insn::bl) goto isBL;
     while (true){
         while (++bl != insn::bl);
