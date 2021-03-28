@@ -104,21 +104,26 @@ void machopatchfinder64::loadSegments(){
     }
     _vmem = new vmem(segments,0);
     
-    try {
-        _vmem->deref(_entrypoint);
-        info("Detected non-slid kernel.");
-    } catch (tihmstar::out_of_range &e) {
-#warning TODO
-        reterror("Detected slid kernel. but slid kernel is currently not supported");
-        //        info("Detected slid kernel. Using kernelslide=%p",(void*)_kslide);
-        //        _kernel_entry += _kslide;
-        //        _kernelIsSlid = true;
+    if (_entrypoint) {
+        try {
+            _vmem->deref(_entrypoint);
+            info("Detected non-slid kernel.");
+        } catch (tihmstar::out_of_range &e) {
+    #warning TODO
+            reterror("Detected slid kernel. but slid kernel is currently not supported");
+            //        info("Detected slid kernel. Using kernelslide=%p",(void*)_kslide);
+            //        _kernel_entry += _kslide;
+            //        _kernelIsSlid = true;
+        }
+        try {
+            _vmem->deref(_entrypoint);
+        } catch (tihmstar::out_of_range &e) {
+            reterror("Error occured when handling kernel entry checks");
+        }
+    }else{
+        warning("Undefined entrypoint! If this is a kernel binary, something went wrong!");
     }
-    try {
-        _vmem->deref(_entrypoint);
-    } catch (tihmstar::out_of_range &e) {
-        reterror("Error occured when handling kernel entry checks");
-    }
+    
     
     info("Inited offsetfinder64 %s %s",VERSION_COMMIT_COUNT, VERSION_COMMIT_SHA);
     try {
