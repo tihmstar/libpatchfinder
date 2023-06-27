@@ -1,9 +1,16 @@
-nobase_dist_include_HEADERS = liboffsetfinder64/common.h \
-															liboffsetfinder64/OFexception.hpp \
-															liboffsetfinder64/patch.hpp \
-															liboffsetfinder64/patchfinder64.hpp \
-															liboffsetfinder64/machopatchfinder64.hpp \
-															liboffsetfinder64/kernelpatchfinder64.hpp \
-															liboffsetfinder64/ibootpatchfinder64.hpp \
-															liboffsetfinder64/ibootpatchfinder64_base.hpp \
-															liboffsetfinder64/ibootpatchfinder64_iOS14.hpp
+nobase_dist_include_HEADERS = libpatchfinder/OFexception.hpp \
+															libpatchfinder/patch.hpp \
+															libpatchfinder/patchfinder64.hpp \
+															libpatchfinder/machopatchfinder64.hpp \
+															libpatchfinder/patchfinder32.hpp \
+															libpatchfinder/machopatchfinder32.hpp
+
+#ibootpatchfinder
+nobase_dist_include_HEADERS +=	libpatchfinder/ibootpatchfinder/ibootpatchfinder.hpp
+nobase_dist_include_HEADERS +=	libpatchfinder/ibootpatchfinder/ibootpatchfinder32.hpp
+nobase_dist_include_HEADERS +=	libpatchfinder/ibootpatchfinder/ibootpatchfinder64.hpp
+
+#kernelpatchfinder
+nobase_dist_include_HEADERS +=	libpatchfinder/kernelpatchfinder/kernelpatchfinder.hpp
+nobase_dist_include_HEADERS +=	libpatchfinder/kernelpatchfinder/kernelpatchfinder32.hpp
+nobase_dist_include_HEADERS +=	libpatchfinder/kernelpatchfinder/kernelpatchfinder64.hpp

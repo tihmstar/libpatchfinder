@@ -22,7 +22,13 @@ AC_PROG_CC
 AC_MSG_CHECKING([whether we need platform-specific build settings])
 case $host_os in
   darwin* )
+        AC_MSG_RESULT([${host_os}])
         CXXFLAGS+=" -stdlib=libc++ "
+        ;;
+  *mingw32*|*cygwin*)
+        AC_MSG_RESULT([${host_os}])
+        win32=true
+        LDFLAGS+=" -no-undefined -lws2_32"
         ;;
 esac
 
@@ -32,16 +38,23 @@ CFLAGS+=" -std=c11"
 CXXFLAGS+=" -D EXPECTIONNAME=OFexception"
 
 # Checks for libraries.
-IMG4TOOL_REQUIRES_STR="libimg4tool >= 192"
-LIBGENERAL_REQUIRES_STR="libgeneral >= 39"
-LIBINSN_REQUIRES_STR="libinsn >= 24"
+IMG4TOOL_REQUIRES_STR="libimg4tool >= 228"
+IMG3TOOL_REQUIRES_STR="libimg3tool >= 10"
+LIBGENERAL_REQUIRES_STR="libgeneral >= 70"
+LIBINSN_REQUIRES_STR="libinsn >= 69"
 PKG_CHECK_MODULES(libimg4tool, $IMG4TOOL_REQUIRES_STR, have_img4tool=yes, have_img4tool=no)
+PKG_CHECK_MODULES(libimg3tool, $IMG3TOOL_REQUIRES_STR, have_img3tool=yes, have_img3tool=no)
 PKG_CHECK_MODULES(libgeneral, $LIBGENERAL_REQUIRES_STR)
 PKG_CHECK_MODULES(libinsn, $LIBINSN_REQUIRES_STR)
 
 AC_SUBST([libgeneral_requires], [$LIBGENERAL_REQUIRES_STR])
 AC_SUBST([libinsn_requires], [$LIBINSN_REQUIRES_STR])
 
+AC_ARG_ENABLE([debug],
+            [AS_HELP_STRING([--enable-debug],
+            [enable debug build(default is no)])],
+            [debug_build=true],
+            [debug_build=false])
 
 AC_ARG_WITH([img4tool],
             [AS_HELP_STRING([--without-img4tool],
@@ -49,8 +62,14 @@ AC_ARG_WITH([img4tool],
             [with_img4tool=no],
             [with_img4tool=yes])
 
-if test "x$with_img4tool" == "xyes"; then
-  if test "x$have_img4tool" = "xyes"; then
+AC_ARG_WITH([img3tool],
+            [AS_HELP_STRING([--without-img3tool],
+            [do not build with img3tool @<:@default=yes@:>@])],
+            [with_img3tool=no],
+            [with_img3tool=yes])
+
+if test "x$have_img4tool" == "xyes"; then
+  if test "x$with_img4tool" = "xyes"; then
     AC_DEFINE(HAVE_IMG4TOOL, 1, [Define if you have img4tool])
     AC_SUBST([img4tool_requires], [$IMG4TOOL_REQUIRES_STR])
     AC_SUBST(libimg4tool_CFLAGS)
@@ -64,15 +83,42 @@ else
   fi
 fi
 
+if test "x$have_img3tool" == "xyes"; then
+  if test "x$with_img3tool" = "xyes"; then
+    AC_DEFINE(HAVE_IMG3TOOL, 1, [Define if you have img3tool])
+    AC_SUBST([img3tool_requires], [$IMG3TOOL_REQUIRES_STR])
+    AC_SUBST(libimg3tool_CFLAGS)
+    AC_SUBST(libimg3tool_LIBS)
+  else
+    echo "*** Note: img3tool has been disabled ***"
+  fi
+else
+  if test "x$with_img3tool" == "xyes"; then
+    AC_MSG_ERROR([requested building with img3tool, but library could not be found])
+  fi
+fi
+
+if test "$debug_build" = true; then
+  echo "*** Note: debug build requested ***"
+  CFLAGS+=" -g -O0 -DDEBUG=1"
+  CXXFLAGS+=" -g -O0 -DDEBUG=1"
+fi
+
+
 # Checks for header files.
-AC_CHECK_HEADERS([fcntl.h stdint.h stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([fcntl.h stdint.h stdlib.h string.h unistd.h arpa/inet.h winsock.h])
+
+# Check for functions
+AC_CHECK_FUNCS([memmem])
 
 LT_INIT
 
 AC_CONFIG_FILES([Makefile
                  include/Makefile
-                 liboffsetfinder64/Makefile
-		             liboffsetfinder64.pc])
+                 libpatchfinder/Makefile
+                 libpatchfinder/ibootpatchfinder/Makefile
+                 libpatchfinder/kernelpatchfinder/Makefile
+		             libpatchfinder.pc])
 AC_OUTPUT
 
 echo "
@@ -80,7 +126,8 @@ Configuration for $PACKAGE-$VERSION:
 -------------------------------------------
 
   install prefix ..........: $prefix
-  have img4tool ...........: $with_img4tool"
+  have img4tool ...........: $with_img4tool
+  have img3tool ...........: $with_img3tool"
 
 echo "  compiler ................: ${CC}
 
