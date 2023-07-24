@@ -51,6 +51,10 @@ kernelpatchfinder64 *kernelpatchfinder64::make_kernelpatchfinder64(machopatchfin
     return new kernelpatchfinder64_base(std::move(helper));
 }
 
+kernelpatchfinder64::~kernelpatchfinder64(){
+    //
+}
+
 std::string kernelpatchfinder64::get_xnu_kernel_version(){
     patchfinder64::loc_t kerneluname = findstr("root:xnu-", false);
     debug("kerneluname=0x%016llx",kerneluname);
@@ -104,8 +108,3 @@ kernelpatchfinder64::kernelpatchfinder64(const void *buffer, size_t bufSize, boo
 {
     //
 }
-
-kernelpatchfinder64::~kernelpatchfinder64(){
-    //
-}
-

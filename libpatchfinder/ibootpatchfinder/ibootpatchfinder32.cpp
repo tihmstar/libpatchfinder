@@ -7,6 +7,7 @@
 
 #include "../../include/libpatchfinder/ibootpatchfinder/ibootpatchfinder32.hpp"
 #include "ibootpatchfinder32_base.hpp"
+#include "ibootpatchfinder32_iOS4.hpp"
 #include "ibootpatchfinder32_iOS5.hpp"
 #include "ibootpatchfinder32_iOS11.hpp"
 #include "ibootpatchfinder32_iOS12.hpp"
@@ -33,7 +34,7 @@ static void *memmem(const void *haystack_start, size_t haystack_len, const void 
         return NULL;
     }
     
-    for (; *haystack && haystack_len--; haystack++) {
+    for (; haystack_len--; haystack++) {
         x = needle_len;
         n = needle;
         h = haystack;
@@ -107,7 +108,7 @@ ibootpatchfinder32 *ibootpatchfinder32::make_ibootpatchfinder32(const void *buff
         retassure(vers = atoi((char*)&buf[IBOOT_VERS_STR_OFFSET+6]), "No iBoot version found!\n");
     }else{
         //iOS 1 iBoot??
-        const char *ibootstr = (char*)memmem(buf, bufSize, "iBoot-", sizeof("iBoot-")-1);
+        const char *ibootstr = (char*)::memmem(buf, bufSize, "iBoot-", sizeof("iBoot-")-1);
         retassure(ibootstr, "No iBoot version found!\n");
         retassure(vers = atoi(ibootstr+6), "No iBoot version found!\n");
     }
@@ -125,6 +126,9 @@ ibootpatchfinder32 *ibootpatchfinder32::make_ibootpatchfinder32(const void *buff
     } else if (vers >= 1200) {
         info("iOS 5 iBoot detected!");
         return new ibootpatchfinder32_iOS5(buf,bufSize,takeOwnership);
+    } else if (vers >= 820) {
+        info("iOS 4 iBoot detected!");
+        return new ibootpatchfinder32_iOS4(buf,bufSize,takeOwnership);
     }
 
     return new ibootpatchfinder32_base(buf,bufSize,takeOwnership);
@@ -133,24 +137,6 @@ ibootpatchfinder32 *ibootpatchfinder32::make_ibootpatchfinder32(const void *buff
 ibootpatchfinder32::~ibootpatchfinder32(){
     //
 }
-
-//ibootpatchfinder32::loc_t ibootpatchfinder32::findnops(uint16_t nopCnt, bool useNops, uint32_t nopOpcode){
-//    if (_unusedNops.size() == 0) {
-//        patchfinder32::findnops(nopCnt,false,nopOpcode);
-//        
-//        loc_t strsection = findstr("Apple Mobile Device", false) & ~3;
-//        loc_t end_of_code = find_bof(strsection,true);
-//        for (int i=0; i<_unusedNops.size(); i++) {
-//            auto e = _unusedNops.at(i);
-//            if (e.first > end_of_code) {
-//                _unusedNops.erase(_unusedNops.begin() + i);
-//                i--;
-//            }
-//        }
-//    }
-//    
-//    return patchfinder32::findnops(nopCnt,useNops,nopOpcode);
-//}
 
 ibootpatchfinder::loc64_t ibootpatchfinder32::find_base(){
     return patchfinder32::find_base();

@@ -33,3 +33,5 @@ config.h.in~
 .irecovery
 project.xcworkspace
 xcshareddata
+*.bin
+*.bin.h

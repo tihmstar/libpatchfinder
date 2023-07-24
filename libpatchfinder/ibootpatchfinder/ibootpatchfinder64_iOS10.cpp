@@ -22,7 +22,7 @@ std::vector<patch> ibootpatchfinder64_iOS10::replace_cmd_with_memcpy(const char 
     loc_t handler_str_loc = findstr(cmd_handler_str, true);
     debug("handler_str_loc=0x%016llx\n",handler_str_loc);
 
-    loc_t tableref = _vmem->memmem(&handler_str_loc, sizeof(handler_str_loc));
+    loc_t tableref = memmem(&handler_str_loc, sizeof(handler_str_loc));
     debug("tableref=0x%016llx\n",tableref);
 
     loc_t scratchbuf = _vmem->memstr("failed to execute upgrade command from new");
@@ -151,7 +151,7 @@ std::vector<patch> ibootpatchfinder64_iOS10::get_sigcheck_img4_patch(){
     loc_t callback_ref = iter;
     debug("callback_ref=0x%016llx\n",callback_ref);
 
-    loc_t callback = (loc_t)_vmem->deref((loc_t)iter().imm());
+    loc_t callback = (loc_t)deref((loc_t)iter().imm());
     debug("callback=0x%016llx\n",callback);
 
     iter = callback;

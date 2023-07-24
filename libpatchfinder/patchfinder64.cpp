@@ -6,11 +6,15 @@
 //  Copyright © 2018 tihmstar. All rights reserved.
 //
 
-#include <string.h>
-
 #include <libgeneral/macros.h>
 #include "all64.h"
 #include "../include/libpatchfinder/patchfinder64.hpp"
+
+#include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
 
 using namespace std;
 using namespace tihmstar;
@@ -21,45 +25,104 @@ using namespace arm64;
 #pragma mark constructor/destructor
 
 patchfinder64::patchfinder64(bool freeBuf) :
-    _freeBuf(freeBuf),
-    _buf(NULL),
-    _bufSize(0),
-    _entrypoint(0),
-    _base(0),
+    patchfinder(freeBuf),
     _vmem(nullptr)
 {
     //
 }
 
 patchfinder64::patchfinder64(patchfinder64 &&mv) :
-    _freeBuf(mv._freeBuf),
-    _buf(mv._buf),
-    _bufSize(mv._bufSize),
-    _entrypoint(mv._entrypoint),
-    _base(mv._base)
+    patchfinder(std::move(mv))
 {
-    mv._freeBuf = false; //if we take ownership, the old object should no longer free the buffer
-    _vmem = mv._vmem; mv._vmem = NULL;
     _unusedNops = std::move(mv._unusedNops);
     _savedPatches = std::move(mv._savedPatches);
+    _vmem = mv._vmem; mv._vmem = NULL;
 }
 
+patchfinder64::patchfinder64(loc_t base, const char *filename, std::vector<psegment> segments) :
+    patchfinder(true)
+{
+    struct stat fs = {0};
+    int fd = 0;
+    bool didConstructSuccessfully = false;
+    cleanup([&]{
+        if (fd>0) close(fd);
+        if (!didConstructSuccessfully) {
+            safeFreeConst(_buf);
+        }
+    })
+    
+    assure((fd = open(filename, O_RDONLY)) != -1);
+    assure(!fstat(fd, &fs));
+    assure((_buf = (uint8_t*)malloc( _bufSize = fs.st_size)));
+    assure(read(fd,(void*)_buf,_bufSize)==_bufSize);
+    
+    _base = base;
+    
+    if (!segments.size()) {
+        segments.push_back({
+            .fileOffset = 0,
+            .size = _bufSize,
+            .vaddr = base,
+            .perms = kPPROTALL
+        });
+    }
+    
+    std::vector<vsegment> vsegs;
+    for (auto seg : segments){
+        vsegment vseg{
+            .buf = &_buf[seg.fileOffset],
+            .size = seg.size,
+            .vaddr = seg.vaddr,
+            .perms = seg.perms ? (vmprot)seg.perms : (vmprot)(kVMPROTREAD | kVMPROTWRITE | kVMPROTEXEC)
+        };
+        retassure(vseg.buf >= _buf && vseg.buf + vseg.size <= &_buf[_bufSize], "segment out of bounds");
+        vsegs.push_back(vseg);
+    }
+    _vmem = new vmem(vsegs);
+}
+
+patchfinder64::patchfinder64(loc_t base, const void *buffer, size_t bufSize, bool takeOwnership, std::vector<psegment> segments) :
+    patchfinder(takeOwnership)
+{
+    _bufSize = bufSize;
+    _buf = (uint8_t*)buffer;
+    _base = base;
+
+    if (!segments.size()) {
+        segments.push_back({
+            .fileOffset = 0,
+            .size = _bufSize,
+            .vaddr = base,
+            .perms = kPPROTALL
+        });
+    }
+    
+    std::vector<vsegment> vsegs;
+    for (auto seg : segments){
+        vsegment vseg{
+            .buf = &_buf[seg.fileOffset],
+            .size = seg.size,
+            .vaddr = seg.vaddr,
+            .perms = seg.perms ? (vmprot)seg.perms : (vmprot)(kVMPROTREAD | kVMPROTWRITE | kVMPROTEXEC)
+        };
+        retassure(vseg.buf >= _buf && vseg.buf + vseg.size <= &_buf[_bufSize], "segment out of bounds");
+        vsegs.push_back(vseg);
+    }
+    _vmem = new vmem(vsegs);
+}
 
 patchfinder64::~patchfinder64(){
     safeDelete(_vmem);
-    if (_freeBuf) safeFreeConst(_buf);
 }
 
-
-#pragma mark patchfinder
-
+#pragma mark provider for parent
 const void *patchfinder64::memoryForLoc(loc_t loc){
     return _vmem->memoryForLoc(loc);
 }
 
-
 patchfinder64::loc_t patchfinder64::findstr(std::string str, bool hasNullTerminator, loc_t startAddr){
-    return _vmem->memmem(str.c_str(), str.size()+(hasNullTerminator), startAddr);
+    return memmem(str.c_str(), str.size()+(hasNullTerminator), startAddr);
 }
 
 patchfinder64::loc_t patchfinder64::find_bof(loc_t pos, bool mayLackPrologue){
@@ -350,22 +413,35 @@ patchfinder64::loc_t patchfinder64::findnops(uint16_t nopCnt, bool useNops, uint
     auto foundnops = _unusedNops.at(besti);
     if (useNops) {
         _unusedNops.erase(_unusedNops.begin() + besti);
+        size_t remainSpaceSize = 0;
         if (tgtSize < bestSize) {
-            size_t remainSpaceSize = foundnops.second - tgtSize;
+            remainSpaceSize = foundnops.second - tgtSize;
             loc_t remainSpace = foundnops.first + tgtSize;
             _unusedNops.push_back({remainSpace,remainSpaceSize});
         }
-        debug("consuming nops {0x%016llx,0x%016llx}",foundnops.first,foundnops.first+foundnops.second);
+        debug("consuming nops {0x%016llx,0x%016llx}",foundnops.first,foundnops.first+foundnops.second-remainSpaceSize);
     }
     return foundnops.first;
 }
 
+patchfinder64::loc_t patchfinder64::memmem(const void *little, size_t little_len, patchfinder::loc_t startLoc) const {
+    return _vmem->memmem(little, little_len, startLoc);
+}
+
+patchfinder64::loc_t patchfinder64::memstr(const char *str) const {
+    return _vmem->memstr(str);
+}
+
+patchfinder64::loc_t patchfinder64::deref(patchfinder::loc_t pos) const {
+    return _vmem->deref(pos);
+}
+
+#pragma mark own functions
 uint32_t patchfinder64::pageshit_for_pagesize(uint32_t pagesize){
     uint32_t pageshift = 0;
     while (pagesize>>=1) pageshift++;
     return pageshift;
 }
-
 
 uint64_t patchfinder64::pte_vma_to_index(uint32_t pagesize, uint8_t level, uint64_t address){
     switch (pagesize) {
@@ -461,29 +537,6 @@ uint64_t patchfinder64::pte_index_to_vma(uint32_t pagesize, uint8_t level, uint6
     }
 }
 
-
-std::vector<patch> patchfinder64::get_replace_string_patch(std::string needle, std::string replacement){
-    std::vector<patch> patches;
-
-    retassure(needle.size() == replacement.size(), "needle.size() != replacement.size()");
-    
-    loc_t curloc = -1;
-    
-    try {
-        while (true) {
-            curloc = _vmem->memmem(needle.data(), needle.size(), curloc+1);
-            patches.push_back({
-                curloc,
-                replacement.data(),
-                replacement.size()
-            });
-        }
-    } catch (...) {
-        //
-    }
-    retassure(patches.size(), "Failed to find even a single instance of '%s'",needle.c_str());
-    return patches;
-}
 
 
 //

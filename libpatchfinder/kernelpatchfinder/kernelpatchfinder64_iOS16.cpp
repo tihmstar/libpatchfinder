@@ -126,7 +126,7 @@ std::vector<patch> kernelpatchfinder64_iOS16::get_codesignature_patches(){
             warning("Failed to get query_trust_cache symbol, ignoring...");
         }else{
             debug("query_trust_cache=0x%016llx",query_trust_cache);
-            loc_t stub_ptr = _vmem->memmem(&query_trust_cache, sizeof(query_trust_cache));
+            loc_t stub_ptr = memmem(&query_trust_cache, sizeof(query_trust_cache));
             debug("stub_ptr=0x%016llx",stub_ptr);
             
             loc_t stub_query_trust_cache = find_literal_ref(stub_ptr);
@@ -309,7 +309,7 @@ std::vector<patch> kernelpatchfinder64_iOS16::get_read_bpr_patch_with_params(int
 #undef cPC
     
     //hello linkerinfo in pointers
-    uint64_t funcptr = _vmem->deref(table) & 0xffffffff00000000;
+    uint64_t funcptr = deref(table) & 0xffffffff00000000;
     funcptr |= (shellcode & 0xffffffff);
     patches.push_back({table,&funcptr,sizeof(funcptr)});
     
@@ -323,7 +323,7 @@ std::vector<patch> kernelpatchfinder64_iOS16::get_mount_patch(){
     loc_t str = findstr("Updating mount to read/write mode is not allowed", false);
     if (str) {
         debug("Found 'Updating mount to read/write mode is not allowed' str, adding additional apfs update rw patch");
-        while (_vmem->deref(str) & 0xff) str--;
+        while (deref(str) & 0xff) str--;
         str++;
         debug("str=0x%016llx",str);
         
@@ -382,10 +382,10 @@ patchfinder64::loc_t kernelpatchfinder64_iOS16::find_sbops(){
     debug("str=0x%16llx",str);
     str -= _base;
     patchfinder64::loc_t ref = 0;
-    retassure(ref = _vmem->memmem(&str, 4), "Failed to find ref");
+    retassure(ref = memmem(&str, 4), "Failed to find ref");
     debug("ref=0x%16llx",ref);
 
-    loc_t retval = (patchfinder64::loc_t)_vmem->deref(ref+0x18);
+    loc_t retval = (patchfinder64::loc_t)deref(ref+0x18);
     RETCACHELOC(retval);
 }
 
@@ -414,7 +414,7 @@ std::vector<patch> kernelpatchfinder64_iOS16::get_sandbox_patch(){
     debug("ret0gadget=0x%016llx",ret0gadget);
         
 #define PATCH_OP(loc) \
-    if (uint64_t origval = _vmem->deref(loc)) { \
+    if (uint64_t origval = deref(loc)) { \
         patchfinder64::loc_t tmp = ((ret0gadget-_base) & 0xFFFFFFFF) | (origval & 0xFFFFFFFF00000000); \
         patches.push_back({loc,&tmp,sizeof(tmp)}); \
     }

@@ -39,7 +39,7 @@ std::vector<patch> kernelpatchfinder64_iOS17::get_codesignature_patches(){
         //Hello iOS 16.4!
         loc_t query_trust_cache = find_sym("_query_trust_cache");
         debug("query_trust_cache=0x%016llx",query_trust_cache);
-        loc_t stub_ptr = _vmem->memmem(&query_trust_cache, sizeof(query_trust_cache));
+        loc_t stub_ptr = memmem(&query_trust_cache, sizeof(query_trust_cache));
         debug("stub_ptr=0x%016llx",stub_ptr);
 
         loc_t stub_query_trust_cache = find_literal_ref(stub_ptr);

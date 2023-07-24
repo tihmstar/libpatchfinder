@@ -171,7 +171,7 @@ patchfinder64::loc_t kernelpatchfinder64_iOS15::find_kerncontext(){
 patchfinder64::loc_t kernelpatchfinder64_iOS15::find_vnode_getattr(){
     UNCACHELOC;
     loc_t str = findstr("vnode_getattr() returned", false);
-    while (_vmem->deref(--str) & 0xff)
+    while (deref(--str) & 0xff)
         ;
     ++str;
     debug("str=0x%016llx",str);
@@ -278,11 +278,11 @@ patchfinder64::loc_t kernelpatchfinder64_iOS15::find_machtrap_table(){
     
     loc_t table_entry = 0;
     try {
-        table_entry = _vmem->memmem(&kern_invalid, 8);
+        table_entry = memmem(&kern_invalid, 8);
     } catch (...) {
         //pac devce??
         kern_invalid -= _base;
-        table_entry = _vmem->memmem(&kern_invalid, 4);
+        table_entry = memmem(&kern_invalid, 4);
     }
     debug("table_entry=0x%016llx",table_entry);
 
@@ -292,7 +292,7 @@ patchfinder64::loc_t kernelpatchfinder64_iOS15::find_machtrap_table(){
 patchfinder64::loc_t kernelpatchfinder64_iOS15::find_function_for_machtrap(int trapcall){
     patchfinder64::loc_t machtrapTable = find_machtrap_table();
     patchfinder64::loc_t tableEntry =machtrapTable + 3*8*trapcall;
-    loc_t e = _vmem->deref(tableEntry);
+    loc_t e = deref(tableEntry);
     if ((e >> 36) != 0xfffffff) {
         //pac
         e = _base + (e & 0xffffffff);
@@ -804,7 +804,7 @@ std::vector<patch> kernelpatchfinder64_iOS15::get_insert_setuid_patch(){
     loc_t hook_addr = sbops+offsetof(struct mac_policy_ops,mpo_cred_label_update_execve);
     debug("hook_addr=0x%016llx",hook_addr);
 
-    loc_t orig_hook = _vmem->deref(hook_addr);
+    loc_t orig_hook = deref(hook_addr);
     debug("orig_hook=0x%016llx",orig_hook | 0xffff000000000000);
     
     uint32_t shellcode_insn_cnt = 41; //commitment
@@ -896,7 +896,7 @@ std::vector<patch> kernelpatchfinder64_iOS15::get_apfs_root_from_sealed_livefs_p
     
     loc_t str = findstr("Rooting from the live fs of a sealed volume is not allowed on a", false);
     assure(str);
-    while (_vmem->deref(str) & 0xff) str--;
+    while (deref(str) & 0xff) str--;
     str++;
     debug("str=0x%016llx",str);
     
@@ -1004,7 +1004,7 @@ std::vector<patch> kernelpatchfinder64_iOS15::get_kernelbase_syscall_patch(){
     patches.push_back({nops+4,shellcode+4,sizeof(shellcode)-1-4});
 
     //hello linkerinfo in pointers
-    uint64_t funcptr = _vmem->deref(table) & 0xffffffff00000000;
+    uint64_t funcptr = deref(table) & 0xffffffff00000000;
     funcptr |= ((nops-_base) & 0xffffffff);
     patches.push_back({table,&funcptr,sizeof(funcptr)});
     
@@ -1030,7 +1030,7 @@ std::vector<patch> kernelpatchfinder64_iOS15::get_kcall_syscall_patch(){
     patches.push_back({nops,shellcode,sizeof(shellcode)-1});
 
     //hello linkerinfo in pointers
-    uint64_t funcptr = _vmem->deref(table) & 0xffffffff00000000;
+    uint64_t funcptr = deref(table) & 0xffffffff00000000;
     funcptr |= ((nops-_base) & 0xffffffff);
     patches.push_back({table,&funcptr,sizeof(funcptr)});
     

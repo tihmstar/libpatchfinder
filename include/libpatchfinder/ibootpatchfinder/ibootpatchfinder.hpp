@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <libpatchfinder/patch.hpp>
+#include <libpatchfinder/patchfinder.hpp>
 
 namespace tihmstar {
     namespace patchfinder {
@@ -20,7 +21,8 @@ namespace tihmstar {
             uint32_t _vers;
         public:
             using loc64_t = tihmstar::libinsn::arm64::insn::loc_t;
-            
+            virtual ~ibootpatchfinder();
+
             virtual loc64_t find_base();
             /*
                 Patch replace strings (or raw bytes).
@@ -30,6 +32,9 @@ namespace tihmstar {
             
             virtual bool has_kernel_load();
             virtual bool has_recovery_console();
+            
+            virtual std::vector<patch> get_wtf_pwndfu_patch();
+
                
             /*
                 Make iBoot think we're in production mode, even if we demoted
@@ -135,6 +140,12 @@ namespace tihmstar {
                 This will make sure sep image gets propagated to devicetree.
              */
             virtual std::vector<patch> get_force_septype_local_patch();
+
+            /*
+                Runs the above 'get_force_septype_local_patch' function, but this time only "rsep" images are accepted
+                This may skip some iBoot pre-processing, because without this the image doesn't end up where it should :/
+             */
+            virtual std::vector<patch> get_sep_load_raw_patch(bool localSEP = false);
 
             /*
                 Skip setting BPR by iBoot

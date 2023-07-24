@@ -16,7 +16,12 @@ namespace tihmstar {
         public:
             using ibootpatchfinder64_iOS14::ibootpatchfinder64_iOS14;
                                                 
-            virtual std::vector<patch> get_sigcheck_img4_patch() override;            
+            virtual std::vector<patch> get_sigcheck_img4_patch() override;
+            
+            /*
+                Make iBoot think we're in production mode, even if we demoted
+             */
+            virtual std::vector<patch> get_always_production_patch() override;
         };
     };
 };

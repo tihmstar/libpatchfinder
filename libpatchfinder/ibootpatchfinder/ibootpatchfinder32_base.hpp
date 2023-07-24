@@ -29,6 +29,11 @@ namespace tihmstar {
             
             virtual bool has_kernel_load() override;
             virtual bool has_recovery_console() override;
+            
+            /*
+                patch a wtf image to enter pwndfu
+             */
+            virtual std::vector<patch> get_wtf_pwndfu_patch() override;
 
             /*
                 disable IMG3 signature validation

@@ -342,12 +342,12 @@ std::vector<patch> ibootpatchfinder64_base::get_cmd_handler_patch(const char *cm
     handler_str+= cmd_handler_str;
     ((char*)handler_str.c_str())[0] = '\0';
     
-    loc_t handler_str_loc = _vmem->memmem(handler_str.c_str(), handler_str.size());
+    loc_t handler_str_loc = memmem(handler_str.c_str(), handler_str.size());
     debug("handler_str_loc=0x%016llx\n",handler_str_loc);
     
     handler_str_loc++;
     
-    loc_t tableref = _vmem->memmem(&handler_str_loc, sizeof(handler_str_loc));
+    loc_t tableref = memmem(&handler_str_loc, sizeof(handler_str_loc));
     debug("tableref=0x%016llx\n",tableref);
     
     patches.push_back({tableref+8,&ptr,8});
@@ -360,10 +360,10 @@ std::vector<patch> ibootpatchfinder64_base::get_cmd_handler_callfunc_patch(const
     retassure(cmd_handler_str, "null pointer provided");
     std::string handler_str = cmd_handler_str;
 
-    loc_t handler_str_loc = _vmem->memmem(handler_str.c_str(), handler_str.size());
+    loc_t handler_str_loc = memmem(handler_str.c_str(), handler_str.size());
     debug("handler_str_loc=0x%016llx",handler_str_loc);
     
-    loc_t tableref = _vmem->memmem(&handler_str_loc, sizeof(handler_str_loc));
+    loc_t tableref = memmem(&handler_str_loc, sizeof(handler_str_loc));
     debug("tableref=0x%016llx",tableref);
     tableref+=8;
     
@@ -438,7 +438,7 @@ std::vector<patch> ibootpatchfinder64_base::replace_cmd_with_memcpy(const char *
     loc_t handler_str_loc = findstr(cmd_handler_str, true);
     debug("handler_str_loc=0x%016llx\n",handler_str_loc);
 
-    loc_t tableref = _vmem->memmem(&handler_str_loc, sizeof(handler_str_loc));
+    loc_t tableref = memmem(&handler_str_loc, sizeof(handler_str_loc));
     debug("tableref=0x%016llx\n",tableref);
 
     loc_t scratchbuf = _vmem->memstr("failed to execute upgrade command from new");
@@ -515,14 +515,14 @@ std::vector<patch> ibootpatchfinder64_base::get_ra1nra1n_patch(){
      */
     
 
-    loc_t findloc = _vmem->memmem("\x12\x00\x80\xd2", 4);
+    loc_t findloc = memmem("\x12\x00\x80\xd2", 4);
     debug("findloc=0x%016llx\n",findloc);
 
     constexpr const char patch[] = "\xE8\x03\x1D\xAA\xE9\x03\x1D\xAA\x1B\x01\xC0\xD2\x1B\x00\xA3\xF2\xFD\x03\x1B\xAA";
 
     patches.push_back({findloc,patch,sizeof(patch)-1});
 
-    loc_t findloc2 = _vmem->memmem("\x23\x74\x0b\xd5", 4);
+    loc_t findloc2 = memmem("\x23\x74\x0b\xd5", 4);
     debug("findloc2=0x%016llx\n",findloc2);
 
     loc_t bzero = find_bof(findloc2);
@@ -542,7 +542,7 @@ std::vector<patch> ibootpatchfinder64_base::get_ra1nra1n_patch(){
     loc_t aftershellcode = shellcode+sizeof(patch2)-1;
     debug("aftershellcode=0x%016llx\n",aftershellcode);
     
-    uint32_t backUpProloge = (uint32_t)_vmem->deref(bzero);
+    uint32_t backUpProloge = (uint32_t)deref(bzero);
     
     patches.push_back({aftershellcode, &backUpProloge, 4});
     aftershellcode +=4;
@@ -562,12 +562,12 @@ std::vector<patch> ibootpatchfinder64_base::get_unlock_nvram_patch(){
     loc_t debug_uarts_str = findstr("debug-uarts", true);
     debug("debug_uarts_str=0x%016llx\n",debug_uarts_str);
 
-    loc_t debug_uarts_ref = _vmem->memmem(&debug_uarts_str, sizeof(debug_uarts_str));
+    loc_t debug_uarts_ref = memmem(&debug_uarts_str, sizeof(debug_uarts_str));
     debug("debug_uarts_ref=0x%016llx\n",debug_uarts_ref);
 
     loc_t setenv_whitelist = debug_uarts_ref;
     
-    while (_vmem->deref(setenv_whitelist-=8));
+    while (deref(setenv_whitelist-=8));
     setenv_whitelist+=8;
     debug("setenv_whitelist=0x%016llx\n",setenv_whitelist);
 
@@ -580,7 +580,7 @@ std::vector<patch> ibootpatchfinder64_base::get_unlock_nvram_patch(){
     patches.push_back({blacklist1_func_top,"\x00\x00\x80\xD2"/* movz x0, #0x0*/"\xC0\x03\x5F\xD6"/*ret*/,8});
     
     loc_t env_whitelist = setenv_whitelist;
-    while (_vmem->deref(env_whitelist+=8));
+    while (deref(env_whitelist+=8));
     env_whitelist+=8;
     debug("env_whitelist=0x%016llx\n",env_whitelist);
 
@@ -613,10 +613,10 @@ std::vector<patch> ibootpatchfinder64_base::get_nvram_nosave_patch(){
     loc_t saveenv_str = findstr("saveenv", true);
     debug("saveenv_str=0x%016llx\n",saveenv_str);
 
-    loc_t saveenv_ref = _vmem->memmem(&saveenv_str, sizeof(saveenv_str));
+    loc_t saveenv_ref = memmem(&saveenv_str, sizeof(saveenv_str));
     debug("saveenv_ref=0x%016llx\n",saveenv_ref);
 
-    loc_t saveenv_cmd_func_pos = _vmem->deref(saveenv_ref+8);
+    loc_t saveenv_cmd_func_pos = deref(saveenv_ref+8);
     debug("saveenv_cmd_func_pos=0x%016llx\n",saveenv_cmd_func_pos);
 
     vmem saveenv_func = _vmem->getIter(saveenv_cmd_func_pos);

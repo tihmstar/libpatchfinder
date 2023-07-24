@@ -109,7 +109,7 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_change_reboot_to_fsboot_patch()
     loc_t rebootstr = findstr("reboot", true);
     debug("rebootstr=0x%016llx",rebootstr);
 
-    loc_t rebootrefstr = _vmem->memmem(&rebootstr,sizeof(loc_t));
+    loc_t rebootrefstr = memmem(&rebootstr,sizeof(loc_t));
     debug("rebootrefstr=0x%016llx",rebootrefstr);
     
     loc_t rebootrefptr = rebootrefstr+8;
@@ -120,10 +120,10 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_change_reboot_to_fsboot_patch()
 
     patches.push_back({rebootrefstr,&fsbootstr,sizeof(loc_t)}); //rewrite pointer to point to fsboot
 
-    loc_t fsbootrefstr = _vmem->memmem(&fsbootstr,sizeof(loc_t));
+    loc_t fsbootrefstr = memmem(&fsbootstr,sizeof(loc_t));
     debug("fsbootrefstr=0x%016llx",fsbootrefstr);
     
-    loc_t fsbootfunction = _vmem->deref(fsbootrefstr+8);
+    loc_t fsbootfunction = deref(fsbootrefstr+8);
     debug("fsbootfunction=0x%016llx",fsbootfunction);
     patches.push_back({rebootrefstr+8,&fsbootfunction,sizeof(loc_t)}); //rewrite pointer to point to fsboot
 
@@ -226,6 +226,10 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_boot_arg_patch(const char *boot
 }
 
 std::vector<patch> ibootpatchfinder64_iOS14::get_force_septype_local_patch(){
+    return get_sep_load_raw_patch(true);
+}
+
+std::vector<patch> ibootpatchfinder64_iOS14::get_sep_load_raw_patch(bool localSEP){
     UNCACHEPATCHES;
         
     loc_t loadaddrstr = findstr("loadaddr", true);
@@ -334,10 +338,18 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_force_septype_local_patch(){
         pushINSN(insn::new_immediate_movz(ploc+4*3, 0, 0, 0));
         
         addPatches(get_cmd_handler_patch("rsepfirmware", bof));
-        break;
+        
+        if (!localSEP){
+            iter = sepiref;
+            retassure(iter() == insn::movk && iter().imm() == 0x73650000, "sanity check failed");
+            retassure(--iter == insn::movz && iter().imm() == 0x7069, "sanity check failed");
+            pushINSN(insn::new_immediate_movz(iter,   0x6570, iter().rd(), 0));
+            pushINSN(insn::new_immediate_movk(++iter, 0x7273, iter().rd(), 16));
+        }
+        
+        RETCACHEPATCHES;
     }
-
-    RETCACHEPATCHES;
+    reterror("Failed to find patches");
 }
 
 std::vector<patch> ibootpatchfinder64_iOS14::get_skip_set_bpr_patch(){
@@ -373,10 +385,10 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_skip_set_bpr_patch(){
             if (++iter2 != insn::orr || iter2().rd() != rt || iter2().rn() != rt || iter2().imm() != 1) continue;
             if (++iter2 != insn::str || iter2().rt() != rt || iter2().rn() != rn) continue;
             
-            loc_t bof = find_bof(iter, true);
-            debug("bof=0x%016llx",bof);
+            loc_t bof1 = find_bof(iter, true);
+            debug("bof1=0x%016llx",bof1);
             
-            uint64_t tgtval = find_register_value(iter, rn, bof);
+            uint64_t tgtval = find_register_value(iter, rn, bof1);
             debug("tgtval=0x%016llx",tgtval);
 
             if (bpr_regs.find(tgtval) != bpr_regs.end()) {
@@ -391,25 +403,39 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_skip_set_bpr_patch(){
             loc_t candidate = iter;
             debug("candidate=0x%016llx",candidate);
             
-            loc_t cref = -4;
-            try {
-                while ((cref = find_call_ref(bof,0,cref+4))) {
-                    debug("cref=0x%016llx",cref);
-
-                    uint64_t tgt2val = find_register_value(cref, rn, cref-0x10);
-                    tgt2val += tgtval;
-                    debug("tgt2val=0x%016llx",tgt2val);
-
-                    if (bpr_regs.find(tgt2val) != bpr_regs.end()) {
-                        loc_t ppos = cref;
-//                        debug("patch=0x%016llx",ppos);
-                        pushINSN(insn::new_general_nop(ppos));
-                        break;
-                    }
-                }
-            } catch (...) {
-                //
+    
+            std::vector<loc_t> bofs = {bof1};
+            
+            {
+                iter2 = candidate;
+                while (--iter2 != insn::ret && iter2() != insn::b)
+                    ;
+                ++iter2;
+                if (iter2 != bof1) bofs.push_back(iter2);
             }
+            
+            for (loc_t bof : bofs){
+                loc_t cref = -4;
+                try {
+                    while ((cref = find_call_ref(bof,0,cref+4))) {
+                        debug("cref=0x%016llx",cref);
+
+                        uint64_t tgt2val = find_register_value(cref, rn, cref-0x10);
+                        tgt2val += tgtval;
+                        debug("tgt2val=0x%016llx",tgt2val);
+
+                        if (bpr_regs.find(tgt2val) != bpr_regs.end()) {
+                            loc_t ppos = cref;
+    //                        debug("patch=0x%016llx",ppos);
+                            pushINSN(insn::new_general_nop(ppos));
+                            goto found_patch;
+                        }
+                    }
+                } catch (...) {
+                    //
+                }
+            }
+        found_patch:;
         }
     } catch (...) {
         //

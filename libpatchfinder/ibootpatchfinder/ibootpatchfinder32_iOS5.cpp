@@ -44,7 +44,7 @@ std::vector<patch> ibootpatchfinder32_iOS5::set_root_ticket_hash(std::vector<uin
     debug("ref=0x%08x",ref);
     assure(ref);
     
-    vmem_thumb iter = _vmem->getIter(ref);
+    vmem_thumb iter = _vmemThumb->getIter(ref);
     while (++iter != arm32::bl)
         ;
     while (++iter != arm32::bl)
