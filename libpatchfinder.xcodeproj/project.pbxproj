@@ -25,6 +25,26 @@
 		2A8F6DFD2A56D56E006CDDEC /* kernelpatchfinder32_iOS5.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A8F6DFB2A56D56E006CDDEC /* kernelpatchfinder32_iOS5.cpp */; };
 		2AA306662A4328AB00061919 /* ibootpatchfinder64_iOS17.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2AA306642A4328AB00061919 /* ibootpatchfinder64_iOS17.cpp */; };
 		2ADD4778296D4D0400ECE735 /* ibootpatchfinder32_iOS5.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2ADD4776296D4D0400ECE735 /* ibootpatchfinder32_iOS5.cpp */; };
+		872D0CE42A6E5B2E000CEE15 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 872D0CE32A6E5B2E000CEE15 /* main.cpp */; };
+		872D0CE82A6E5D0B000CEE15 /* libgeneral.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8738E87E26945ECC00C03872 /* libgeneral.0.dylib */; };
+		872D0CE92A6E5D0B000CEE15 /* libgeneral.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 8738E87E26945ECC00C03872 /* libgeneral.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		872D0CED2A6E5E65000CEE15 /* reflector_kernelpatchfinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 872D0CEB2A6E5E65000CEE15 /* reflector_kernelpatchfinder.cpp */; };
+		872D0CEE2A6E5FB7000CEE15 /* kernelpatchfinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87F0A57926A5BDE60090C657 /* kernelpatchfinder.cpp */; };
+		872D0CEF2A6E5FC0000CEE15 /* kernelpatchfinder64_iOS12.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E8F92695981A00C03872 /* kernelpatchfinder64_iOS12.cpp */; };
+		872D0CF02A6E5FC0000CEE15 /* kernelpatchfinder64_iOS17.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A32E5DC2A41CD5A007170DA /* kernelpatchfinder64_iOS17.cpp */; };
+		872D0CF12A6E5FC0000CEE15 /* kernelpatchfinder64_base.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E8FA2695981A00C03872 /* kernelpatchfinder64_base.cpp */; };
+		872D0CF22A6E5FC0000CEE15 /* kernelpatchfinder64_iOS13.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E8F82695981A00C03872 /* kernelpatchfinder64_iOS13.cpp */; };
+		872D0CF32A6E5FC0000CEE15 /* kernelpatchfinder64_iOS15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87A370BF27E8799100AA4010 /* kernelpatchfinder64_iOS15.cpp */; };
+		872D0CF42A6E5FC0000CEE15 /* kernelpatchfinder64_iOS16.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87C7D56E2850ED50001CE584 /* kernelpatchfinder64_iOS16.cpp */; };
+		872D0CF52A6E5FC0000CEE15 /* kernelpatchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E8FB2695981A00C03872 /* kernelpatchfinder64.cpp */; };
+		872D0CF62A6E5FC0000CEE15 /* kernelpatchfinder64_iOS9.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E8FC2695981A00C03872 /* kernelpatchfinder64_iOS9.cpp */; };
+		872D0CF72A6E5FCC000CEE15 /* patchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E87026945D5300C03872 /* patchfinder64.cpp */; };
+		872D0CF82A6E5FCC000CEE15 /* machopatchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E87626945E0700C03872 /* machopatchfinder64.cpp */; };
+		872D0CF92A6E5FCC000CEE15 /* patch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E86D26945CBC00C03872 /* patch.cpp */; };
+		872D0CFA2A6E5FCC000CEE15 /* StableHash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739AE2F2A6B48E000630CEA /* StableHash.cpp */; };
+		872D0CFB2A6E5FCC000CEE15 /* patchfinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A6927DF2A4D5D0D00D40454 /* patchfinder.cpp */; };
+		872D0CFC2A6E5FDE000CEE15 /* libinsn.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8738E88126945ED400C03872 /* libinsn.0.dylib */; };
+		872D0CFD2A6E5FDE000CEE15 /* libinsn.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 8738E88126945ED400C03872 /* libinsn.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		8738E86626945C6F00C03872 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E86526945C6F00C03872 /* main.cpp */; };
 		8738E86F26945CBC00C03872 /* patch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E86D26945CBC00C03872 /* patch.cpp */; };
 		8738E87226945D5300C03872 /* patchfinder64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E87026945D5300C03872 /* patchfinder64.cpp */; };
@@ -54,6 +74,7 @@
 		8738E9012695981A00C03872 /* kernelpatchfinder64_iOS9.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E8FC2695981A00C03872 /* kernelpatchfinder64_iOS9.cpp */; };
 		8738E9112695986500C03872 /* ibootpatchfinder32.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E90F2695986500C03872 /* ibootpatchfinder32.cpp */; };
 		8738E91426959AEE00C03872 /* ibootpatchfinder32_base.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E91226959AEE00C03872 /* ibootpatchfinder32_base.cpp */; };
+		8739AE302A6B48E000630CEA /* StableHash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739AE2F2A6B48E000630CEA /* StableHash.cpp */; };
 		879B2F5F26AECD910077C9CE /* kernelpatchfinder32_iOS9.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 879B2F5D26AECD910077C9CE /* kernelpatchfinder32_iOS9.cpp */; };
 		87A141C526C654D3003C20C8 /* kernelpatchfinder32_iOS8.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87A141C326C654D3003C20C8 /* kernelpatchfinder32_iOS8.cpp */; };
 		87A370C127E8799100AA4010 /* kernelpatchfinder64_iOS15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87A370BF27E8799100AA4010 /* kernelpatchfinder64_iOS15.cpp */; };
@@ -88,6 +109,27 @@
 			files = (
 				2A6927ED2A4D7A4600D40454 /* libinsn.0.dylib in Embed Libraries */,
 				2A6927E32A4D5EF200D40454 /* libgeneral.0.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		872D0CDF2A6E5B2E000CEE15 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		872D0CEA2A6E5D0B000CEE15 /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				872D0CFD2A6E5FDE000CEE15 /* libinsn.0.dylib in Embed Libraries */,
+				872D0CE92A6E5D0B000CEE15 /* libgeneral.0.dylib in Embed Libraries */,
 			);
 			name = "Embed Libraries";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -134,6 +176,10 @@
 		2AA306652A4328AB00061919 /* ibootpatchfinder64_iOS17.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ibootpatchfinder64_iOS17.hpp; sourceTree = "<group>"; };
 		2ADD4776296D4D0400ECE735 /* ibootpatchfinder32_iOS5.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ibootpatchfinder32_iOS5.cpp; sourceTree = "<group>"; };
 		2ADD4777296D4D0400ECE735 /* ibootpatchfinder32_iOS5.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ibootpatchfinder32_iOS5.hpp; sourceTree = "<group>"; };
+		872D0CE12A6E5B2E000CEE15 /* offsetexporter */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = offsetexporter; sourceTree = BUILT_PRODUCTS_DIR; };
+		872D0CE32A6E5B2E000CEE15 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		872D0CEB2A6E5E65000CEE15 /* reflector_kernelpatchfinder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = reflector_kernelpatchfinder.cpp; sourceTree = "<group>"; };
+		872D0CEC2A6E5E65000CEE15 /* reflector_kernelpatchfinder.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = reflector_kernelpatchfinder.hpp; sourceTree = "<group>"; };
 		8738E86226945C6F00C03872 /* libpatchfinder */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = libpatchfinder; sourceTree = BUILT_PRODUCTS_DIR; };
 		8738E86526945C6F00C03872 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		8738E86D26945CBC00C03872 /* patch.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = patch.cpp; sourceTree = "<group>"; };
@@ -169,6 +215,8 @@
 		8738E90F2695986500C03872 /* ibootpatchfinder32.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ibootpatchfinder32.cpp; sourceTree = "<group>"; };
 		8738E91226959AEE00C03872 /* ibootpatchfinder32_base.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ibootpatchfinder32_base.cpp; sourceTree = "<group>"; };
 		8738E91526959B3700C03872 /* ibootpatchfinder32.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = ibootpatchfinder32.hpp; path = include/libpatchfinder/ibootpatchfinder/ibootpatchfinder32.hpp; sourceTree = SOURCE_ROOT; };
+		8739AE2E2A6B48E000630CEA /* StableHash.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = StableHash.h; sourceTree = "<group>"; };
+		8739AE2F2A6B48E000630CEA /* StableHash.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = StableHash.cpp; sourceTree = "<group>"; };
 		879B2F5D26AECD910077C9CE /* kernelpatchfinder32_iOS9.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kernelpatchfinder32_iOS9.cpp; sourceTree = "<group>"; };
 		879B2F5E26AECD910077C9CE /* kernelpatchfinder32_iOS9.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kernelpatchfinder32_iOS9.hpp; sourceTree = "<group>"; };
 		87A141C326C654D3003C20C8 /* kernelpatchfinder32_iOS8.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kernelpatchfinder32_iOS8.cpp; sourceTree = "<group>"; };
@@ -224,6 +272,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		872D0CDE2A6E5B2E000CEE15 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				872D0CFC2A6E5FDE000CEE15 /* libinsn.0.dylib in Frameworks */,
+				872D0CE82A6E5D0B000CEE15 /* libgeneral.0.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8738E85F26945C6F00C03872 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -247,11 +304,23 @@
 			path = tools/binrider;
 			sourceTree = "<group>";
 		};
+		872D0CE22A6E5B2E000CEE15 /* offsetexporter */ = {
+			isa = PBXGroup;
+			children = (
+				872D0CEC2A6E5E65000CEE15 /* reflector_kernelpatchfinder.hpp */,
+				872D0CEB2A6E5E65000CEE15 /* reflector_kernelpatchfinder.cpp */,
+				872D0CE32A6E5B2E000CEE15 /* main.cpp */,
+			);
+			name = offsetexporter;
+			path = tools/offsetexporter;
+			sourceTree = "<group>";
+		};
 		8738E85926945C6F00C03872 = {
 			isa = PBXGroup;
 			children = (
 				8738E86426945C6F00C03872 /* libpatchfinder */,
 				2A6927EF2A4D7D9500D40454 /* binrider */,
+				872D0CE22A6E5B2E000CEE15 /* offsetexporter */,
 				8738E86326945C6F00C03872 /* Products */,
 				8738E87926945EC300C03872 /* Frameworks */,
 			);
@@ -262,6 +331,7 @@
 			children = (
 				8738E86226945C6F00C03872 /* libpatchfinder */,
 				2A6927D82A4D502100D40454 /* binrider */,
+				872D0CE12A6E5B2E000CEE15 /* offsetexporter */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -272,6 +342,8 @@
 				8738E8B52695938700C03872 /* OFexception.hpp */,
 				87F83B4A26985EF0006D5C45 /* all32.h */,
 				87F83B4B26985F02006D5C45 /* all64.h */,
+				8739AE2E2A6B48E000630CEA /* StableHash.h */,
+				8739AE2F2A6B48E000630CEA /* StableHash.cpp */,
 				8738E8B42695938700C03872 /* patch.hpp */,
 				8738E86D26945CBC00C03872 /* patch.cpp */,
 				2A6927E52A4D5F8C00D40454 /* patchfinder.hpp */,
@@ -440,6 +512,24 @@
 			productReference = 2A6927D82A4D502100D40454 /* binrider */;
 			productType = "com.apple.product-type.tool";
 		};
+		872D0CE02A6E5B2E000CEE15 /* offsetexporter */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 872D0CE72A6E5B2E000CEE15 /* Build configuration list for PBXNativeTarget "offsetexporter" */;
+			buildPhases = (
+				872D0CDD2A6E5B2E000CEE15 /* Sources */,
+				872D0CDE2A6E5B2E000CEE15 /* Frameworks */,
+				872D0CDF2A6E5B2E000CEE15 /* CopyFiles */,
+				872D0CEA2A6E5D0B000CEE15 /* Embed Libraries */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = offsetexporter;
+			productName = offsetexporter;
+			productReference = 872D0CE12A6E5B2E000CEE15 /* offsetexporter */;
+			productType = "com.apple.product-type.tool";
+		};
 		8738E86126945C6F00C03872 /* libpatchfinder */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8738E86926945C6F00C03872 /* Build configuration list for PBXNativeTarget "libpatchfinder" */;
@@ -469,6 +559,9 @@
 					2A6927D72A4D502100D40454 = {
 						CreatedOnToolsVersion = 14.2;
 					};
+					872D0CE02A6E5B2E000CEE15 = {
+						CreatedOnToolsVersion = 14.3.1;
+					};
 					8738E86126945C6F00C03872 = {
 						CreatedOnToolsVersion = 12.5;
 					};
@@ -489,6 +582,7 @@
 			targets = (
 				8738E86126945C6F00C03872 /* libpatchfinder */,
 				2A6927D72A4D502100D40454 /* binrider */,
+				872D0CE02A6E5B2E000CEE15 /* offsetexporter */,
 			);
 		};
 /* End PBXProject section */
@@ -505,6 +599,29 @@
 				2A6927F12A4D7DC100D40454 /* main.cpp in Sources */,
 				2A6927E72A4D7A2D00D40454 /* patch.cpp in Sources */,
 				2A6927E92A4D7A2D00D40454 /* patchfinder.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		872D0CDD2A6E5B2E000CEE15 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				872D0CF72A6E5FCC000CEE15 /* patchfinder64.cpp in Sources */,
+				872D0CF12A6E5FC0000CEE15 /* kernelpatchfinder64_base.cpp in Sources */,
+				872D0CF32A6E5FC0000CEE15 /* kernelpatchfinder64_iOS15.cpp in Sources */,
+				872D0CF82A6E5FCC000CEE15 /* machopatchfinder64.cpp in Sources */,
+				872D0CEE2A6E5FB7000CEE15 /* kernelpatchfinder.cpp in Sources */,
+				872D0CED2A6E5E65000CEE15 /* reflector_kernelpatchfinder.cpp in Sources */,
+				872D0CF62A6E5FC0000CEE15 /* kernelpatchfinder64_iOS9.cpp in Sources */,
+				872D0CF42A6E5FC0000CEE15 /* kernelpatchfinder64_iOS16.cpp in Sources */,
+				872D0CFB2A6E5FCC000CEE15 /* patchfinder.cpp in Sources */,
+				872D0CF22A6E5FC0000CEE15 /* kernelpatchfinder64_iOS13.cpp in Sources */,
+				872D0CF02A6E5FC0000CEE15 /* kernelpatchfinder64_iOS17.cpp in Sources */,
+				872D0CF52A6E5FC0000CEE15 /* kernelpatchfinder64.cpp in Sources */,
+				872D0CEF2A6E5FC0000CEE15 /* kernelpatchfinder64_iOS12.cpp in Sources */,
+				872D0CFA2A6E5FCC000CEE15 /* StableHash.cpp in Sources */,
+				872D0CF92A6E5FCC000CEE15 /* patch.cpp in Sources */,
+				872D0CE42A6E5B2E000CEE15 /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -549,6 +666,7 @@
 				8738E9002695981A00C03872 /* kernelpatchfinder64.cpp in Sources */,
 				8738E8F0269597FE00C03872 /* ibootpatchfinder64_base.cpp in Sources */,
 				8738E88926945FFE00C03872 /* machopatchfinder32.cpp in Sources */,
+				8739AE302A6B48E000630CEA /* StableHash.cpp in Sources */,
 				8738E8FE2695981A00C03872 /* kernelpatchfinder64_iOS12.cpp in Sources */,
 				87A370C127E8799100AA4010 /* kernelpatchfinder64_iOS15.cpp in Sources */,
 				87C7D5702850ED50001CE584 /* kernelpatchfinder64_iOS16.cpp in Sources */,
@@ -580,6 +698,30 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_STYLE = Automatic;
 				MACOSX_DEPLOYMENT_TARGET = 13.1;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		872D0CE52A6E5B2E000CEE15 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_STYLE = Automatic;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		872D0CE62A6E5B2E000CEE15 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_STYLE = Automatic;
+				MACOSX_DEPLOYMENT_TARGET = 13.3;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -738,6 +880,15 @@
 			buildConfigurations = (
 				2A6927DC2A4D502100D40454 /* Debug */,
 				2A6927DD2A4D502100D40454 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		872D0CE72A6E5B2E000CEE15 /* Build configuration list for PBXNativeTarget "offsetexporter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				872D0CE52A6E5B2E000CEE15 /* Debug */,
+				872D0CE62A6E5B2E000CEE15 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

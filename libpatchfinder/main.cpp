@@ -57,7 +57,7 @@ int main(int argc, const char * argv[]) {
 //    addpatch(ibpf->get_replace_string_patch("recovery mode", "ra1nsn0w mode"));
 //    addpatch(ibpf->get_cmd_handler_callfunc_patch("devicetree"));
 //    addpatch(ibpf->get_tz0_lock_patch());
-    addpatch(ibpf->get_skip_set_bpr_patch());
+//    addpatch(ibpf->get_skip_set_bpr_patch());
 //    addpatch(ibpf->replace_cmd_with_memcpy("reset"));
 //    addpatch(ibpf->get_force_septype_local_patch());
 //    addpatch(ibpf->get_always_sepfw_booted_patch());
@@ -97,7 +97,7 @@ int main(int argc, const char * argv[]) {
 //    addpatch(kpf->get_i_can_has_debugger_patch());
 
     
-//    addpatch(kpf->get_apfs_root_from_sealed_livefs_patch());
+    addloc(kpf->find_struct_offset_for_PACed_member("filedesc.fd_ofiles"));
 
 //    addloc(kpf->find_IOSurface_MemoryDescriptor_offset());
 //    addloc(kpf->find_allproc());

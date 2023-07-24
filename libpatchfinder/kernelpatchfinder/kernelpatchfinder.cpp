@@ -26,7 +26,11 @@ std::vector<patch> kernelpatchfinder::get_replace_string_patch(std::string needl
     FAIL_UNIMPLEMENTED;
 }
 
-std::string kernelpatchfinder::get_xnu_kernel_version(){
+std::string kernelpatchfinder::get_xnu_kernel_version_number_string(){
+    FAIL_UNIMPLEMENTED;
+}
+
+std::string kernelpatchfinder::get_kernel_version_string(){
     FAIL_UNIMPLEMENTED;
 }
 
@@ -35,6 +39,11 @@ std::vector<patch> kernelpatchfinder::get_generic_kernelpatches(){
 }
 
 std::vector<patch> kernelpatchfinder::get_codesignature_patches(){
+    FAIL_UNIMPLEMENTED;
+}
+
+#pragma mark Offset finders
+kernelpatchfinder::offset_t kernelpatchfinder::find_struct_offset_for_PACed_member(const char *strDesc){
     FAIL_UNIMPLEMENTED;
 }
 

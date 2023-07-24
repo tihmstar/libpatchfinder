@@ -24,7 +24,7 @@ using namespace libinsn;
 kernelpatchfinder64 *kernelpatchfinder64::make_kernelpatchfinder64(machopatchfinder64 &&mv){
     kernelpatchfinder64 helper(std::move(mv));
     
-    std::string version = helper.get_xnu_kernel_version();
+    std::string version = helper.get_xnu_kernel_version_number_string();
     info("Kernel version: %s",version.c_str());
     uint32_t vers = atoi(version.c_str());
 
@@ -55,16 +55,24 @@ kernelpatchfinder64::~kernelpatchfinder64(){
     //
 }
 
-std::string kernelpatchfinder64::get_xnu_kernel_version(){
-    patchfinder64::loc_t kerneluname = findstr("root:xnu-", false);
-    debug("kerneluname=0x%016llx",kerneluname);
+std::string kernelpatchfinder64::get_xnu_kernel_version_number_string(){
+    patchfinder64::loc_t kernel_version_number = findstr("root:xnu-", false);
+    debug("kernel_version_number=0x%016llx",kernel_version_number);
     
-    const char *mem = (const char *)memoryForLoc(kerneluname);
+    const char *mem = (const char *)memoryForLoc(kernel_version_number);
     std::string ret;
     mem+= sizeof("root:xnu-")-1;
     while (*mem && *mem != '/') ret += *mem++;
 
     return ret;
+}
+
+std::string kernelpatchfinder64::get_kernel_version_string(){
+    patchfinder64::loc_t kerneluname = findstr("Darwin Kernel Version", false);
+    debug("kerneluname=0x%016llx",kerneluname);
+    
+    const char *mem = (const char *)memoryForLoc(kerneluname);
+    return mem;
 }
 
 const void *kernelpatchfinder64::memoryForLoc(loc64_t loc){

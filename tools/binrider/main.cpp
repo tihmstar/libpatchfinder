@@ -64,7 +64,7 @@ struct rstruct{
 
 MAINFUNCTION
 int main_r(int argc, const char * argv[]) {
-    info("%s",VERSION_STRING);
+    info("binrider: %s",VERSION_STRING);
 
     patchfinder *pf = nullptr;
     cleanup([&]{

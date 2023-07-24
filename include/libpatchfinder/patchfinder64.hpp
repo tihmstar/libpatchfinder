@@ -55,11 +55,14 @@ namespace tihmstar {
             virtual loc_t memmem(const void *little, size_t little_len, patchfinder::loc_t startLoc = 0) const override;
             virtual loc_t memstr(const char *str) const override;
             virtual loc_t deref(loc_t pos) const override;
-
+            
 #pragma mark own functions
             uint32_t pageshit_for_pagesize(uint32_t pagesize);
             uint64_t pte_vma_to_index(uint32_t pagesize, uint8_t level, uint64_t address);
             uint64_t pte_index_to_vma(uint32_t pagesize, uint8_t level, uint64_t index);
+
+#pragma mark own functions virtual
+            virtual loc_t find_PACedPtrRefWithStrDesc(const char *strDesc, int ignoreTimes = 0, loc_t startPos = 0);
         };        
     };
 }

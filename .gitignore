@@ -35,3 +35,6 @@ project.xcworkspace
 xcshareddata
 *.bin
 *.bin.h
+tools/binrider/binrider
+reflected_*
+tools/offsetexporter/offsetexporter

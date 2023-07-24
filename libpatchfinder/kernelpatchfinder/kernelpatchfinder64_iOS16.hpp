@@ -15,9 +15,12 @@ namespace patchfinder {
     class kernelpatchfinder64_iOS16 : public kernelpatchfinder64_iOS15{
     public:
         using kernelpatchfinder64_iOS15::kernelpatchfinder64_iOS15;
-        
+                
+#pragma mark Location finders
         virtual loc_t find_boot_args_commandline_offset() override;
+        virtual loc_t find_sbops() override;
 
+#pragma mark Patch finders
         virtual std::vector<patch> get_trustcache_true_patch() override;
         
         virtual std::vector<patch> get_codesignature_patches() override;
@@ -29,9 +32,7 @@ namespace patchfinder {
         virtual std::vector<patch> get_mount_patch() override;
         
         virtual std::vector<patch> get_apfs_skip_authenticate_root_hash_patch() override;
-        
-        virtual loc_t find_sbops() override;
-        
+                
         virtual std::vector<patch> get_sandbox_patch() override;
         
         virtual std::vector<patch> get_task_conversion_eval_patch() override;

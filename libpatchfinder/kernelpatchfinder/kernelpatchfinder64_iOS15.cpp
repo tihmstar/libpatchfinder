@@ -16,6 +16,28 @@ using namespace patchfinder;
 using namespace libinsn;
 using namespace arm64;
 
+#pragma mark Offset finders
+patchfinder64::offset_t kernelpatchfinder64_iOS15::find_struct_offset_for_PACed_member(const char *strDesc){
+    loc_t ref = find_PACedPtrRefWithStrDesc(strDesc);
+    debug("ref=0x%016llx",ref);
+    
+    vmem iter = _vmem->getIter(ref);
+    uint8_t rd = iter().rd();
+    
+    while (++iter != insn::autda || iter().rn() != rd)
+        retassure(iter() != insn::ret, "Failed to find auth");
+
+    loc_t authloc = iter;
+    debug("authloc=0x%016llx",authloc);
+    
+    uint8_t authreg = iter().rd();
+    while (--iter != insn::ldr || iter().rt() != authreg)
+        retassure(iter() != insn::pacibsp, "Failed to find ldr");
+
+    return iter().imm();
+}
+
+#pragma mark Location finders
 patchfinder64::loc_t kernelpatchfinder64_iOS15::find_kernel_map(){
     UNCACHELOC;
     try {

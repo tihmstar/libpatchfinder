@@ -16,6 +16,10 @@ namespace patchfinder {
     public:
         using kernelpatchfinder64_iOS13::kernelpatchfinder64_iOS13;
 
+#pragma mark Offset finders
+        virtual offset_t find_struct_offset_for_PACed_member(const char *strDesc) override;
+
+#pragma mark Location finders
         virtual loc_t find_kernel_map() override;
         virtual loc_t find_kerneltask() override;
         virtual loc_t find_allproc() override;

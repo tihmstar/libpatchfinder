@@ -80,6 +80,20 @@ AC_ARG_WITH([wtfpwndfu],
             [with_wtfpwndfu=yes],
             [with_wtfpwndfu=no])
 
+AC_ARG_WITH([binrider],
+            [AS_HELP_STRING([--with-binrider],
+            [do build with binrider @<:@default=no@:>@])],
+            [with_binrider=yes],
+            [with_binrider=no])
+
+AC_ARG_WITH([offsetexporter],
+            [AS_HELP_STRING([--with-offsetexporter],
+            [do build with offsetexporter @<:@default=no@:>@])],
+            [with_offsetexporter=yes],
+            [with_offsetexporter=no])
+
+AM_CONDITIONAL(WITH_BINRIDER, test x$with_binrider == xyes)
+AM_CONDITIONAL(WITH_OFFSETEXPORTER, test x$with_offsetexporter == xyes)
 
 if test "x$have_img4tool" == "xyes"; then
   if test "x$with_img4tool" = "xyes"; then
@@ -158,6 +172,7 @@ AC_CONFIG_FILES([Makefile
                  libpatchfinder/kernelpatchfinder/Makefile
                  tools/Makefile
                  tools/binrider/Makefile
+                 tools/offsetexporter/Makefile
 		             libpatchfinder.pc])
 AC_OUTPUT
 
@@ -170,6 +185,8 @@ Configuration for $PACKAGE-$VERSION:
   have img3tool ...........: $with_img3tool
   debug build  ............: $debug_build
   asan build  .............: $asan_build
+  with binrider ...........: $with_binrider
+  with offsetexporter .....: $with_offsetexporter
   with wtfpwndfu ..........: $with_wtfpwndfu"
 
 echo "  compiler ................: ${CC}

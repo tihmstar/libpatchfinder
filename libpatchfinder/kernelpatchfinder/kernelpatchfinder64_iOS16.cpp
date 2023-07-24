@@ -17,6 +17,7 @@ using namespace patchfinder;
 using namespace libinsn;
 using namespace arm64;
 
+#pragma mark Location finders
 patchfinder64::loc_t kernelpatchfinder64_iOS16::find_boot_args_commandline_offset(){
     UNCACHELOC;
     
@@ -42,6 +43,26 @@ patchfinder64::loc_t kernelpatchfinder64_iOS16::find_boot_args_commandline_offse
     RETCACHELOC(bootargOffset);
 }
 
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_sbops(){
+    UNCACHELOC;
+    try {
+        RETCACHELOC(kernelpatchfinder64_iOS15::find_sbops());
+    } catch (...) {
+        //
+    }
+    patchfinder64::loc_t str = findstr("Seatbelt sandbox policy", false);
+    retassure(str, "Failed to find str");
+    debug("str=0x%16llx",str);
+    str -= _base;
+    patchfinder64::loc_t ref = 0;
+    retassure(ref = memmem(&str, 4), "Failed to find ref");
+    debug("ref=0x%16llx",ref);
+
+    loc_t retval = (patchfinder64::loc_t)deref(ref+0x18);
+    RETCACHELOC(retval);
+}
+
+#pragma mark Patch finders
 std::vector<patch> kernelpatchfinder64_iOS16::get_trustcache_true_patch(){
     UNCACHEPATCHES;
 
@@ -368,25 +389,6 @@ std::vector<patch> kernelpatchfinder64_iOS16::get_apfs_skip_authenticate_root_ha
     pushINSN(insn::new_general_ret(bof+4));
 
     RETCACHEPATCHES;
-}
-
-patchfinder64::loc_t kernelpatchfinder64_iOS16::find_sbops(){
-    UNCACHELOC;
-    try {
-        RETCACHELOC(kernelpatchfinder64_iOS15::find_sbops());
-    } catch (...) {
-        //
-    }
-    patchfinder64::loc_t str = findstr("Seatbelt sandbox policy", false);
-    retassure(str, "Failed to find str");
-    debug("str=0x%16llx",str);
-    str -= _base;
-    patchfinder64::loc_t ref = 0;
-    retassure(ref = memmem(&str, 4), "Failed to find ref");
-    debug("ref=0x%16llx",ref);
-
-    loc_t retval = (patchfinder64::loc_t)deref(ref+0x18);
-    RETCACHELOC(retval);
 }
 
 std::vector<patch> kernelpatchfinder64_iOS16::get_sandbox_patch(){

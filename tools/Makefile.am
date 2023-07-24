@@ -1,1 +1,1 @@
-SUBDIRS=binrider
+SUBDIRS=binrider offsetexporter

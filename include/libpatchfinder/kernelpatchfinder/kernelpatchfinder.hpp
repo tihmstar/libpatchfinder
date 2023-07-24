@@ -17,19 +17,21 @@ namespace tihmstar {
         class kernelpatchfinder{
         public:
             using loc64_t = tihmstar::libinsn::arm64::insn::loc_t;
+            using offset_t = tihmstar::libinsn::arm64::insn::loc_t;
         protected:
             std::vector<std::pair<loc64_t, size_t>> _unusedBSS;
         public:
             virtual ~kernelpatchfinder();
 
-            virtual std::string get_xnu_kernel_version();
+            virtual std::string get_xnu_kernel_version_number_string();
+            virtual std::string get_kernel_version_string();
             virtual const void *memoryForLoc(loc64_t loc);
-
+            
             /*
                 Patch replace strings (or raw bytes).
              */
             virtual std::vector<patch> get_replace_string_patch(std::string needle, std::string replacement);
-            
+                        
 #pragma mark Patch collections
             /*
                 Provides a set of generic kernelpatches for jailbreaking
@@ -40,6 +42,9 @@ namespace tihmstar {
                 Provides a set patches to disable codesignature checks
              */
             virtual std::vector<patch> get_codesignature_patches();
+
+#pragma mark Offset finders
+            virtual offset_t find_struct_offset_for_PACed_member(const char *strDesc);
 
 #pragma mark Location finders
             virtual loc64_t find_syscall0();
