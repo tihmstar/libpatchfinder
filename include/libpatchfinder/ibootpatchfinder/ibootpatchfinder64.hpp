@@ -32,7 +32,7 @@ namespace tihmstar {
             static ibootpatchfinder64 *make_ibootpatchfinder64(const void *buffer, size_t bufSize, bool takeOwnership = false);
             virtual ~ibootpatchfinder64();
             
-            loc_t findnops(uint16_t nopCnt, bool useNops = true, uint32_t nopOpcode = 0xd503201f /*nop insn*/);
+            virtual loc_t findnops(uint16_t nopCnt, bool useNops = true, uint32_t nopOpcode = 0xd503201f /*nop insn*/) override;
             
             virtual loc64_t find_base() override;
             virtual std::vector<patch> get_replace_string_patch(std::string needle, std::string replacement) override;

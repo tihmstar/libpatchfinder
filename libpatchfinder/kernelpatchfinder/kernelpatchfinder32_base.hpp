@@ -59,6 +59,8 @@ namespace patchfinder {
         
         virtual std::vector<patch> get_read_bpr_patch() override;
         
+        virtual std::vector<patch> get_noemf_patch() override;
+
 #pragma mark Util
         virtual loc64_t find_rootvnode() override;
 

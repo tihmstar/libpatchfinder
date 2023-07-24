@@ -7,6 +7,7 @@
 
 #include "../../include/libpatchfinder/kernelpatchfinder/kernelpatchfinder32.hpp"
 #include "kernelpatchfinder32_base.hpp"
+#include "kernelpatchfinder32_iOS5.hpp"
 #include "kernelpatchfinder32_iOS6.hpp"
 #include "kernelpatchfinder32_iOS9.hpp"
 #include "kernelpatchfinder32_iOS11.hpp"
@@ -22,20 +23,27 @@ kernelpatchfinder32 *kernelpatchfinder32::make_kernelpatchfinder32(machopatchfin
     
     std::string version = helper.get_xnu_kernel_version();
     info("Kernel version: %s",version.c_str());
-    
-    if (version > "4000") {
+    uint32_t vers = atoi(version.c_str());
+
+    if (vers > 4000) {
         info("Detected iOS 11 kernel");
         return new kernelpatchfinder32_iOS11(std::move(helper));
-    } else if (version > "3200") {
+    } else if (vers > 3200) {
         info("Detected iOS 9 kernel");
         return new kernelpatchfinder32_iOS9(std::move(helper));
-    } else if (version > "2100") {
+    } else if (vers > 2100) {
         info("Detected iOS 6 kernel");
         return new kernelpatchfinder32_iOS6(std::move(helper));
+    } else if (vers > 1800) {
+        info("Detected iOS 5 kernel");
+        return new kernelpatchfinder32_iOS5(std::move(helper));
     }
 
-
     return new kernelpatchfinder32_base(std::move(helper));
+}
+
+kernelpatchfinder32::~kernelpatchfinder32(){
+    //
 }
 
 std::vector<patch> kernelpatchfinder32::get_replace_string_patch(std::string needle, std::string replacement){
@@ -43,7 +51,7 @@ std::vector<patch> kernelpatchfinder32::get_replace_string_patch(std::string nee
 }
 
 std::string kernelpatchfinder32::get_xnu_kernel_version(){
-    patchfinder32::loc_t kerneluname = findstr("root:xnu-", false);
+    loc_t kerneluname = (loc_t)findstr("root:xnu-", false);
     debug("kerneluname=0x%08x",kerneluname);
     
     const char *mem = (const char *)memoryForLoc(kerneluname);
@@ -67,7 +75,6 @@ kernelpatchfinder32 *kernelpatchfinder32::make_kernelpatchfinder32(const char *f
 }
 
 
-
 kernelpatchfinder32::kernelpatchfinder32(machopatchfinder32 &&mv)
     : machopatchfinder32(std::move(mv)), _syscall_entry_size(0)
 {
@@ -89,9 +96,5 @@ kernelpatchfinder32::kernelpatchfinder32(const char *filename)
 kernelpatchfinder32::kernelpatchfinder32(const void *buffer, size_t bufSize, bool takeOwnership)
 : machopatchfinder32(buffer, bufSize, takeOwnership), _syscall_entry_size(0)
 {
-    //
-}
-
-kernelpatchfinder32::~kernelpatchfinder32(){
     //
 }

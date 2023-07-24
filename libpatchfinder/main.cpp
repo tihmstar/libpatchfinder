@@ -30,6 +30,10 @@ int main(int argc, const char * argv[]) {
     std::vector<patch> patches;
     ibootpatchfinder *ibpf = nullptr;
     kernelpatchfinder *kpf = nullptr;
+    cleanup([&]{
+        safeDelete(ibpf);
+        safeDelete(kpf);
+    });
     
     try {
         kpf = kernelpatchfinder64::make_kernelpatchfinder64(argv[1]);
@@ -53,15 +57,17 @@ int main(int argc, const char * argv[]) {
 //    addpatch(ibpf->get_replace_string_patch("recovery mode", "ra1nsn0w mode"));
 //    addpatch(ibpf->get_cmd_handler_callfunc_patch("devicetree"));
 //    addpatch(ibpf->get_tz0_lock_patch());
-//    addpatch(ibpf->get_skip_set_bpr_patch());
+    addpatch(ibpf->get_skip_set_bpr_patch());
 //    addpatch(ibpf->replace_cmd_with_memcpy("reset"));
 //    addpatch(ibpf->get_force_septype_local_patch());
-    addpatch(ibpf->get_always_sepfw_booted_patch());
+//    addpatch(ibpf->get_always_sepfw_booted_patch());
 //    addpatch(ibpf->get_atv4k_enable_uart_patch());
 //    addpatch(ibpf->get_ra1nra1n_patch());
 //    addpatch(ibpf->replace_cmd_with_memcpy("reboot"));
-//    addpatch(ibpf->get_boot_arg_patch("-v serial=3"));
+//    addpatch(ibpf->get_boot_arg_patch("-v serial=3 rd=md0"));
 //    addpatch(ibpf->get_no_force_dfu_patch());
+//    addpatch(ibpf->get_wtf_pwndfu_patch());
+//    addpatch(ibpf->get_sep_load_raw_patch());
 
 
     
@@ -88,6 +94,7 @@ int main(int argc, const char * argv[]) {
 //    addpatch(kpf->get_task_conversion_eval_patch());
 //    addpatch(kpf->get_tfp_anyone_allow_patch());
 //    addpatch(kpf->get_vm_fault_internal_patch());
+//    addpatch(kpf->get_i_can_has_debugger_patch());
 
     
 //    addpatch(kpf->get_apfs_root_from_sealed_livefs_patch());
@@ -109,6 +116,8 @@ int main(int argc, const char * argv[]) {
         }
         if (p._patchSize == 4) {
             printf(" 0x%08x",*(uint32_t*)p._patch);
+        } else if (p._patchSize == 2) {
+            printf(" 0x%04x",*(uint16_t*)p._patch);
         }
         printf("\n");
     }

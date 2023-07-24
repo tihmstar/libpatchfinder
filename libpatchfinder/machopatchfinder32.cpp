@@ -94,10 +94,10 @@ void machopatchfinder32::loadSegments(){
                 continue;
             }
             /*
-             idk what this weird thing is, but a TEXT section is never writable o.O
-             Note: this is iOS8 related issue
+             idk what this weird thing is, but a TEXT section is always executeable o.O
+             Note: this is iOS4 related issue
              */
-            bool isWeirdPrelinkText = (strcmp(seg->segname, "__PRELINK_TEXT") == 0 && seg->maxprot == (kVMPROTREAD | kVMPROTWRITE));
+            bool isWeirdPrelinkText = (strcmp(seg->segname, "__PRELINK_TEXT") == 0 && !(seg->maxprot & kVMPROTEXEC ));
             if (strcmp(seg->segname, "__TEXT_EXEC") == 0) has_text_exec = true;
             segments.push_back({_buf+seg->fileoff,seg->filesize, (loc_t)seg->vmaddr, (vmprot)(isWeirdPrelinkText ? (kVMPROTEXEC | kVMPROTREAD) : seg->maxprot), seg->segname});
             if (i==0){
@@ -129,16 +129,17 @@ void machopatchfinder32::loadSegments(){
         }
         segments = newsegments;
     }
-    _vmem = new vmem_thumb(segments,0, kVMPROTALL);
+    _vmemThumb = new vmem_thumb(segments,0, kVMPROTALL);
+    _vmemArm = new vmem_arm(segments,0, kVMPROTALL);
 
     try {
-        _vmem->deref(_entrypoint);
+        _vmemThumb->deref(_entrypoint);
         info("Detected non-slid kernel.");
     } catch (tihmstar::out_of_range &e) {
         reterror("Detected slid kernel. but slid kernel is currently not supported");
     }
     try {
-        _vmem->deref(_entrypoint);
+        _vmemThumb->deref(_entrypoint);
     } catch (tihmstar::out_of_range &e) {
         reterror("Error occured when handling kernel entry checks");
     }
@@ -329,7 +330,7 @@ std::string machopatchfinder32::sym_for_addr(loc_t addr){
 }
 
 machopatchfinder32::loc_t machopatchfinder32::bl_jump_stub_ptr_loc(loc_t bl_insn){
-    vmem_thumb iter = _vmem->getIter(bl_insn);
+    vmem_thumb iter = _vmemThumb->getIter(bl_insn);
     assure(iter() == arm32::bl);
 
     iter = iter().imm();

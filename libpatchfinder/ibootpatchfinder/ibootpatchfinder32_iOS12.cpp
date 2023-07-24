@@ -37,7 +37,7 @@ std::vector<patch> ibootpatchfinder32_iOS12::get_force_septype_local_patch(){
             }
         }
         debug("bref=0x%08x",bref);
-        vmem_thumb iter = _vmem->getIter(bref);
+        vmem_thumb iter = _vmemThumb->getIter(bref);
 
         if (--iter != mov || (iter().rd() != 2 && (--iter != mov || iter().rd() != 2))){
             //setting third arg

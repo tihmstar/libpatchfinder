@@ -8,13 +8,13 @@
 #ifndef kernelpatchfinder32_iOS6_hpp
 #define kernelpatchfinder32_iOS6_hpp
 
-#include "kernelpatchfinder32_base.hpp"
+#include "kernelpatchfinder32_iOS5.hpp"
 
 namespace tihmstar {
 namespace patchfinder {
-    class kernelpatchfinder32_iOS6 : public kernelpatchfinder32_base{
+    class kernelpatchfinder32_iOS6 : public kernelpatchfinder32_iOS5{
     public:
-        using kernelpatchfinder32_base::kernelpatchfinder32_base;
+        using kernelpatchfinder32_iOS5::kernelpatchfinder32_iOS5;
         
         virtual std::vector<patch> get_amfi_validateCodeDirectoryHashInDaemon_patch() override;
     };

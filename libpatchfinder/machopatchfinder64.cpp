@@ -169,13 +169,13 @@ void machopatchfinder64::loadSegments(){
     _vmem = new vmem(segments,0,kVMPROTALL);
     
     try {
-        _vmem->deref(_entrypoint);
+        deref(_entrypoint);
         info("Detected non-slid kernel.");
     } catch (tihmstar::out_of_range &e) {
         reterror("Detected slid kernel. but slid kernel is currently not supported");
     }
     try {
-        _vmem->deref(_entrypoint);
+        deref(_entrypoint);
     } catch (tihmstar::out_of_range &e) {
         reterror("Error occured when handling kernel entry checks");
     }

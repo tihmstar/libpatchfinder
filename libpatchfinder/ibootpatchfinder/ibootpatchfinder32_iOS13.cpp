@@ -26,7 +26,7 @@ std::vector<patch> ibootpatchfinder32_iOS13::get_boot_arg_patch(const char *boot
     loc_t default_boot_args_str_loc = findstr(DEFAULT_BOOTARGS_STR, false);
     debug("default_boot_args_str_loc=0x%08x",default_boot_args_str_loc);
     
-    loc_t default_boot_args_data_xref = _vmem->memmem(&default_boot_args_str_loc, sizeof(default_boot_args_str_loc));
+    loc_t default_boot_args_data_xref = memmem(&default_boot_args_str_loc, sizeof(default_boot_args_str_loc));
     debug("default_boot_args_data_xref=0x%08x",default_boot_args_data_xref);
 
     loc_t default_boot_args_xref = find_literal_ref_thumb(default_boot_args_str_loc);
@@ -53,7 +53,7 @@ std::vector<patch> ibootpatchfinder32_iOS13::get_boot_arg_patch(const char *boot
     debug("Applying custom boot-args \"%s\"\n", bootargs);
     patches.push_back({default_boot_args_str_loc, bootargs, strlen(bootargs)+1});
 
-    vmem_thumb iter = _vmem->getIter(default_boot_args_xref);
+    vmem_thumb iter = _vmemThumb->getIter(default_boot_args_xref);
         
     if ((--iter).supertype() != sut_branch_imm) {
         for (int i=0; i<2; i++,--iter) {
@@ -114,7 +114,7 @@ std::vector<patch> ibootpatchfinder32_iOS13::get_force_septype_local_patch(){
             //
         }
         debug("rsepref=0x%08x",rsepref);
-        vmem_thumb iter = _vmem->getIter(rsepref);
+        vmem_thumb iter = _vmemThumb->getIter(rsepref);
         if (iter() != ldr || iter().rt() != 1){
             debug("skipping reference by unexpected instruction!");
             continue;

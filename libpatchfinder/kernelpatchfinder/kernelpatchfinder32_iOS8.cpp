@@ -25,7 +25,7 @@ std::vector<patch> kernelpatchfinder32_iOS8::get_cs_enforcement_disable_amfi_pat
     loc_t ref = find_literal_ref_thumb(str);
     debug("ref=0x%08x",ref);
 
-    vmem_thumb cbz = _vmem->getIter(ref);
+    vmem_thumb cbz = _vmemThumb->getIter(ref);
     while (--cbz != arm32::cbz);
 
     vmem_thumb mov(cbz);

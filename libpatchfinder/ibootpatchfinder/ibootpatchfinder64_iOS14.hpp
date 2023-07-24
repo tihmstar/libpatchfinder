@@ -27,6 +27,8 @@ namespace tihmstar {
             
             virtual std::vector<patch> get_force_septype_local_patch() override;
             
+            virtual std::vector<patch> get_sep_load_raw_patch(bool localSEP = false) override;
+            
             /*
                 Skip setting BPR by iBoot
              */

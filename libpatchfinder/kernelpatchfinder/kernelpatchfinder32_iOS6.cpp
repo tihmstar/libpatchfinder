@@ -34,8 +34,8 @@ std::vector<patch> kernelpatchfinder32_iOS6::get_amfi_validateCodeDirectoryHashI
     debug("memcmp=0x%08x",memcmp);
     
     loc_t bl_amfi_memcp_loc = 0;
-    vmem_thumb bl_amfi_memcp_f = _vmem->getIter(ref);
-    vmem_thumb bl_amfi_memcp_b = _vmem->getIter(ref);
+    vmem_thumb bl_amfi_memcp_f = _vmemThumb->getIter(ref);
+    vmem_thumb bl_amfi_memcp_b = _vmemThumb->getIter(ref);
     loc_t jscpl = 0;
     for (int i=0; i < 50; i++) {
         while (++bl_amfi_memcp_f != arm32::bl)
@@ -58,16 +58,16 @@ std::vector<patch> kernelpatchfinder32_iOS6::get_amfi_validateCodeDirectoryHashI
         }
         
         if (jscpl_f) {
-            debug("bl_stub=0x%08x (0x%08x) -> 0x%08x",(loc_t)bl_amfi_memcp_f,jscpl_f,_vmem->deref(jscpl_f));
-            if ((_vmem->deref(jscpl_f)>>1) == (memcmp>>1)){
+            debug("bl_stub=0x%08x (0x%08x) -> 0x%08x",(loc_t)bl_amfi_memcp_f,jscpl_f,_vmemThumb->deref(jscpl_f));
+            if ((_vmemThumb->deref(jscpl_f)>>1) == (memcmp>>1)){
                 bl_amfi_memcp_loc = bl_amfi_memcp_f;
                 jscpl = jscpl_f;
                 break;
             }
         }
         if (jscpl_b) {
-            debug("bl_stub=0x%08x (0x%08x) -> 0x%08x",(loc_t)bl_amfi_memcp_b,jscpl_b,_vmem->deref(jscpl_b));
-            if ((_vmem->deref(jscpl_b)>>1) == (memcmp>>1)){
+            debug("bl_stub=0x%08x (0x%08x) -> 0x%08x",(loc_t)bl_amfi_memcp_b,jscpl_b,_vmemThumb->deref(jscpl_b));
+            if ((_vmemThumb->deref(jscpl_b)>>1) == (memcmp>>1)){
                 bl_amfi_memcp_loc = bl_amfi_memcp_b;
                 jscpl = jscpl_b;
                 break;
@@ -80,7 +80,7 @@ std::vector<patch> kernelpatchfinder32_iOS6::get_amfi_validateCodeDirectoryHashI
     /* find*/
     //movs r0, #0x0
     //bx lr
-    vmem_thumb ret0 = _vmem->getIter(memcmp);
+    vmem_thumb ret0 = _vmemThumb->getIter(memcmp);
     while (1) {
         while (++ret0 != arm32::mov || ret0().subtype() != st_immediate || ret0().rd() != 0 || ret0().imm() != 0)
             ;

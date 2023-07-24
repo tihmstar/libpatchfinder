@@ -10,6 +10,7 @@
 
 #include <libinsn/vmem.hpp>
 #include <libpatchfinder/patch.hpp>
+#include <libpatchfinder/patchfinder.hpp>
 
 namespace tihmstar {
     namespace patchfinder {
@@ -19,6 +20,7 @@ namespace tihmstar {
         protected:
             std::vector<std::pair<loc64_t, size_t>> _unusedBSS;
         public:
+            virtual ~kernelpatchfinder();
 
             virtual std::string get_xnu_kernel_version();
             virtual const void *memoryForLoc(loc64_t loc);
@@ -152,6 +154,8 @@ namespace tihmstar {
                 No restrictions on calling task_for_pid
              */
             virtual std::vector<patch> get_tfp_anyone_allow_patch();
+
+            virtual std::vector<patch> get_noemf_patch();
 #ifdef XCODE
             virtual std::vector<patch> test();
 #endif

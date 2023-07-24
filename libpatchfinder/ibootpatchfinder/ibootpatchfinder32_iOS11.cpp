@@ -24,7 +24,7 @@ std::vector<patch> ibootpatchfinder32_iOS11::get_skip_set_bpr_patch(){
         size_t insn_size = 2;
         while ((bpr_reg_ref = find_literal_ref_thumb(bpr_reg,0,(loc_t)(bpr_reg_ref+insn_size)))){
             if (bpr_reg_ref) {
-                vmem_thumb iter = _vmem->getIter(bpr_reg_ref);
+                vmem_thumb iter = _vmemThumb->getIter(bpr_reg_ref);
                 insn_size = iter().insnsize();
                 uint8_t addr_reg = iter().rt();
                 assure(++iter == ldr && iter().rn() == addr_reg);

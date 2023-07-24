@@ -22,18 +22,19 @@ namespace tihmstar {
             kernelpatchfinder32(const void *buffer, size_t bufSize, bool takeOwnership = false);
         public:
             kernelpatchfinder32(const kernelpatchfinder32 &cpy) = delete;
+            virtual ~kernelpatchfinder32();
+            
 
             virtual std::string get_xnu_kernel_version() override;
             virtual const void *memoryForLoc(loc64_t loc) override;
-
             
             virtual std::vector<patch> get_replace_string_patch(std::string needle, std::string replacement) override;
+
             
+#pragma mark static
             static kernelpatchfinder32 *make_kernelpatchfinder32(const char *filename);
             static kernelpatchfinder32 *make_kernelpatchfinder32(const void *buffer, size_t bufSize, bool takeOwnership = false);
             static kernelpatchfinder32 *make_kernelpatchfinder32(machopatchfinder32 &&mv);
-            
-            virtual ~kernelpatchfinder32();
         };
     };
 };

@@ -9,7 +9,8 @@ lib_LTLIBRARIES = libpatchfinder.la
 libpatchfinder_la_CPPFLAGS = $(AM_CFLAGS)
 libpatchfinder_la_LIBADD = $(AM_LDFLAGS) ibootpatchfinder/libpatchfinder_ibootpatchfinder.la kernelpatchfinder/libpatchfinder_kernelpatchfinder.la
 libpatchfinder_la_SOURCES =	patch.cpp \
-														patchfinder32.cpp \
-														patchfinder64.cpp \
-														machopatchfinder32.cpp \
-														machopatchfinder64.cpp
+							patchfinder.cpp \
+							patchfinder32.cpp \
+							patchfinder64.cpp \
+							machopatchfinder32.cpp \
+							machopatchfinder64.cpp

@@ -380,15 +380,15 @@ kernelpatchfinder32_base::~kernelpatchfinder32_base(){
 #pragma mark Location finders
 kernelpatchfinder::loc64_t kernelpatchfinder32_base::find_syscall0(){
     constexpr char sig_syscall_3[] = "\x06\x00\x00\x00\x03\x00\x0c\x00";
-    loc_t sys3 = _vmem->memmem(sig_syscall_3, sizeof(sig_syscall_3)-1);
+    loc_t sys3 = memmem(sig_syscall_3, sizeof(sig_syscall_3)-1);
     uint8_t syscall_entry_size = 0xc;
     loc_t syscall0 = 0;
     
 verify:
     syscall0 = sys3 - (3 * syscall_entry_size) + 0x8;
     try {
-        loc_t func0 = _vmem->deref(syscall0) & ~1;
-        vmem_thumb iter = _vmem->getIter(func0);
+        loc_t func0 = deref(syscall0) & ~1;
+        vmem_thumb iter = _vmemThumb->getIter(func0);
         assure(iter() == arm32::push);
         _syscall_entry_size = syscall_entry_size;
         debug("Syscall entry size is 0x%x",_syscall_entry_size);
@@ -415,7 +415,7 @@ kernelpatchfinder::loc64_t kernelpatchfinder32_base::find_table_entry_for_syscal
 }
 
 kernelpatchfinder::loc64_t kernelpatchfinder32_base::find_function_for_syscall(int syscall){
-    return _vmem->deref((loc_t)find_table_entry_for_syscall(syscall));
+    return deref((loc_t)find_table_entry_for_syscall(syscall));
 }
 
 kernelpatchfinder::loc64_t kernelpatchfinder32_base::find_sbops(){
@@ -424,12 +424,12 @@ kernelpatchfinder::loc64_t kernelpatchfinder32_base::find_sbops(){
     
     patchfinder32::loc_t ref = -1;
     do{
-        ref = _vmem->memmem(&str, sizeof(str), ref+1);
+        ref = memmem(&str, sizeof(str), ref+1);
         //ref cannot be misaligned in this case
     }while (ref & 3);
     debug("ref=0x%08x",ref);
 
-    return (loc_t)_vmem->deref(ref+0xc);
+    return (loc_t)deref(ref+0xc);
 }
 
 #pragma mark Patch finders
@@ -440,7 +440,7 @@ std::vector<patch> kernelpatchfinder32_base::get_MarijuanARM_patch(){
 
     patchfinder32::loc_t strloc = -1;
     try {
-        while ((strloc = _vmem->memmem(release_arm, sizeof(release_arm)-1, strloc+1))) {
+        while ((strloc = memmem(release_arm, sizeof(release_arm)-1, strloc+1))) {
             patches.push_back({strloc,marijuanarm,sizeof(marijuanarm)-1});
         }
     } catch (...) {
@@ -460,7 +460,7 @@ std::vector<patch> kernelpatchfinder32_base::get_trustcache_true_patch(){
         Maybe a little less cursed than 64bit variant.
      */
 
-    vmem_thumb iter(_vmem);
+    vmem_thumb iter = _vmemThumb->getIter();
 
     try {
         for (int z=0;;z++) {
@@ -517,21 +517,35 @@ std::vector<patch> kernelpatchfinder32_base::get_cs_enforcement_disable_amfi_pat
     std::vector<patch> patches;
     loc_t str = findstr("csflags",true);
     debug("str=0x%08x",str);
-
+    bool isArmCode = false;
+    
     loc_t ref = find_literal_ref_thumb(str);
+    if (!ref){
+        ref = find_literal_ref_arm(str);
+        isArmCode = true;
+    }
     debug("ref=0x%08x",ref);
+    assure(ref);
 
-    vmem_thumb iter = _vmem->getIter(ref);
+    if (isArmCode) {
+        vmem_arm iter = _vmemArm->getIter(ref);
 
-    while (--iter != arm32::push);
-    pushINSN(thumb::new_T1_immediate_movs(iter, 0, 0));
-    pushINSN(thumb::new_T1_general_bx(iter.pc()+2, 14));
+        while (--iter != arm32::push);
+        pushINSN(arm::new_A1_immediate_mov(iter, 0, 0));
+        pushINSN(arm::new_A1_general_bx(iter.pc()+4, 14));
+    }else{
+        vmem_thumb iter = _vmemThumb->getIter(ref);
+
+        while (--iter != arm32::push);
+        pushINSN(thumb::new_T1_immediate_movs(iter, 0, 0));
+        pushINSN(thumb::new_T1_general_bx(iter.pc()+2, 14));
+    }
 
     return patches;
 }
 
 std::vector<patch> kernelpatchfinder32_base::get_amfi_validateCodeDirectoryHashInDaemon_patch(){
-    std::vector<patch> patches;
+    UNCACHEPATCHES;
     loc_t memcmp = 0;
     if (haveSymbols()) {
         memcmp = find_sym("_memcmp");
@@ -543,7 +557,7 @@ std::vector<patch> kernelpatchfinder32_base::get_amfi_validateCodeDirectoryHashI
     /* find*/
     //movs r0, #0x0
     //bx lr
-    vmem_thumb ret0 = _vmem->getIter(memcmp);
+    vmem_thumb ret0 = _vmemThumb->getIter(memcmp);
     while (1) {
         while (++ret0 != arm32::mov || ret0().subtype() != st_immediate || ret0().rd() != 0 || ret0().imm() != 0)
             ;
@@ -561,27 +575,29 @@ std::vector<patch> kernelpatchfinder32_base::get_amfi_validateCodeDirectoryHashI
         debug("str=0x%08x",str);
         
         loc_t ref = find_literal_ref_thumb(str);
+        if (!ref) ref = find_literal_ref_arm(str);
         debug("ref=0x%08x",ref);
+        retassure(ref, "failed to find ref");
         
-        loc_t kext_start = ref &~3;
-        while (static_cast<uint32_t>(_vmem->deref(kext_start)) != 0xfeedface)
-            kext_start-=4;
-        debug("kext_start=0x%08x",kext_start);
+        {
+            loc_t kext_start = ref &~3;
+            while (static_cast<uint32_t>(deref(kext_start)) != 0xfeedface)
+                kext_start-=4;
+            debug("kext_start=0x%08x",kext_start);
 
-        loc_t kext_end = kext_start+4;
-        while (static_cast<uint32_t>(_vmem->deref(kext_end)) != 0xfeedface)
-            kext_end+=4;
-        debug("kext_end=0x%08x",kext_end);
-        
-        for (;kext_start < kext_end; kext_start += 4){
-            if ((_vmem->deref(kext_start) & 0xfffffffc) == memcmp){
-                patches.push_back({kext_start,&ret0_gadget,sizeof(ret0_gadget),slide_ptr});
+            loc_t kext_end = kext_start+4;
+            while (static_cast<uint32_t>(deref(kext_end)) != 0xfeedface)
+                kext_end+=4;
+            debug("kext_end=0x%08x",kext_end);
+            
+            for (;kext_start < kext_end; kext_start += 4){
+                if ((deref(kext_start) & ~1) == (memcmp & ~1)){
+                    patches.push_back({kext_start,&ret0_gadget,sizeof(ret0_gadget),slide_ptr});
+                }
             }
         }
     }
-    
-    retassure(patches.size(), "Failed to find a single patch");
-    return patches;
+    RETCACHEPATCHES;
 }
 
 std::vector<patch> kernelpatchfinder32_base::get_mount_patch(){
@@ -591,7 +607,7 @@ std::vector<patch> kernelpatchfinder32_base::get_mount_patch(){
     mount &= ~1;
     debug("mount=0x%08x",mount);
 
-    vmem_thumb iter = _vmem->getIter(mount);
+    vmem_thumb iter = _vmemThumb->getIter(mount);
 
     while (++iter != arm32::bl);
 
@@ -644,7 +660,7 @@ std::vector<patch> kernelpatchfinder32_base::get_sandbox_patch(){
     /* find*/
     //movs r0, #0x0
     //bx lr
-    vmem_thumb ret0 = _vmem->getIter();
+    vmem_thumb ret0 = _vmemThumb->getIter();
     while (1) {
         while (++ret0 != arm32::mov || ret0().subtype() != st_immediate || ret0().rd() != 0 || ret0().imm() != 0)
             ;
@@ -658,7 +674,7 @@ std::vector<patch> kernelpatchfinder32_base::get_sandbox_patch(){
     debug("ret0_gadget=0x%08x",ret0_gadget);
     
 #define PATCH_OP(loc) \
-    if (loc_t origval = _vmem->deref(loc)) { \
+    if (loc_t origval = deref(loc)) { \
         loc_t tmp = ret0_gadget; \
         patches.push_back({loc,&tmp,sizeof(tmp),slide_ptr}); \
     }
@@ -753,41 +769,42 @@ std::vector<patch> kernelpatchfinder32_base::get_sandbox_patch(){
 }
 
 std::vector<patch> kernelpatchfinder32_base::get_allow_UID_key_patch(){
-    std::vector<patch> patches;
-    vmem_thumb iter = _vmem->getIter();
-    
-    while (true) {
-        while (++iter != arm32::cmp || iter().subtype() != st_immediate)
-            ;
-        if (iter().imm() != 0x3e8 && iter().imm() != 0x7d0) {
-            continue;
-        }
-        uint8_t cmpreg = iter().rn();
-        uint32_t val = iter().imm();
-        
-        vmem_thumb iter2 = iter;
-        
-        for (int i=0; i<4; i++) {
-            auto insn = ++iter2;
-            if (insn == arm32::cmp && insn.subtype() == st_immediate && insn.rn() == cmpreg && (insn.imm() == (val == 0x3e8 ? 0x7d0 : 0x3e8))){
-                
-                vmem_thumb iter3 = iter2;
-                for (int j=0; j<4; j++) {
-                    if (++iter3 == arm32::mov && iter3().imm() == 0x835){
-                        loc_t cmp = iter;
-                        loc_t cmp2 = iter2;
-                        debug("cmp1=0x%08x",cmp);
-                        debug("cmp2=0x%08x",cmp2);
+    UNCACHEPATCHES;
 
-                        pushINSN(arm32::thumb::new_T2_immediate_cmp(cmp, 0xff, cmpreg));
-                        pushINSN(arm32::thumb::new_T2_immediate_cmp(cmp2, 0xff, cmpreg));
-                        return patches;
-                    }
-                }
+    loc_t aes_cbc_str = findstr("AES-CBC", true);
+    debug("aes_cbc_str=0x%08x",aes_cbc_str);
+    
+    loc_t aes_cbc_ref = find_literal_ref(aes_cbc_str);
+    debug("aes_cbc_ref=0x%08x",aes_cbc_ref);
+
+    aes_cbc_ref+=1;
+    loc_t vtable_ref = memmem(&aes_cbc_ref, sizeof(uint32_t),aes_cbc_ref);
+    debug("vtable_ref=0x%08x",vtable_ref);
+    
+    vtable_ref += 4;
+    
+    loc_t cryptofunc = deref(vtable_ref) & ~1;
+    debug("cryptofunc=0x%08x",cryptofunc);
+    
+    auto iter = _vmemThumb->getIter(cryptofunc);
+    
+    while ((++iter).supertype() != sut_branch_imm)
+        ;
+    retassure(iter() != arm32::bl, "shouldn't be bl");
+    
+    loc_t badLoc = iter().imm();
+    debug("badLoc=0x%08x",badLoc);
+    
+    do{
+        if (iter().supertype() == sut_branch_imm && iter().imm() == badLoc){
+            pushINSN(arm32::thumb::new_T2_register_mov(iter(), 0, 0));
+            if (iter().insnsize() != 2){
+                pushINSN(arm32::thumb::new_T2_register_mov(++iter, 0, 0));
             }
         }
-    }
-    reterror("failed to find patch");
+    }while (++iter != arm32::pop);
+    
+    RETCACHEPATCHES;
 }
 
 std::vector<patch> kernelpatchfinder32_base::get_force_NAND_writeable_patch(){
@@ -796,7 +813,7 @@ std::vector<patch> kernelpatchfinder32_base::get_force_NAND_writeable_patch(){
     loc_t str = findstr(" NAND is not writable", false);
     retassure(str, "Failed to find str");
     {
-        const char *strbuf = (const char *)_vmem->memoryForLoc(str);
+        const char *strbuf = (const char *)memoryForLoc(str);
         int offset = 0;
         while (strbuf[offset]) offset--;
         str += offset + 1;
@@ -806,7 +823,7 @@ std::vector<patch> kernelpatchfinder32_base::get_force_NAND_writeable_patch(){
     loc_t ref = find_literal_ref_thumb(str);
     debug("ref=0x%08x",ref);
 
-    vmem_thumb iter = _vmem->getIter(ref);
+    vmem_thumb iter = _vmemThumb->getIter(ref);
 
     while (--iter != arm32::bl)
         ;
@@ -860,7 +877,7 @@ std::vector<patch> kernelpatchfinder32_base::get_read_bpr_patch(){
     
     loc_t release_uname_str = findstr("RELEASE_ARM_", false);
     debug("release_uname_str=0x%08x",release_uname_str);
-    const char *release_uname_str_ptr = (const char*)_vmem->memoryForLoc(release_uname_str);
+    const char *release_uname_str_ptr = (const char*)memoryForLoc(release_uname_str);
     release_uname_str_ptr+=sizeof("RELEASE_ARM_")-1;
     while (*release_uname_str_ptr && isalpha(*release_uname_str_ptr)) release_uname_str_ptr++;
     
@@ -879,6 +896,16 @@ std::vector<patch> kernelpatchfinder32_base::get_read_bpr_patch(){
 
     debug("bpr_addr=0x%08x",bpr_addr);
     return get_read_bpr_patch_with_params(213, bpr_addr, ml_io_map, kernel_store, kmem_free);
+}
+
+std::vector<patch> kernelpatchfinder32_base::get_noemf_patch(){
+    UNCACHEPATCHES;
+    loc_t func = find_sym("_bufattr_cpx");
+    debug("func=0x%08x",func);
+    assure(func);
+    pushINSN(thumb::new_T1_immediate_movs(func, 0, 0));
+    pushINSN(thumb::new_T1_general_bx(func+2, 14));
+    RETCACHEPATCHES;
 }
 
 #pragma mark Util

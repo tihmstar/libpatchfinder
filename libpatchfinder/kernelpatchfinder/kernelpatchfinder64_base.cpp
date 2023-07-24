@@ -52,7 +52,7 @@ static void slide_ptr(class patch *p, uint64_t slide){
 patchfinder64::loc_t kernelpatchfinder64_base::find_syscall0(){
     UNCACHELOC;
     constexpr char sig_syscall_3[] = "\x06\x00\x00\x00\x03\x00\x0c\x00";
-    patchfinder64::loc_t sys3 = _vmem->memmem(sig_syscall_3, sizeof(sig_syscall_3)-1);
+    patchfinder64::loc_t sys3 = memmem(sig_syscall_3, sizeof(sig_syscall_3)-1);
     loc_t retval = sys3 - (3 * 0x18) + 0x8;
     RETCACHELOC(retval);
 }
@@ -101,13 +101,13 @@ patchfinder64::loc_t kernelpatchfinder64_base::find_table_entry_for_syscall(int 
 }
 
 patchfinder64::loc_t kernelpatchfinder64_base::find_function_for_syscall(int syscall){
-    return _vmem->deref(find_table_entry_for_syscall(syscall));
+    return deref(find_table_entry_for_syscall(syscall));
 }
 
 patchfinder64::loc_t kernelpatchfinder64_base::find_function_for_machtrap(int trapcall){
     patchfinder64::loc_t machtrapTable = find_machtrap_table();
     patchfinder64::loc_t tableEntry =machtrapTable + 4*8*trapcall;
-    return _vmem->deref(tableEntry);
+    return deref(tableEntry);
 }
 
 patchfinder64::loc_t kernelpatchfinder64_base::find_kerneltask(){
@@ -169,7 +169,7 @@ std::vector<patch> kernelpatchfinder64_base::get_MarijuanARM_patch(){
 
     patchfinder64::loc_t strloc = -1;
     try {
-        while ((strloc = _vmem->memmem(release_arm, sizeof(release_arm)-1, strloc+1))) {
+        while ((strloc = memmem(release_arm, sizeof(release_arm)-1, strloc+1))) {
             patches.push_back({strloc,marijuanarm,sizeof(marijuanarm)-1});
         }
     } catch (...) {
@@ -540,12 +540,12 @@ std::vector<patch> kernelpatchfinder64_base::get_amfi_validateCodeDirectoryHashI
             continue;
         }
         if (haveSymbols()) {
-            debug("bl_stub=0x%016llx (0x%16llx) -> 0x%016llx",(patchfinder64::loc_t)bl_amfi_memcp,jscpl,_vmem->deref(jscpl));
-            if (_vmem->deref(jscpl) == (uint64_t)(memcmp = find_sym("_memcmp")))
+            debug("bl_stub=0x%016llx (0x%16llx) -> 0x%016llx",(patchfinder64::loc_t)bl_amfi_memcp,jscpl,deref(jscpl));
+            if (deref(jscpl) == (uint64_t)(memcmp = find_sym("_memcmp")))
                 break;
         }else{
             //check for _memcmp function signature
-            vmem checker = _vmem->getIter(memcmp = (patchfinder64::loc_t)_vmem->deref(jscpl));
+            vmem checker = _vmem->getIter(memcmp = (patchfinder64::loc_t)deref(jscpl));
             if (checker == insn::cbz
                 && (++checker == insn::ldrb && checker().rn() == 0)
                 && (++checker == insn::ldrb && checker().rn() == 1)
@@ -679,7 +679,7 @@ std::vector<patch> kernelpatchfinder64_base::get_sandbox_patch(){
      */
     
 #define PATCH_OP(loc) \
-    if (uint64_t origval = _vmem->deref(loc)) { \
+    if (uint64_t origval = deref(loc)) { \
         patchfinder64::loc_t tmp = (ret0gadget & 0x0000ffffffffffff) | (origval & 0xffff000000000000); \
         patches.push_back({loc,&tmp,sizeof(tmp)}); \
     }
@@ -778,7 +778,7 @@ std::vector<patch> kernelpatchfinder64_base::get_nuke_sandbox_patch(){
      */
     
 #define PATCH_OP(loc) \
-    if (uint64_t origval = _vmem->deref(loc)) { \
+    if (uint64_t origval = deref(loc)) { \
         patchfinder64::loc_t tmp = (ret0gadget & 0x0000ffffffffffff) | (origval & 0xffff000000000000); \
         patches.push_back({loc,&tmp,sizeof(tmp)}); \
     }
@@ -1008,7 +1008,7 @@ std::vector<patch> kernelpatchfinder64_base::get_ramdisk_detection_patch(){
         }
     }
     
-    loc_t rd_str = _vmem->memmem("\x00rd\x00", 4)+1;
+    loc_t rd_str = memmem("\x00rd\x00", 4)+1;
     debug("rd_str=0x%016llx",rd_str);
     
     loc_t rd_ref = -4;
@@ -1087,7 +1087,7 @@ std::vector<patch> kernelpatchfinder64_base::get_kernelbase_syscall_patch(){
     patches.push_back({nops+4,shellcode+4,sizeof(shellcode)-1-4});
 
     //hello linkerinfo in pointers
-    uint64_t funcptr = _vmem->deref(table) & 0xffffffff00000000;
+    uint64_t funcptr = deref(table) & 0xffffffff00000000;
     funcptr |= (nops & 0xffffffff);
     patches.push_back({table,&funcptr,sizeof(funcptr)});
     
@@ -1216,7 +1216,7 @@ std::vector<patch> kernelpatchfinder64_base::get_harcode_boot_manifest_patch(std
     pushINSN(insn::new_register_str(cPC, 5, 7, 8, true));
     pushINSN(insn::new_immediate_bcond(cPC, shellcode+loop2dst*4, libinsn::arm64::insn::NE));
     {
-        uint32_t opcode = (uint32_t)_vmem->deref(hookpos);
+        uint32_t opcode = (uint32_t)deref(hookpos);
         patches.push_back({cPC,&opcode,sizeof(opcode)});
     }
     pushINSN(insn::new_immediate_b(cPC, hookpos+4));
@@ -1258,14 +1258,14 @@ patchfinder64::loc_t kernelpatchfinder64_base::find_sbops(){
 
     patchfinder64::loc_t ref = 0;
     try {
-        retassure(ref = _vmem->memmem(&str, sizeof(str)), "Failed to find ref");
+        retassure(ref = memmem(&str, sizeof(str)), "Failed to find ref");
     } catch (...) {
         //pointer now contain linker information
         debug("Failed to find full ref, retrying with masking off upper 2 bytes...");
-        retassure(ref = _vmem->memmem(&str, sizeof(str)-2), "Failed to find ref");
+        retassure(ref = memmem(&str, sizeof(str)-2), "Failed to find ref");
     }
 
-    loc_t retval = (patchfinder64::loc_t)_vmem->deref(ref+0x18);
+    loc_t retval = (patchfinder64::loc_t)deref(ref+0x18);
     RETCACHELOC(retval);
 }
 
@@ -1536,7 +1536,7 @@ std::vector<patch> kernelpatchfinder64_base::get_read_bpr_patch_with_params(int 
     patches.push_back({nops+sizeof(readbpr)-1+4*6,&bpr_reg_addr,sizeof(bpr_reg_addr)});
     
     //hello linkerinfo in pointers
-    uint64_t funcptr = _vmem->deref(table) & 0xffffffff00000000;
+    uint64_t funcptr = deref(table) & 0xffffffff00000000;
     funcptr |= (nops & 0xffffffff);
     patches.push_back({table,&funcptr,sizeof(funcptr)});
 

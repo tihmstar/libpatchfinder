@@ -39,7 +39,7 @@ std::vector<patch> kernelpatchfinder32_iOS11::get_mount_patch(){
     mount &= ~1;
     debug("mount=0x%08x",mount);
 
-    vmem_thumb iter = _vmem->getIter(mount);
+    vmem_thumb iter = _vmemThumb->getIter(mount);
 
     while (++iter != arm32::bl);
 
