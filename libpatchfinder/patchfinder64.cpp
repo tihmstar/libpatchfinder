@@ -539,8 +539,12 @@ uint64_t patchfinder64::pte_index_to_vma(uint32_t pagesize, uint8_t level, uint6
 }
 
 #pragma mark own functions virtual
+uint16_t patchfinder64::getPointerAuthStringDiscriminator(const char *strDesc){
+    return clang::getPointerAuthStringDiscriminator(strDesc);
+}
+
 patchfinder64::loc_t patchfinder64::find_PACedPtrRefWithStrDesc(const char *strDesc, int ignoreTimes, loc_t startPos){
-    uint64_t desc = clang::getPointerAuthStringDiscriminator(strDesc);
+    uint64_t desc = getPointerAuthStringDiscriminator(strDesc);
     vmem iter = _vmem->getIter(startPos);
     while (true) {
         while (++iter != insn::movk || iter().imm() != ((uint64_t)desc << 48));

@@ -17,6 +17,160 @@ using namespace patchfinder;
 using namespace libinsn;
 using namespace arm64;
 
+#pragma mark Offset finders
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_kqworkloop_offset_kqwl_owner(){
+    UNCACHELOC;
+    
+    loc_t str = findstr("kq(%p) invalid refcount %d", false);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+
+    vmem iter = _vmem->getIter(ref);
+    while (--iter != insn::movz)
+        ;
+    
+    loc_t bref = find_branch_ref(iter, -0x130);
+    debug("bref=0x%016llx",bref);
+
+    iter = bref;
+    while (++iter != insn::bl)
+        ;
+    
+    loc_t kqworkloop_dealloc = iter().imm();
+    --iter;
+    assure(iter() == insn::movz && iter().rd() == 1 && iter().imm() == 0);
+    debug("kqworkloop_dealloc=0x%016llx",kqworkloop_dealloc);
+
+    iter = kqworkloop_dealloc;
+    while (++iter != insn::ldr)
+        ;
+    assert(iter().rn() == 0);
+    RETCACHELOC(iter().imm());
+}
+
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_task_offset_thread_count(){
+    UNCACHELOC;
+    
+    loc_t str = findstr("Panicked task %p: %d threads: ", true);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+
+    vmem iter = _vmem->getIter(ref);
+    {
+        int distance = 0;
+        while (--iter != insn::stp)
+            distance++;
+        retassure(distance < 5, "we went too far!");
+    }
+
+    uint8_t countreg = iter().rt2();
+
+    while (--iter != insn::ldr || iter().rt() != countreg)
+        ;
+    RETCACHELOC(iter().imm());
+}
+
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_thread_offset_map(){
+    UNCACHELOC;
+    
+    loc_t str = findstr("swap_task_map ", false);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+
+    loc_t bof = find_bof(ref);
+    debug("bof=0x%016llx",bof);
+
+    vmem iter = _vmem->getIter(bof);
+    
+    uint16_t pachash = getPointerAuthStringDiscriminator("task.map");
+
+    while (true) {
+    continue_loop:
+        while (++iter != insn::movk || iter().imm() != ((uint64_t)pachash<<48))
+            ;
+        loc_t hit = iter;
+        debug("hit=0x%016llx",hit);
+        vmem iter2 = iter;
+        while (++iter2 != insn::str || iter2().rt() != iter().rd()){
+            if (iter2() == insn::ret) goto continue_loop;
+        }
+        loc_t hot = iter2;
+        debug("hot=0x%016llx",hot);
+        
+        if (iter2().subtype() != insn::st_immediate || iter2().imm() < 0x100)
+            continue;
+        
+        RETCACHELOC(iter2().imm());
+    }
+}
+
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_elementsize_for_zone(const char *zonedesc){
+    loc_t str = -1;
+    while (true) {
+        str = findstr(zonedesc, true, str+1);
+        if (deref(str-1) & 0xff) continue;
+        break;
+    }
+    debug("str=0x%016llx",str);
+    str -= find_base();
+    debug("needle=0x%016llx",str);
+    
+    loc_t ref = memmem(&str, 6);
+    debug("ref=0x%016llx",ref);
+        
+    return deref(ref+8);
+}
+
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_proc(){
+    UNCACHELOC;
+    
+    loc_t str = findstr("io_telemetry_limit", true);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+
+    vmem iter = _vmem->getIter(ref);
+    
+    while (++iter != insn::bl)
+        ;
+    while (++iter != insn::ldr)
+        ;
+    
+    loc_t val = find_register_value(iter, iter().rn());
+    val += iter().imm();
+    
+    uint64_t retval = deref(val);
+    
+    RETCACHELOC(retval);
+}
+
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_task(){
+    UNCACHELOC;
+    
+    loc_t str = findstr("io_telemetry_limit", true);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+
+    vmem iter = _vmem->getIter(ref);
+    
+    while (++iter != insn::bl)
+        ;
+    
+    while (++iter != insn::add || iter().subtype() != insn::st_immediate)
+        ;
+    
+    RETCACHELOC(iter().imm());
+}
+
 #pragma mark Location finders
 patchfinder64::loc_t kernelpatchfinder64_iOS16::find_boot_args_commandline_offset(){
     UNCACHELOC;

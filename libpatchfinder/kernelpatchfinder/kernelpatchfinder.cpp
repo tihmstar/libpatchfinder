@@ -47,6 +47,30 @@ kernelpatchfinder::offset_t kernelpatchfinder::find_struct_offset_for_PACed_memb
     FAIL_UNIMPLEMENTED;
 }
 
+kernelpatchfinder::offset_t kernelpatchfinder::find_struct_kqworkloop_offset_kqwl_owner(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::offset_t kernelpatchfinder::find_struct_task_offset_thread_count(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::offset_t kernelpatchfinder::find_struct_thread_offset_map(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::offset_t kernelpatchfinder::find_elementsize_for_zone(const char *zonedesc){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::offset_t kernelpatchfinder::find_sizeof_struct_proc(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::offset_t kernelpatchfinder::find_sizeof_struct_task(){
+    FAIL_UNIMPLEMENTED;
+}
+
 #pragma mark Location finders
 kernelpatchfinder::loc64_t kernelpatchfinder::find_syscall0(){
     FAIL_UNIMPLEMENTED;

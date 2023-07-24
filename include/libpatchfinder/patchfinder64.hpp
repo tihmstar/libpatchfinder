@@ -62,6 +62,7 @@ namespace tihmstar {
             uint64_t pte_index_to_vma(uint32_t pagesize, uint8_t level, uint64_t index);
 
 #pragma mark own functions virtual
+            virtual uint16_t getPointerAuthStringDiscriminator(const char *strDesc);
             virtual loc_t find_PACedPtrRefWithStrDesc(const char *strDesc, int ignoreTimes = 0, loc_t startPos = 0);
         };        
     };

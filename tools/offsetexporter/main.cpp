@@ -143,39 +143,22 @@ int main_r(int argc, const char * argv[]) {
         templ = {(char*)templ_f.data(),(char*)templ_f.data()+templ_f.size()};
     }
     for (auto method : findOffsets) {
-        patch patch(0,NULL,0);
+        patch pp(0,NULL,0);
+        std::string static_str;
         if (method.funcname == "static") {
             retassure(method.args.size() == 1, "bad number of args for 'static' call! Needs 1");
-            std::string arg = method.args.at(0);
-            
-            if (arg.size()) {
-                if (strncasecmp(arg.c_str(), "0x", 2) == 0){
-                    uint64_t parseNum = strtoll(arg.c_str(), NULL, 16);
-                    patch._location = parseNum;
-                }else{
-                    uint64_t parseNum = strtoll(arg.c_str(), NULL, 16);
-                    if (parseNum){
-                        patch._location = parseNum;
-                    }else if (isdigit(arg.c_str()[0])){
-                        uint64_t parseNum = strtoll(arg.c_str(), NULL, 10);
-                        patch._location = parseNum;
-                    }
-                }
-            }
-            if (patch._location == 0) {
-                reterror("string constants not implemented!");
-            }
+            pp = patch(offsetexporter::ReturnType_std_string,method.args.at(0).data(),method.args.at(0).size(),NULL,false);
         }else{
-            patch = offsetexporter::reflect_kernelpatchfinder(kpf, method.funcname, method.args);
+            pp = offsetexporter::reflect_kernelpatchfinder(kpf, method.funcname, method.args);
         }
         
-        if (patch._location == offsetexporter::ReturnType_std_string) {
+        if (pp._location == offsetexporter::ReturnType_std_string) {
             //first check for "magic" locations
-            std::string rs = {(char*)patch._patch,(char*)patch._patch+patch._patchSize};
+            std::string rs = {(char*)pp._patch,(char*)pp._patch+pp._patchSize};
             templ = ReplaceAll(templ, method.templaceName, rs);
-        }else if (patch._patchSize == 0){
+        }else if (pp._patchSize == 0){
             //this is a location, not a patch
-            uint64_t loc = patch._location;
+            uint64_t loc = pp._location;
             char buf[20] = {};
             snprintf(buf, sizeof(buf), "0x%llx",loc);
             templ = ReplaceAll(templ, method.templaceName, buf);

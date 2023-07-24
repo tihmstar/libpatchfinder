@@ -13,7 +13,9 @@
 
 using namespace tihmstar::patchfinder;
 
-patch::patch(uint64_t location, const void *patch, size_t patchSize, void(*slidefunc)(class patch *patch, uint64_t slide)) : _location(location), _patchSize(patchSize), _slidefunc(slidefunc){
+patch::patch(uint64_t location, const void *patch, size_t patchSize, void(*slidefunc)(class patch *patch, uint64_t slide), bool dofree)
+: _location(location), _patchSize(patchSize), _slidefunc(slidefunc), _dofree(dofree)
+{
     _patch = malloc(_patchSize);
     memcpy((void*)_patch, patch, _patchSize);
     _slideme = (_slidefunc) ? true : false;
@@ -27,7 +29,7 @@ patch::patch(const patch& cpy) noexcept : _location(cpy._location), _patchSize(c
 }
 
 patch::~patch(){
-    safeFreeConst(_patch);
+    if (_dofree) safeFreeConst(_patch);
 }
 
 patch &patch::operator=(const patch& cpy){

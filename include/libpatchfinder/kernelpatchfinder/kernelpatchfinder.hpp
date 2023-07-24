@@ -45,6 +45,14 @@ namespace tihmstar {
 
 #pragma mark Offset finders
             virtual offset_t find_struct_offset_for_PACed_member(const char *strDesc);
+            virtual offset_t find_struct_kqworkloop_offset_kqwl_owner();
+            virtual offset_t find_struct_task_offset_thread_count();
+            virtual offset_t find_struct_thread_offset_map();
+
+            virtual offset_t find_elementsize_for_zone(const char *zonedesc);
+
+            virtual offset_t find_sizeof_struct_proc();
+            virtual offset_t find_sizeof_struct_task();
 
 #pragma mark Location finders
             virtual loc64_t find_syscall0();
