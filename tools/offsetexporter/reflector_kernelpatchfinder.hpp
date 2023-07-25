@@ -8,7 +8,7 @@
 #ifndef reflector_kernelpatchfinder_hpp
 #define reflector_kernelpatchfinder_hpp
 
-#include <libpatchfinder/kernelpatchfinder/kernelpatchfinder.hpp>
+#include <libpatchfinder/kernelpatchfinder/kernelpatchfinder64.hpp>
 #include <iostream>
 #include <vector>
 
@@ -27,7 +27,7 @@ struct funcs{
 
     std::vector<funcs> reflect_kernelpatchfinder_member_list(void);
 
-    patch reflect_kernelpatchfinder(kernelpatchfinder *kpf, std::string method, std::vector<std::string> args);
+    patch reflect_kernelpatchfinder(kernelpatchfinder64 *kpf, std::string method, std::vector<std::string> args);
 };
 };
 };

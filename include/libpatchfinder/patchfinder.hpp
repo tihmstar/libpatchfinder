@@ -49,10 +49,10 @@ namespace tihmstar {
             
             virtual ~patchfinder();
 
-            const void *buf() { return _buf;}
-            size_t bufSize() { return _bufSize;}
-            loc_t find_entry() { return _entrypoint;}
-            loc_t find_base() { return _base; }
+            const void *buf();
+            size_t bufSize();
+            loc_t find_entry();
+            loc_t find_base();
             
 #pragma mark no-provider
             virtual const void *memoryForLoc(loc_t loc);

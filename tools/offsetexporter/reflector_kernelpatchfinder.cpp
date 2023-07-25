@@ -10,9 +10,12 @@
 using namespace tihmstar::patchfinder;
 using offset_t = kernelpatchfinder::offset_t;
 using loc64_t = kernelpatchfinder::loc64_t;
+using loc_t = patchfinder::loc_t;
 
 
 #include "reflected_kernelpatchfinder.cpp"
+#include "reflected_patchfinder.cpp"
+
 /*
  struct funcdef {
      std::string funcname;
@@ -20,11 +23,18 @@ using loc64_t = kernelpatchfinder::loc64_t;
      std::string rettype;
      std::vector<std::string> typeinfo;
  };
- static const std::vector<funcdef> gFuncLookup;
+ static const std::vector<funcdef> gFuncLookup_kernelpatchfinder;
  */
 
-static funcdef lookupMethod(std::string method){
-    for (auto &f : gFuncLookup){
+static funcdef lookupMethod_kernelpatchfinder(std::string method){
+    for (auto &f : gFuncLookup_kernelpatchfinder){
+        if (f.funcname == method) return f;
+    }
+    reterror("Failed to lookup method '%s'",method.c_str());
+}
+
+static funcdef lookupMethod_patchfinder(std::string method){
+    for (auto &f : gFuncLookup_patchfinder){
         if (f.funcname == method) return f;
     }
     reterror("Failed to lookup method '%s'",method.c_str());
@@ -32,24 +42,52 @@ static funcdef lookupMethod(std::string method){
 
 std::vector<offsetexporter::funcs> offsetexporter::reflect_kernelpatchfinder_member_list(void){
     std::vector<offsetexporter::funcs> ret;
-    for (auto &f : gFuncLookup){
+    for (auto &f : gFuncLookup_patchfinder){
         offsetexporter::funcs func{
             .funcname = f.funcname,
             .funcargs = f.typeinfo
         };
         ret.push_back(func);
     }
+    for (auto &f : gFuncLookup_kernelpatchfinder){
+        offsetexporter::funcs func{
+            .funcname = f.funcname,
+            .funcargs = f.typeinfo
+        };
+        /*
+            inherited class may overwrite function
+         */
+        auto res = std::find_if(ret.begin(), ret.end(), [&](const offsetexporter::funcs & e){
+            if (e.funcname == func.funcname) return true;
+            if (e.funcargs == func.funcargs) return true;
+            return false;
+        });
+        if (res != ret.end()) {
+            ret.erase(res);
+        }
+        ret.push_back(func);
+    }
     return ret;
 }
 
-patch offsetexporter::reflect_kernelpatchfinder(kernelpatchfinder *kpf, std::string method, std::vector<std::string> args){
+patch offsetexporter::reflect_kernelpatchfinder(kernelpatchfinder64 *kpf, std::string method, std::vector<std::string> args){
     void *call_args[4] = {};
-
-    auto fdef = lookupMethod(method);
+    bool isKernelpatchfidnerObject = false;
+    funcdef fdef;
+    try {
+        fdef = lookupMethod_kernelpatchfinder(method);
+        isKernelpatchfidnerObject = true;
+    } catch (...) {
+        fdef = lookupMethod_patchfinder(method);
+    }
     retassure(fdef.typeinfo.size() <= 4, "too many args needed");
     ReturnType rettype = ReturnType_unknown;
     
     if (fdef.rettype == "offset_t") {
+        rettype = ReturnType_u64;
+    }else if (fdef.rettype == "loc_t") {
+        rettype = ReturnType_u64;
+    }else if (fdef.rettype == "loc64_t") {
         rettype = ReturnType_u64;
     }else if (fdef.rettype == "std::string") {
         rettype = ReturnType_std_string;
@@ -73,16 +111,28 @@ patch offsetexporter::reflect_kernelpatchfinder(kernelpatchfinder *kpf, std::str
     switch (rettype) {
         case ReturnType_u64:
         {
-            uint64_t (*callfunc)(kernelpatchfinder *, void *, void* ,void *, void *) = (uint64_t (*)(kernelpatchfinder *, void *, void* ,void *, void *))fdef.func;
-            uint64_t retU64 = callfunc(kpf,call_args[0],call_args[1],call_args[2],call_args[3]);
+            uint64_t retU64 = 0;
+            if (isKernelpatchfidnerObject) {
+                uint64_t (*callfunc)(kernelpatchfinder *, void *, void* ,void *, void *) = (uint64_t (*)(kernelpatchfinder *, void *, void* ,void *, void *))fdef.func;
+                retU64 = callfunc(kpf,call_args[0],call_args[1],call_args[2],call_args[3]);
+            }else{
+                uint64_t (*callfunc)(patchfinder *, void *, void* ,void *, void *) = (uint64_t (*)(patchfinder *, void *, void* ,void *, void *))fdef.func;
+                retU64 = callfunc(kpf,call_args[0],call_args[1],call_args[2],call_args[3]);
+            }
             return {retU64, NULL, 0};
         }
             break;
             
         case ReturnType_std_string:
         {
-            std::string (*callfunc)(kernelpatchfinder *, void *, void* ,void *, void *) = (std::string (*)(kernelpatchfinder *, void *, void* ,void *, void *))fdef.func;
-            std::string retstr = callfunc(kpf,call_args[0],call_args[1],call_args[2],call_args[3]);
+            std::string retstr;
+            if (isKernelpatchfidnerObject) {
+                std::string (*callfunc)(kernelpatchfinder *, void *, void* ,void *, void *) = (std::string (*)(kernelpatchfinder *, void *, void* ,void *, void *))fdef.func;
+                retstr = callfunc(kpf,call_args[0],call_args[1],call_args[2],call_args[3]);
+            }else{
+                std::string (*callfunc)(patchfinder *, void *, void* ,void *, void *) = (std::string (*)(patchfinder *, void *, void* ,void *, void *))fdef.func;
+                retstr = callfunc(kpf,call_args[0],call_args[1],call_args[2],call_args[3]);
+            }
             return {ReturnType_std_string, retstr.data(), retstr.size()};
         }
             

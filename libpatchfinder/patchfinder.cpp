@@ -36,6 +36,21 @@ patchfinder::~patchfinder(){
     if (_freeBuf) safeFreeConst(_buf);
 }
 
+const void *patchfinder::buf() {
+    return _buf;
+}
+
+size_t patchfinder::bufSize() {
+    return _bufSize;
+}
+
+patchfinder::loc_t patchfinder::find_entry() {
+    return _entrypoint;
+}
+
+patchfinder::loc_t patchfinder::find_base() {
+    return _base;
+}
 
 #pragma mark no-provider
 const void *patchfinder::memoryForLoc(loc_t loc){

@@ -14,13 +14,16 @@ offsetexporter_SOURCES = 	main.cpp \
                             reflector_kernelpatchfinder.cpp
 
 
-BUILT_SOURCES = reflected_kernelpatchfinder.cpp
+BUILT_SOURCES = reflected_kernelpatchfinder.cpp reflected_patchfinder.cpp
 
 
-$(BUILT_SOURCES): reflected_%.cpp: ${srcdir}/../../include/libpatchfinder/kernelpatchfinder/%.hpp
+reflected_kernelpatchfinder.cpp: reflected_%.cpp: ${srcdir}/../../include/libpatchfinder/kernelpatchfinder/%.hpp
 	python3 ${srcdir}/genreflector.py $< reflected_$*.cpp
 
-CLEANFILES = reflected_kernelpatchfinder.cpp
+reflected_patchfinder.cpp: reflected_%.cpp: ${srcdir}/../../include/libpatchfinder/%.hpp
+	python3 ${srcdir}/genreflector.py $< reflected_$*.cpp
+
+CLEANFILES = reflected_kernelpatchfinder.cpp reflected_patchfinder.cpp
 
 
 endif #WITH_OFFSETEXPORTER

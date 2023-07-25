@@ -16,7 +16,7 @@ with open(infile, "r") as f:
 
 classname = r.split("class")[1].split("{")[0].split(":")[0].replace(" ","")
 print("class=%s"%(classname))
-toparse = r.split("class")[1].split("{")[1]
+toparse = "{".join(r.split("class")[1].split("{")[1:])
 
 funcdefs=""
 argtypes = {}
@@ -39,7 +39,7 @@ static %s reflect_%s_%s(%s){
     print("Got function '%s' '%s' args: "%(rettype,funcname),args)
     argtypelist = [rettype]
     nargs = []
-    mmargs = ["kernelpatchfinder *kpf"]
+    mmargs = ["%s *kpf"%classname]
     if len(args):
         if len(args[0]) == 0:
             args.pop(0)
@@ -86,6 +86,9 @@ while i+1 < len(toparse):
         case '\n':
             #ignore whitespace char
             continue
+        case '}':
+            #ignore whitespace char
+            continue
         case _:
             pass
     if (curs.startswith("public:")):
@@ -112,6 +115,11 @@ while i+1 < len(toparse):
         continue
     elif (curs.startswith("using ")):
         i += curs.find(";")
+        continue
+    elif (curs.startswith("enum")):
+        p =  curs.find(";")
+        assert(p != -1)
+        i += p
         continue
     elif (curs.startswith("/*")):
         i += curs.find("*/")+1
@@ -144,11 +152,17 @@ while i+1 < len(toparse):
                     funcname = sps[0]
                     args = sps[1].split(")")[0].split(",")
                     isValidFunction = True
-        if isValidFunction:
+
+        if rettype.startswith("static"):
+            i += curs.find(";")
+        elif isValidFunction:
             handleFunction(rettype,funcname,args)
             i += semicolonpos
             continue
+        elif (curs.startswith(classname)):
+            i += curs.find("\n")
         else:
+            print("-------FAIL-----")
             print(curs)
             exit(1)
 
@@ -162,14 +176,19 @@ template_p1 = """
 
 """
 template_p2 = """
+#ifndef HAVE_STRUCT_FUNCDEF
+#define HAVE_STRUCT_FUNCDEF
 struct funcdef {
     std::string funcname;
     void *func;
     std::string rettype;
     std::vector<std::string> typeinfo;
 };
-static const std::vector<funcdef> gFuncLookup={
-"""
+#endif
+
+static const std::vector<funcdef> gFuncLookup_%s={
+""" %classname
+
 template_p3 = """
 };
 """
