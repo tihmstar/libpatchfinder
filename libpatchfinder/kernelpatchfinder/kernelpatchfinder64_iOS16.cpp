@@ -74,6 +74,60 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_task_offset_threa
     RETCACHELOC(iter().imm());
 }
 
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_thread_offset_thread_id(){
+    UNCACHELOC;
+    
+    loc_t str = findstr("mach_exception_raise_identity_protected() must be code64 ", false);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+
+    vmem iter = _vmem->getIter(ref);
+    while (--iter != insn::bl)
+        ;
+    ++iter;
+    
+    loc_t bref = find_branch_ref(iter, -0x600);
+    debug("bref=0x%016llx",bref);
+
+    iter = bref;
+    
+    while (++iter != insn::ldr)
+        ;
+    
+    RETCACHELOC(iter().imm());
+}
+
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct__vm_map_offset_vmu1_lowest_unnestable_start(){
+    UNCACHELOC;
+    
+    loc_t str = findstr("vm_map_clip_unnest(", false);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+    
+    loc_t bof = find_bof(ref);
+    debug("bof=0x%016llx",bof);
+
+    vmem iter = _vmem->getIter(bof);
+
+    while (++iter != insn::ldp)
+        retassure(iter() != insn::bl, "sanity check failed");
+
+    uint8_t tgtreg = iter().rt();
+    
+    loc_t lastLdrLoc = 0;
+    
+    while (++iter != insn::bl) {
+        if (iter() == insn::ldr && iter().rn() == tgtreg) lastLdrLoc = iter;
+    }
+    debug("lastLdrLoc=0x%016llx",lastLdrLoc);
+    iter = lastLdrLoc;
+    RETCACHELOC(iter().imm());
+}
+
 patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_thread_offset_map(){
     UNCACHELOC;
     
@@ -169,6 +223,77 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_task(){
         ;
     
     RETCACHELOC(iter().imm());
+}
+
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_thread(){
+    UNCACHELOC;
+    
+    loc_t str = findstr("foreground process without thread", false);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+
+    loc_t bof = find_bof(ref);
+    debug("bof=0x%016llx",bof);
+
+    vmem iter = _vmem->getIter(bof);
+    
+    while (true) {
+        while (++iter != insn::bl)
+            ;
+        uint64_t x1 = find_register_value(iter, 1);
+        if (x1 != 3) continue;
+        
+        loc_t candidate = iter;
+        debug("candidate=0x%016llx",candidate);
+        break;
+    }
+    
+    while (--iter != insn::sub || iter().rd() != 0)
+        ;
+    
+    RETCACHELOC(iter().imm());
+}
+
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_uthread(){
+    UNCACHELOC;
+    
+    loc_t str = findstr("threads", true);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+
+    vmem iter = _vmem->getIter(ref);
+
+    while (++iter != insn::bl)
+        ;
+
+    uint64_t retval = find_register_value(iter, 1);
+
+    retval -= find_sizeof_struct_thread();
+    
+    RETCACHELOC(retval);
+}
+
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct__vm_map(){
+    UNCACHELOC;
+    
+    loc_t str = findstr("maps", true);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+
+    vmem iter = _vmem->getIter(ref);
+
+    while (++iter != insn::bl)
+        ;
+
+    uint64_t retval = find_register_value(iter, 1);
+    
+    RETCACHELOC(retval);
 }
 
 #pragma mark Location finders

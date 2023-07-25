@@ -59,6 +59,14 @@ kernelpatchfinder::offset_t kernelpatchfinder::find_struct_thread_offset_map(){
     FAIL_UNIMPLEMENTED;
 }
 
+kernelpatchfinder::offset_t kernelpatchfinder::find_struct_thread_offset_thread_id(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::offset_t kernelpatchfinder::find_struct__vm_map_offset_vmu1_lowest_unnestable_start(){
+    FAIL_UNIMPLEMENTED;
+}
+
 kernelpatchfinder::offset_t kernelpatchfinder::find_elementsize_for_zone(const char *zonedesc){
     FAIL_UNIMPLEMENTED;
 }
@@ -68,6 +76,18 @@ kernelpatchfinder::offset_t kernelpatchfinder::find_sizeof_struct_proc(){
 }
 
 kernelpatchfinder::offset_t kernelpatchfinder::find_sizeof_struct_task(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::offset_t kernelpatchfinder::find_sizeof_struct_thread(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::offset_t kernelpatchfinder::find_sizeof_struct_uthread(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::offset_t kernelpatchfinder::find_sizeof_struct__vm_map(){
     FAIL_UNIMPLEMENTED;
 }
 

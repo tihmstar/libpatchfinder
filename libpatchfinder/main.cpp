@@ -97,7 +97,7 @@ int main(int argc, const char * argv[]) {
 //    addpatch(kpf->get_i_can_has_debugger_patch());
 
     
-    addloc(kpf->find_struct_thread_offset_map());
+    addloc(kpf->find_sizeof_struct__vm_map());
 
 //    addloc(kpf->find_IOSurface_MemoryDescriptor_offset());
 //    addloc(kpf->find_allproc());

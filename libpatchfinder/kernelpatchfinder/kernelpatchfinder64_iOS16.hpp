@@ -20,11 +20,16 @@ namespace patchfinder {
         virtual offset_t find_struct_kqworkloop_offset_kqwl_owner() override;
         virtual offset_t find_struct_task_offset_thread_count() override;
         virtual offset_t find_struct_thread_offset_map() override;
+        virtual offset_t find_struct_thread_offset_thread_id() override;
+        virtual offset_t find_struct__vm_map_offset_vmu1_lowest_unnestable_start() override;
 
         virtual offset_t find_elementsize_for_zone(const char *zonedesc) override;
 
         virtual offset_t find_sizeof_struct_proc() override;
         virtual offset_t find_sizeof_struct_task() override;
+        virtual offset_t find_sizeof_struct_thread() override;
+        virtual offset_t find_sizeof_struct_uthread() override;
+        virtual offset_t find_sizeof_struct__vm_map() override;
 
 #pragma mark Location finders
         virtual loc_t find_boot_args_commandline_offset() override;
