@@ -34,6 +34,17 @@ namespace patchfinder {
 #pragma mark Location finders
         virtual loc_t find_boot_args_commandline_offset() override;
         virtual loc_t find_sbops() override;
+        virtual loc_t find_cdevsw() override;
+        virtual loc_t find_gPhysBase() override;
+        virtual loc_t find_gVirtBase() override;
+        virtual loc_t find_perfmon_devices() override;
+        virtual loc_t find_ptov_table() override;
+        virtual loc_t find_vm_first_phys_ppnum() override;
+        virtual loc_t find_vm_pages() override;
+        virtual loc_t find_vm_page_array_beginning_addr() override;
+        virtual loc_t find_vm_page_array_ending_addr() override;
+        virtual loc_t find_function_vn_kqfilter() override;
+
 
 #pragma mark Patch finders
         virtual std::vector<patch> get_trustcache_true_patch() override;

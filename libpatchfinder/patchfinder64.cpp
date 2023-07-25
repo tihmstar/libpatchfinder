@@ -160,6 +160,13 @@ patchfinder64::loc_t patchfinder64::find_bof(loc_t pos, bool mayLackPrologue){
     return functop;
 }
 
+patchfinder64::loc_t patchfinder64::find_bof_with_sting_ref(const char *str, bool hasNullTerminator){
+    loc_t s = findstr(str, hasNullTerminator);
+    assure(s);
+    loc_t ref = find_literal_ref(s);
+    assert(ref);
+    return find_bof(ref);
+}
 
 uint64_t patchfinder64::find_register_value(loc_t where, int reg, loc_t startAddr){
     vmem functop = _vmem->seg(where);

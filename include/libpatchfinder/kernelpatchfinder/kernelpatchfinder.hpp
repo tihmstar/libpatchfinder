@@ -79,6 +79,16 @@ namespace tihmstar {
             virtual loc64_t find_proc_p_flag_offset();
             virtual loc64_t find_pac_tag_ref(uint16_t pactag, int skip = 0, loc64_t startpos = 0, int limit = 0);
             virtual loc64_t find_boot_args_commandline_offset();
+            virtual loc64_t find_cdevsw();
+            virtual loc64_t find_gPhysBase();
+            virtual loc64_t find_gVirtBase();
+            virtual loc64_t find_perfmon_devices();
+            virtual loc64_t find_ptov_table();
+            virtual loc64_t find_vm_first_phys_ppnum();
+            virtual loc64_t find_vm_pages();
+            virtual loc64_t find_vm_page_array_beginning_addr();
+            virtual loc64_t find_vm_page_array_ending_addr();
+            virtual loc64_t find_function_vn_kqfilter();
 
             virtual loc64_t find_IOGeneralMemoryDescriptor_ranges_offset();
             virtual loc64_t find_IOSurface_MemoryDescriptor_offset();

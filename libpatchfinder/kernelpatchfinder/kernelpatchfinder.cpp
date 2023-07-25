@@ -164,6 +164,46 @@ kernelpatchfinder::loc64_t kernelpatchfinder::find_boot_args_commandline_offset(
     FAIL_UNIMPLEMENTED;
 }
 
+kernelpatchfinder::loc64_t kernelpatchfinder::find_cdevsw(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_gPhysBase(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_gVirtBase(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_perfmon_devices(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_ptov_table(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_vm_first_phys_ppnum(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_vm_pages(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_vm_page_array_beginning_addr(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_vm_page_array_ending_addr(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_function_vn_kqfilter(){
+    FAIL_UNIMPLEMENTED;
+}
+
 kernelpatchfinder::loc64_t kernelpatchfinder::find_IOGeneralMemoryDescriptor_ranges_offset(){
     FAIL_UNIMPLEMENTED;
 }

@@ -321,10 +321,12 @@ patchfinder64::loc_t machopatchfinder64::find_sym(const char *sym){
         const uint8_t *pstrtab = _buf + symtab.first->stroff;
         
         struct nlist_64 *entry = (struct nlist_64 *)psymtab;
-        for (uint32_t i = 0; i < symtab.first->nsyms; i++, entry++)
-            if (!strcmp(sym, (char*)(pstrtab + entry->n_un.n_strx))){
+        for (uint32_t i = 0; i < symtab.first->nsyms; i++, entry++){
+            char *stab_sym = (char*)(pstrtab + entry->n_un.n_strx);
+            if (!strcmp(sym, stab_sym)){
                 return (patchfinder64::loc_t)entry->n_value;
             }
+        }
     }
     
     retcustomerror(symbol_not_found,sym);

@@ -47,6 +47,7 @@ namespace tihmstar {
             virtual const void *memoryForLoc(loc_t loc) override;
             virtual loc_t findstr(std::string str, bool hasNullTerminator, loc_t startAddr = 0) override;
             virtual loc_t find_bof(loc_t pos, bool mayLackPrologue = false) override;
+            virtual loc_t find_bof_with_sting_ref(const char *str, bool hasNullTerminator) override;
             virtual uint64_t find_register_value(loc_t where, int reg, loc_t startAddr = 0) override;
             virtual loc_t find_literal_ref(loc_t pos, int ignoreTimes = 0, loc_t startPos = 0) override;
             virtual loc_t find_call_ref(loc_t pos, int ignoreTimes = 0, loc_t startPos = 0) override;

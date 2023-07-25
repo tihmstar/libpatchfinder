@@ -66,6 +66,9 @@ patchfinder::loc_t patchfinder::find_bof(loc_t pos, bool mayLackPrologue){
     FAIL_UNIMPLEMENTED;
 }
 
+patchfinder::loc_t patchfinder::find_bof_with_sting_ref(const char *str, bool hasNullTerminator){
+    FAIL_UNIMPLEMENTED;
+}
 
 uint64_t patchfinder::find_register_value(loc_t where, int reg, loc_t startAddr){
     FAIL_UNIMPLEMENTED;

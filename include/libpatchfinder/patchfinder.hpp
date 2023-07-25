@@ -58,6 +58,7 @@ namespace tihmstar {
             virtual const void *memoryForLoc(loc_t loc);
             virtual loc_t findstr(std::string str, bool hasNullTerminator, loc_t startAddr = 0);
             virtual loc_t find_bof(loc_t pos, bool mayLackPrologue = false);
+            virtual loc_t find_bof_with_sting_ref(const char *str, bool hasNullTerminator);
             virtual loc_t find_literal_ref(loc_t pos, int ignoreTimes = 0, loc_t startPos = 0);
             virtual loc_t find_call_ref(loc_t pos, int ignoreTimes = 0, loc_t startPos = 0);
             virtual loc_t find_branch_ref(loc_t pos, int limit, int ignoreTimes = 0, loc_t startPos = 0);
