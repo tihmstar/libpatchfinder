@@ -6,6 +6,7 @@
 //
 
 #include "reflector_kernelpatchfinder.hpp"
+#include <algorithm>
 
 using namespace tihmstar::patchfinder;
 using offset_t = kernelpatchfinder::offset_t;
