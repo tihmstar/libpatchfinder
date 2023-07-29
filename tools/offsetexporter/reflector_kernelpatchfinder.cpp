@@ -105,6 +105,9 @@ patch offsetexporter::reflect_kernelpatchfinder(kernelpatchfinder64 *kpf, std::s
         }else if (ct.find("bool") != std::string::npos){
             uint64_t num = strtoull(args.at(0).c_str(), NULL, 0);
             call_args[i] = (void *)num;
+        }else if (ct.find("uint8_t") != std::string::npos){
+            uint64_t num = strtoull(args.at(0).c_str(), NULL, 0);
+            call_args[i] = (void *)num;
         }else{
             reterror("handled argument type '%s'",ct.c_str());
         }

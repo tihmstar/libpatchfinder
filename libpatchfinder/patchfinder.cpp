@@ -87,6 +87,10 @@ patchfinder::loc_t patchfinder::find_branch_ref(loc_t pos, int limit, int ignore
     FAIL_UNIMPLEMENTED;
 }
 
+patchfinder::loc_t patchfinder::find_block_branch_ref(loc_t pos, int limit, int ignoreTimes, loc_t startPos){
+    FAIL_UNIMPLEMENTED;
+}
+
 patchfinder::loc_t patchfinder::findnops(uint16_t nopCnt, bool useNops, uint32_t nopOpcode){
     FAIL_UNIMPLEMENTED;
 }

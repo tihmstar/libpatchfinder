@@ -20,6 +20,7 @@ void cmd_help(){
     printf("Ride an ARM binary by doing quick analysis passes\n\n");
     /* Short opts setup */
     printf("  -h            \t\tprints usage information\n");
+    printf("  -d            \t\tPrint numbers in DEC instead fof HEC\n");
     printf("  -t <template> \t\tSpecify template file\n");
     printf("  -i <infile>   \t\tSpecify input kernel file\n");
     printf("  -o <outfile>  \t\tSpecify output file\n");
@@ -74,6 +75,8 @@ int main_r(int argc, const char * argv[]) {
 
     std::vector<finder_func> findOffsets;
     
+    bool printNumbersInDec = false;
+    
     if (argc == 1){
         cmd_help();
         return 0;
@@ -93,6 +96,10 @@ int main_r(int argc, const char * argv[]) {
                             cmd_help();
                             return 0;
                             
+                        case 'd':
+                            printNumbersInDec = true;
+                            break;
+
                         case 'i':
                             infile = (curarg[2]) ? &curarg[2] : argv[++i];
                             break;
@@ -160,7 +167,11 @@ int main_r(int argc, const char * argv[]) {
             //this is a location, not a patch
             uint64_t loc = pp._location;
             char buf[20] = {};
-            snprintf(buf, sizeof(buf), "0x%llx",loc);
+            if (printNumbersInDec) {
+                snprintf(buf, sizeof(buf), "%llu",loc);
+            }else{
+                snprintf(buf, sizeof(buf), "0x%llx",loc);
+            }
             templ = ReplaceAll(templ, method.templaceName, buf);
         }else{
             reterror("TODO");

@@ -17,6 +17,21 @@ using namespace patchfinder;
 using namespace libinsn;
 using namespace arm64;
 
+#pragma mark Info finders
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_kernel_el(){
+    UNCACHELOC;
+    
+    vmem iter = _vmem->getIter(find_entry());
+    assure(iter() == insn::b);
+    iter = iter().imm();
+    
+    iter = iter.pc() + 0x10;
+    
+    if (iter() == insn::mrs && iter().special() == insn::currentel)
+        RETCACHELOC(2);
+    RETCACHELOC(1);
+}
+
 #pragma mark Offset finders
 patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_kqworkloop_offset_kqwl_owner(){
     UNCACHELOC;
@@ -125,6 +140,65 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct__vm_map_offset_vm
     }
     debug("lastLdrLoc=0x%016llx",lastLdrLoc);
     iter = lastLdrLoc;
+    RETCACHELOC(iter().imm());
+}
+
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_ACT_CONTEXT(){
+    UNCACHELOC;
+    /*
+                    mrs    x0, TPIDR_EL1
+                    add    x21, x0, ACT_CONTEXT
+     B5 02 40 F9    ldr    x21, [x21]
+     FC 03 1F AA    mov    x28, xzr
+     */
+    
+    loc_t tgt = memmem("\xB5\x02\x40\xF9\xFC\x03\x1F\xAA", 8);
+    debug("tgt=0x%016llx",tgt);
+    
+    vmem iter = _vmem->getIter(tgt);
+    --iter;
+    uint64_t retval = iter().imm();
+    retassure(--iter == insn::mrs && iter().special() == insn::tpidr_el1, "sanity check failed");
+
+    RETCACHELOC(retval);
+}
+
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_ACT_CPUDATAP(){
+    UNCACHELOC;
+    /*
+     check_exception_stack:
+     92 D0 38 D5    mrs    x18, TPIDR_EL1
+                    cbz    x18, Lvalid_exception_stack
+                    ldr    x18, [x18, ACT_CPUDATAP]
+                    cbz    x18, .
+     */
+    
+    loc_t tgt = memmem("\x92\xD0\x38\xD5", 4);
+    debug("tgt=0x%016llx",tgt);
+    
+    vmem iter = _vmem->getIter(tgt);
+    assure(++iter == insn::cbz);
+    assure(++iter == insn::ldr);
+    uint64_t retval = iter().imm();
+    assure(++iter == insn::cbz && iter().imm() == iter.pc());
+
+    RETCACHELOC(retval);
+}
+
+patchfinder64::offset_t kernelpatchfinder64_iOS16::find_TH_KSTACKPTR(){
+    UNCACHELOC;
+    /*
+                    ldr    x0, [x22, TH_KSTACKPTR]
+                    mov    sp, x0
+     BF 20 03 D5    sevl
+     */
+    
+    loc_t tgt = memmem("\xBF\x20\x03\xD5", 4);
+    debug("tgt=0x%016llx",tgt);
+    
+    vmem iter = _vmem->getIter(tgt);
+    assure((--iter == insn::mov || (iter() == insn::add && iter().imm() == 0)) && iter().rn() == 0 && iter().rd() == 31);
+    assure(--iter == insn::ldr && iter().rt() == 0);
     RETCACHELOC(iter().imm());
 }
 
@@ -684,6 +758,294 @@ patchfinder64::loc_t kernelpatchfinder64_iOS16::find_function_vn_kqfilter(){
     debug("vn_kqfilter=0x%016llx",vn_kqfilter);
 
     RETCACHELOC(vn_kqfilter);
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_cpu_ttep(){
+    UNCACHELOC;
+    vmem iter = _vmem->getIter();
+    while (true) {
+        while (++iter != insn::msr || iter().special() != insn::ttbr1_el1)
+            ;
+        uint8_t reg = iter().rt();
+        if (--iter != insn::ldr || iter().rt() != reg){
+            ++iter;
+            continue;
+        }
+        
+        RETCACHELOC(find_register_value(iter, reg, iter.pc()-0x20));
+    }
+    reterror("Failed to find loc");
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_exception_return(){
+    UNCACHELOC;
+    /*
+     exception_return:
+     DF 4F 03 D5    msr DAIFSet, #DAIFSC_ALL
+     exception_return_unint:
+     83 D0 38 D5    mrs x3, TPIDR_EL1
+     */
+    loc_t tgt = memmem("\xDF\x4F\x03\xD5\x83\xD0\x38\xD5", 8);
+    debug("tgt=0x%016llx",tgt);
+    assure(tgt);
+    RETCACHELOC(tgt);
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_exception_return_after_check(){
+    UNCACHELOC;
+    loc_t er = find_exception_return();
+    vmem iter = _vmem->getIter(er);
+    while (++iter != insn::mov || iter().rd() != 30)
+        ;
+    RETCACHELOC(iter);
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_exception_return_after_check_no_restore(){
+    UNCACHELOC;
+    loc_t erac = find_exception_return_after_check();
+    vmem iter = _vmem->getIter(erac);
+    while (++iter != insn::msr)
+        ;
+    RETCACHELOC(iter);
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_gxf_ppl_enter(){
+    UNCACHELOC;
+    
+    loc_t ppl_bootstrap_dispatch = find_ppl_bootstrap_dispatch();
+    loc_t bref = find_branch_ref(ppl_bootstrap_dispatch, -0x400);
+    debug("bref=0x%016llx",bref);
+    
+    RETCACHELOC(find_bof(bref));
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_kalloc_data_external(){
+    UNCACHELOC;
+    loc_t str = findstr("AMFI: %s: Failed to allocate memory for fatal error message, cannot produce a crash reason", false);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+    
+    loc_t bref = find_block_branch_ref(ref, -0x100);
+    debug("bref=0x%016llx",bref);
+
+    vmem iter = _vmem->getIter(bref);
+    while (--iter != insn::bl)
+        ;
+    RETCACHELOC(iter().imm());
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_kernel_pmap(){
+    UNCACHELOC;
+    loc_t str = findstr("kaddr not in kernel", false);
+    while (deref(str) & 0xff) str--;
+    str++;
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+    
+    loc_t bof = find_bof(ref);
+    debug("bof=0x%016llx",bof);
+
+    uint64_t hash = getPointerAuthStringDiscriminator("_vm_map.pmap");
+    hash<<=48;
+    
+    vmem iter = _vmem->getIter(bof);
+    
+    while (++iter != insn::movk || iter().imm() != hash)
+        ;
+    
+    loc_t hit = iter;
+    debug("hit=0x%016llx",hit);
+    while (++iter != insn::autda)
+        ;
+    uint8_t reg = iter().rd();
+
+    bool hasAdr = false;
+    
+    while (!hasAdr) {
+        while (++iter != insn::cmp || (iter().rn() != reg && iter().rm() != reg))
+            if (iter() == insn::adrp || iter() == insn::adr)
+                hasAdr = true;
+    }
+
+    loc_t tgtcmp = iter;
+    debug("tgtcmp=0x%016llx",tgtcmp);
+
+    if (iter().rn() == reg) {
+        RETCACHELOC(find_register_value(iter, iter().rm(), iter.pc()-0x20));
+    }else{
+        RETCACHELOC(find_register_value(iter, iter().rn(), iter.pc()-0x20));
+    }
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_ml_sign_thread_state(){
+    UNCACHELOC;
+    /*
+     E1 03 16 AA    mov x1, x22
+     E2 03 17 2A    mov w2, w23
+     E3 03 14 AA    mov x3, x20
+     E4 03 10 AA    mov x4, x16
+     E5 03 11 AA    mov x5, x17
+     13 42 38 D5    mrs x19, SPSel
+     BF 41 00 D5    msr SPSel, #1
+        bl  _ml_sign_thread_state
+        msr SPSel, x19
+        mov lr, x20
+        mov x1, x21
+     */
+    char needle[] = "\xE1\x03\x16\xAA\xE2\x03\x17\x2A\xE3\x03\x14\xAA\xE4\x03\x10\xAA\xE5\x03\x11\xAA\x13\x42\x38\xD5\xBF\x41\x00\xD5";
+    loc_t tgt = memmem(needle,sizeof(needle)-1);
+    debug("tgt=0x%016llx",tgt);
+    assure(tgt);
+    
+    vmem iter = _vmem->getIter(tgt);
+    while (++iter != insn::bl)
+        ;
+    RETCACHELOC(iter().imm());
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_pmap_create_options(){
+    UNCACHELOC;
+    
+    loc_t ref = find_literal_ref(0xfeedfacefeedfad3);
+    debug("ref=0x%016llx",ref);
+
+    vmem iter = _vmem->getIter(ref);
+    
+    while (++iter != insn::bl) {
+        if (iter() == insn::b) iter = iter().imm()-4;
+    }
+    
+    RETCACHELOC(iter().imm());
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_pmap_enter_options_addr(){
+    UNCACHELOC;
+
+    loc_t str = findstr("VM page %p should not have an error", false);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+    
+    loc_t bof = find_bof(ref);
+    debug("bof=0x%016llx",bof);
+    
+    vmem iter = _vmem->getIter(bof);
+    
+    while (++iter != insn::ret)
+        ;
+    
+    loc_t ret = iter;
+    debug("ret=0x%016llx",ret);
+    
+    while (true) {
+        while (--iter != insn::bl)
+            assure(iter > bof);
+
+        loc_t retval = iter().imm();
+        bool has_x5_0 = false;
+        
+        while (true) {
+            insn isn = --iter;
+            if (isn == insn::movz && isn.rd() == 5 && isn.imm() == 0){
+                has_x5_0 = true;
+                break;
+            } else if (isn != insn::mov){
+                ++iter;
+                break;
+            }
+        }
+        if (!has_x5_0) continue;
+        RETCACHELOC(retval);
+    }
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_stub_for_pplcall(uint8_t pplcall){
+    loc_t gxf_ppl_enter = find_gxf_ppl_enter();
+    vmem iter = _vmem->getIter();
+    while (true) {
+        iter = find_branch_ref(gxf_ppl_enter, 0, 0, iter.pc()+8);
+        if (--iter == insn::movz && iter().imm() == pplcall)
+            return iter;
+    }
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_pmap_nest(){
+    UNCACHELOC;
+
+    loc_t func = find_stub_for_pplcall(0x11);
+    debug("func=0x%016llx",func);
+    
+    loc_t ref = find_call_ref(func);
+    debug("ref=0x%016llx",ref);
+
+    RETCACHELOC(find_bof(ref));
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_pmap_remove_options(){
+    UNCACHELOC;
+
+    loc_t func = find_stub_for_pplcall(0x17);
+    debug("func=0x%016llx",func);
+    
+    loc_t ref = find_call_ref(func);
+    debug("ref=0x%016llx",ref);
+
+    RETCACHELOC(find_bof(ref));
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_ppl_bootstrap_dispatch(){
+    UNCACHELOC;
+    /*
+     LEXT(ppl_bootstrap_dispatch)
+                    cmp    x15, PMAP_COUNT
+                    b.hs   Lppl_fail_bootstrap_dispatch
+                    adrp   x9, EXT(ppl_handler_table)@page
+                    add    x9, x9, EXT(ppl_handler_table)@pageoff
+                    add    x9, x9, x15, lsl #3
+     2A 01 40 F9    ldr    x10, [x9]
+     #ifdef HAS_APPLE_PAC
+     49 09 3F D7    blraa        x10, x9
+     #else
+                    blr        x10
+     #endif
+     */
+    loc_t tgt = -1;
+    while (true) {
+        tgt = memmem("\x2A\x01\x40\xF9\x49\x09\x3F\xD7", 8, tgt+1);
+        debug("tgt=0x%016llx",tgt);
+        assure(tgt);
+        vmem iter = _vmem->getIter(tgt);
+        for (int i=0; i<10; i++) {
+            if (--iter == insn::cmp){
+                assure(iter().rn() == 15);
+                RETCACHELOC(iter);
+            }
+        }
+    }
+    reterror("Failed to find loc");
+}
+
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_ppl_handler_table(){
+    UNCACHELOC;
+    
+    loc_t func = find_ppl_bootstrap_dispatch();
+    loc_t retval = 0;
+    vmem iter = _vmem->getIter(func);
+    
+    while (++iter != insn::adrp)
+        if (iter() == insn::adr) RETCACHELOC(iter().imm());
+    
+    retval = iter().imm();
+    if (++iter == insn::add) {
+        retval += iter().imm();
+    }
+    
+    RETCACHELOC(retval);
 }
 
 #pragma mark Patch finders

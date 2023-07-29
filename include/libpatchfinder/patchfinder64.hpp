@@ -52,6 +52,7 @@ namespace tihmstar {
             virtual loc_t find_literal_ref(loc_t pos, int ignoreTimes = 0, loc_t startPos = 0) override;
             virtual loc_t find_call_ref(loc_t pos, int ignoreTimes = 0, loc_t startPos = 0) override;
             virtual loc_t find_branch_ref(loc_t pos, int limit, int ignoreTimes = 0, loc_t startPos = 0) override;
+            virtual loc_t find_block_branch_ref(loc_t pos, int limit, int ignoreTimes = 0, loc_t startPos = 0) override;
             virtual loc_t findnops(uint16_t nopCnt, bool useNops = true, uint32_t nopOpcode = 0xd503201f /*nop insn*/) override;
             virtual loc_t memmem(const void *little, size_t little_len, patchfinder::loc_t startLoc = 0) const override;
             virtual loc_t memstr(const char *str) const override;

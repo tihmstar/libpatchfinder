@@ -373,6 +373,30 @@ patchfinder64::loc_t patchfinder64::find_branch_ref(loc_t pos, int limit, int ig
     reterror("branchref not found");
 }
 
+patchfinder64::loc_t patchfinder64::find_block_branch_ref(loc_t pos, int limit, int ignoreTimes, loc_t startPos){
+    loc_t bof = find_bof(pos);
+    
+    vmem iter = _vmem->getIter(pos);
+    while (iter > bof) {
+        try {
+            return find_branch_ref(iter, limit, ignoreTimes, startPos);
+        } catch (...) {
+            if ((--iter).supertype() == insn::sut_branch_imm && iter() != insn::bl){
+                /*
+                 Any non-bl immediate branch means we reached a different basic block
+                 */
+                break;
+            }
+            if (limit > 0){
+                limit-=4;
+            } else if (limit < 0){
+                limit += 4;
+            }
+        }
+    }
+    reterror("Failed to find block branch ref");
+}
+
 patchfinder64::loc_t patchfinder64::findnops(uint16_t nopCnt, bool useNops, uint32_t nopOpcode){
     size_t tgtSize = nopCnt*4;
     if (!_unusedNops.size()) {

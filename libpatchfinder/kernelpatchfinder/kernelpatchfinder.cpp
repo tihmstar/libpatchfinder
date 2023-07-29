@@ -42,6 +42,11 @@ std::vector<patch> kernelpatchfinder::get_codesignature_patches(){
     FAIL_UNIMPLEMENTED;
 }
 
+#pragma mark Info finders
+kernelpatchfinder::offset_t kernelpatchfinder::find_kernel_el(){
+    FAIL_UNIMPLEMENTED;
+}
+
 #pragma mark Offset finders
 kernelpatchfinder::offset_t kernelpatchfinder::find_struct_offset_for_PACed_member(const char *strDesc){
     FAIL_UNIMPLEMENTED;
@@ -64,6 +69,18 @@ kernelpatchfinder::offset_t kernelpatchfinder::find_struct_thread_offset_thread_
 }
 
 kernelpatchfinder::offset_t kernelpatchfinder::find_struct__vm_map_offset_vmu1_lowest_unnestable_start(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::offset_t kernelpatchfinder::find_ACT_CONTEXT(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::offset_t kernelpatchfinder::find_ACT_CPUDATAP(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::offset_t kernelpatchfinder::find_TH_KSTACKPTR(){
     FAIL_UNIMPLEMENTED;
 }
 
@@ -201,6 +218,66 @@ kernelpatchfinder::loc64_t kernelpatchfinder::find_vm_page_array_ending_addr(){
 }
 
 kernelpatchfinder::loc64_t kernelpatchfinder::find_function_vn_kqfilter(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_cpu_ttep(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_exception_return(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_exception_return_after_check(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_exception_return_after_check_no_restore(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_gxf_ppl_enter(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_kalloc_data_external(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_kernel_pmap(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_ml_sign_thread_state(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_pmap_create_options(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_pmap_enter_options_addr(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_stub_for_pplcall(uint8_t pplcall){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_pmap_nest(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_pmap_remove_options(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_ppl_bootstrap_dispatch(){
+    FAIL_UNIMPLEMENTED;
+}
+
+kernelpatchfinder::loc64_t kernelpatchfinder::find_ppl_handler_table(){
     FAIL_UNIMPLEMENTED;
 }
 

@@ -16,12 +16,19 @@ namespace patchfinder {
     public:
         using kernelpatchfinder64_iOS15::kernelpatchfinder64_iOS15;
                 
+#pragma mark Info finders
+        virtual offset_t find_kernel_el() override;
+
 #pragma mark Offset finders
         virtual offset_t find_struct_kqworkloop_offset_kqwl_owner() override;
         virtual offset_t find_struct_task_offset_thread_count() override;
         virtual offset_t find_struct_thread_offset_map() override;
         virtual offset_t find_struct_thread_offset_thread_id() override;
         virtual offset_t find_struct__vm_map_offset_vmu1_lowest_unnestable_start() override;
+
+        virtual offset_t find_ACT_CONTEXT() override;
+        virtual offset_t find_ACT_CPUDATAP() override;
+        virtual offset_t find_TH_KSTACKPTR() override;
 
         virtual offset_t find_elementsize_for_zone(const char *zonedesc) override;
 
@@ -44,7 +51,21 @@ namespace patchfinder {
         virtual loc_t find_vm_page_array_beginning_addr() override;
         virtual loc_t find_vm_page_array_ending_addr() override;
         virtual loc_t find_function_vn_kqfilter() override;
-
+        virtual loc_t find_cpu_ttep() override;
+        virtual loc_t find_exception_return() override;
+        virtual loc_t find_exception_return_after_check() override;
+        virtual loc_t find_exception_return_after_check_no_restore() override;
+        virtual loc_t find_gxf_ppl_enter() override;
+        virtual loc_t find_kalloc_data_external() override;
+        virtual loc_t find_kernel_pmap() override;
+        virtual loc_t find_ml_sign_thread_state() override;
+        virtual loc_t find_pmap_create_options() override;
+        virtual loc_t find_pmap_enter_options_addr() override;
+        virtual loc_t find_stub_for_pplcall(uint8_t pplcall) override;
+        virtual loc_t find_pmap_nest() override;
+        virtual loc_t find_pmap_remove_options() override;
+        virtual loc_t find_ppl_bootstrap_dispatch() override;
+        virtual loc_t find_ppl_handler_table() override;
 
 #pragma mark Patch finders
         virtual std::vector<patch> get_trustcache_true_patch() override;

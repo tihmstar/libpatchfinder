@@ -43,6 +43,9 @@ namespace tihmstar {
              */
             virtual std::vector<patch> get_codesignature_patches();
 
+#pragma mark Info finders
+            virtual offset_t find_kernel_el();
+            
 #pragma mark Offset finders
             virtual offset_t find_struct_offset_for_PACed_member(const char *strDesc);
             virtual offset_t find_struct_kqworkloop_offset_kqwl_owner();
@@ -50,6 +53,10 @@ namespace tihmstar {
             virtual offset_t find_struct_thread_offset_map();
             virtual offset_t find_struct_thread_offset_thread_id();
             virtual offset_t find_struct__vm_map_offset_vmu1_lowest_unnestable_start();
+
+            virtual offset_t find_ACT_CONTEXT();
+            virtual offset_t find_ACT_CPUDATAP();
+            virtual offset_t find_TH_KSTACKPTR();
 
             virtual offset_t find_elementsize_for_zone(const char *zonedesc);
 
@@ -89,7 +96,23 @@ namespace tihmstar {
             virtual loc64_t find_vm_page_array_beginning_addr();
             virtual loc64_t find_vm_page_array_ending_addr();
             virtual loc64_t find_function_vn_kqfilter();
+            virtual loc64_t find_cpu_ttep();
+            virtual loc64_t find_exception_return();
+            virtual loc64_t find_exception_return_after_check();
+            virtual loc64_t find_exception_return_after_check_no_restore();
+            virtual loc64_t find_gxf_ppl_enter();
+            virtual loc64_t find_kalloc_data_external();
+            virtual loc64_t find_kernel_pmap();
+            virtual loc64_t find_ml_sign_thread_state();
+            virtual loc64_t find_pmap_create_options();
+            virtual loc64_t find_pmap_enter_options_addr();
+            virtual loc64_t find_stub_for_pplcall(uint8_t pplcall);
+            virtual loc64_t find_pmap_nest();
+            virtual loc64_t find_pmap_remove_options();
+            virtual loc64_t find_ppl_bootstrap_dispatch();
+            virtual loc64_t find_ppl_handler_table();
 
+            
             virtual loc64_t find_IOGeneralMemoryDescriptor_ranges_offset();
             virtual loc64_t find_IOSurface_MemoryDescriptor_offset();
 

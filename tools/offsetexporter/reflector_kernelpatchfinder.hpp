@@ -15,10 +15,10 @@
 namespace tihmstar {
 namespace patchfinder {
 namespace offsetexporter {
-enum ReturnType{
-    ReturnType_unknown = 0,
-    ReturnType_u64 = 1,
-    ReturnType_std_string = 2
+enum ReturnType : uint64_t {
+    ReturnType_unknown      = 0x726174736d686900,
+    ReturnType_u64          = 0x726174736d686901,
+    ReturnType_std_string   = 0x726174736d686902
 };
 struct funcs{
     std::string funcname;
