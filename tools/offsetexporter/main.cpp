@@ -143,9 +143,8 @@ int main_r(int argc, const char * argv[]) {
     info("Init KPF('%s')",infile);
     kpf = kernelpatchfinder64::make_kernelpatchfinder64(infile);
 
-    retassure(templatefile, "templatefile not set");
     std::string templ;
-    {
+    if (templatefile){
         std::vector<uint8_t> templ_f = tihmstar::readFile(templatefile);
         templ = {(char*)templ_f.data(),(char*)templ_f.data()+templ_f.size()};
     }
@@ -157,6 +156,9 @@ int main_r(int argc, const char * argv[]) {
             pp = patch(offsetexporter::ReturnType_std_string,method.args.at(0).data(),method.args.at(0).size(),NULL,false);
         }else{
             pp = offsetexporter::reflect_kernelpatchfinder(kpf, method.funcname, method.args);
+        }
+        if (!templatefile){
+            templ += method.funcname += "=" + method.templaceName + "\n";
         }
         
         if (pp._location == offsetexporter::ReturnType_std_string) {

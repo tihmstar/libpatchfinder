@@ -75,6 +75,8 @@
 		8738E9112695986500C03872 /* ibootpatchfinder32.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E90F2695986500C03872 /* ibootpatchfinder32.cpp */; };
 		8738E91426959AEE00C03872 /* ibootpatchfinder32_base.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E91226959AEE00C03872 /* ibootpatchfinder32_base.cpp */; };
 		8739AE302A6B48E000630CEA /* StableHash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739AE2F2A6B48E000630CEA /* StableHash.cpp */; };
+		8788A0BD2A75170E003AA19B /* libimg4tool.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8738E87A26945EC300C03872 /* libimg4tool.0.dylib */; };
+		8788A0BE2A75170E003AA19B /* libimg4tool.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 8738E87A26945EC300C03872 /* libimg4tool.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		879B2F5F26AECD910077C9CE /* kernelpatchfinder32_iOS9.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 879B2F5D26AECD910077C9CE /* kernelpatchfinder32_iOS9.cpp */; };
 		87A141C526C654D3003C20C8 /* kernelpatchfinder32_iOS8.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87A141C326C654D3003C20C8 /* kernelpatchfinder32_iOS8.cpp */; };
 		87A370C127E8799100AA4010 /* kernelpatchfinder64_iOS15.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 87A370BF27E8799100AA4010 /* kernelpatchfinder64_iOS15.cpp */; };
@@ -128,6 +130,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				8788A0BE2A75170E003AA19B /* libimg4tool.0.dylib in Embed Libraries */,
 				872D0CFD2A6E5FDE000CEE15 /* libinsn.0.dylib in Embed Libraries */,
 				872D0CE92A6E5D0B000CEE15 /* libgeneral.0.dylib in Embed Libraries */,
 			);
@@ -276,6 +279,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8788A0BD2A75170E003AA19B /* libimg4tool.0.dylib in Frameworks */,
 				872D0CFC2A6E5FDE000CEE15 /* libinsn.0.dylib in Frameworks */,
 				872D0CE82A6E5D0B000CEE15 /* libgeneral.0.dylib in Frameworks */,
 			);
@@ -710,6 +714,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
+					HAVE_IMG4TOOL,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.3;
 				PRODUCT_NAME = "$(TARGET_NAME)";

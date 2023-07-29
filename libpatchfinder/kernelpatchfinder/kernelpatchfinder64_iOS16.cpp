@@ -145,22 +145,18 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct__vm_map_offset_vm
 
 patchfinder64::offset_t kernelpatchfinder64_iOS16::find_ACT_CONTEXT(){
     UNCACHELOC;
-    /*
-                    mrs    x0, TPIDR_EL1
-                    add    x21, x0, ACT_CONTEXT
-     B5 02 40 F9    ldr    x21, [x21]
-     FC 03 1F AA    mov    x28, xzr
-     */
     
-    loc_t tgt = memmem("\xB5\x02\x40\xF9\xFC\x03\x1F\xAA", 8);
-    debug("tgt=0x%016llx",tgt);
+    vmem iter = _vmem->getIter();
     
-    vmem iter = _vmem->getIter(tgt);
-    --iter;
-    uint64_t retval = iter().imm();
-    retassure(--iter == insn::mrs && iter().special() == insn::tpidr_el1, "sanity check failed");
+    while (true) {
+        while (++iter != insn::mrs || iter().special() != insn::tpidr_el1 || iter().rt() != 0)
+            ;
+        if (++iter != insn::mrs || iter().special() != insn::sp_el0) continue;
+        if (++iter != insn::add || iter().rd() != 0) continue;
+        RETCACHELOC(iter().imm());
+    }
 
-    RETCACHELOC(retval);
+    reterror("failed to find offset");
 }
 
 patchfinder64::offset_t kernelpatchfinder64_iOS16::find_ACT_CPUDATAP(){
