@@ -75,7 +75,7 @@ int main(int argc, const char * argv[]) {
 //    debug("asd=0x%016llx",asd);
     
 //    addpatch(kpf->get_allow_UID_key_patch());
-//    addpatch(kpf->get_codesignature_patches());
+    addpatch(kpf->get_codesignature_patches());
 //    addpatch(kpf->get_trustcache_true_patch());
 //    addpatch(kpf->get_mount_patch());
 //    addpatch(kpf->get_sandbox_patch());
@@ -86,7 +86,6 @@ int main(int argc, const char * argv[]) {
 //    addpatch(kpf->get_kernelbase_syscall_patch());
 //    addpatch(kpf->get_insert_setuid_patch());
 //    addpatch(kpf->get_ramdisk_detection_patch());
-//    addpatch(kpf->get_read_bpr_patch());
 //    addpatch(kpf->get_force_boot_ramdisk_patch());
 //    addpatch(kpf->get_ramdisk_detection_patch());
 //    addpatch(kpf->get_apfs_skip_authenticate_root_hash_patch());
