@@ -57,7 +57,7 @@ int main(int argc, const char * argv[]) {
 //    addpatch(ibpf->get_replace_string_patch("recovery mode", "ra1nsn0w mode"));
 //    addpatch(ibpf->get_cmd_handler_callfunc_patch("devicetree"));
 //    addpatch(ibpf->get_tz0_lock_patch());
-    addpatch(ibpf->get_skip_set_bpr_patch());
+//    addpatch(ibpf->get_skip_set_bpr_patch());
 //    addpatch(ibpf->replace_cmd_with_memcpy("reset"));
 //    addpatch(ibpf->get_force_septype_local_patch());
 //    addpatch(ibpf->get_always_sepfw_booted_patch());
@@ -75,7 +75,7 @@ int main(int argc, const char * argv[]) {
 //    debug("asd=0x%016llx",asd);
     
 //    addpatch(kpf->get_allow_UID_key_patch());
-//    addpatch(kpf->get_codesignature_patches());
+    addpatch(kpf->get_codesignature_patches());
 //    addpatch(kpf->get_trustcache_true_patch());
 //    addpatch(kpf->get_mount_patch());
 //    addpatch(kpf->get_sandbox_patch());
@@ -86,7 +86,6 @@ int main(int argc, const char * argv[]) {
 //    addpatch(kpf->get_kernelbase_syscall_patch());
 //    addpatch(kpf->get_insert_setuid_patch());
 //    addpatch(kpf->get_ramdisk_detection_patch());
-//    addpatch(kpf->get_read_bpr_patch());
 //    addpatch(kpf->get_force_boot_ramdisk_patch());
 //    addpatch(kpf->get_ramdisk_detection_patch());
 //    addpatch(kpf->get_apfs_skip_authenticate_root_hash_patch());

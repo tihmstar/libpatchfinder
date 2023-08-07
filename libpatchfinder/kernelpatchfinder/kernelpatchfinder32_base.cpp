@@ -571,7 +571,12 @@ std::vector<patch> kernelpatchfinder32_base::get_amfi_validateCodeDirectoryHashI
     debug("ret0_gadget=0x%08x",ret0_gadget);
 
     {
-        loc_t str = findstr("int _validateCodeDirectoryHashInDaemon",false);
+        loc_t str = 0;
+        try {
+            str = findstr("int _validateCodeDirectoryHashInDaemon",false);
+        } catch (...) {
+            str = findstr("int AppleMobileFileIntegrity::validateCodeDirectoryHashInDaemon",false);
+        }
         debug("str=0x%08x",str);
         
         loc_t ref = find_literal_ref_thumb(str);
@@ -931,7 +936,12 @@ std::vector<patch> kernelpatchfinder32_base::get_read_bpr_patch_with_params(int 
     
     loc_t table = (loc_t)find_table_entry_for_syscall(syscall);
     debug("table=0x%08x",table);
-    loc_t nops = findnops((sizeof(readbpr)-1+4+4*3)/4);
+    loc_t nops = 0;
+    try {
+        nops = (loc_t)findnops((sizeof(readbpr)-1+4+4*3)/4);
+    } catch (tihmstar::exception &e) {
+        nops = (loc_t)findnops((sizeof(readbpr)-1+4+4*3)/4, true, 0);
+    }
     nops += 4;
     nops &= ~3;
     debug("nops=0x%08x",nops);
