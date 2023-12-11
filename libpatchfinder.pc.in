@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libpatchfinder
+Description: a patchfinder for 32bit/64bit ARM
+
+Requires: @img3tool_requires@ @img4tool_requires@ @libgeneral_requires@ @libinsn_requires@
+Version: @VERSION_COMMIT_COUNT@
+Libs: -L${libdir} -lpatchfinder
+Cflags: -I${includedir}

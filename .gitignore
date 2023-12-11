@@ -12,7 +12,6 @@ config.sub
 configure
 depcomp
 install-sh
-liboffsetfinder64.pc
 libtool
 ltmain.sh
 m4/
@@ -25,5 +24,17 @@ test-driver
 .libs
 .deps
 Build
+*.pc
 *.xcworkspace
 xcuserdata
+.DS_Store
+configure~
+config.h.in~
+.irecovery
+project.xcworkspace
+xcshareddata
+*.bin
+*.bin.h
+tools/binrider/binrider
+reflected_*
+tools/offsetexporter/offsetexporter
