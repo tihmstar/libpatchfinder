@@ -15,6 +15,7 @@ sudo apt-get install \
 ## Then clone the actual project repository:
 
 git clone https://github.com/thimstar/liboffsetfinder64.git
+
 cd liboffsetfinder64
 
 ## Now you can build and install it:
