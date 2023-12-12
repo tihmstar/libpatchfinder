@@ -12,15 +12,34 @@
 
 #include <stdlib.h>
 #include <functional>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+extern "C" int close(int);
+extern "C" int read(int, void*, size_t);
 
 using namespace tihmstar::patchfinder;
+
+std::vector<uint8_t> old_readFile(const char *path){
+    int fd = -1;
+    cleanup([&]{
+        safeClose(fd);
+    });
+    struct stat st = {};
+    retassure((fd = open(path, O_RDONLY)) != -1, "Failed to open file at path '%s'",path);
+    std::vector<uint8_t> ret;
+    retassure((fd = open(path, O_RDONLY)) != -1, "Failed to open file at path '%s'",path);
+    retassure(!fstat(fd, &st), "Failed to fstat file at path '%s'",path);
+    ret.resize(st.st_size);
+    retassure(read(fd, ret.data(), ret.size()) == ret.size(), "Failed to read file at path '%s'",path);
+    return ret;
+}
 
 void cmd_help(){
     printf("Usage: offsetexporter [SHORTOPTS] \n");
     printf("Ride an ARM binary by doing quick analysis passes\n\n");
     /* Short opts setup */
     printf("  -h            \t\tprints usage information\n");
-    printf("  -d            \t\tPrint numbers in DEC instead fof HEC\n");
     printf("  -t <template> \t\tSpecify template file\n");
     printf("  -i <infile>   \t\tSpecify input kernel file\n");
     printf("  -o <outfile>  \t\tSpecify output file\n");
@@ -75,8 +94,6 @@ int main_r(int argc, const char * argv[]) {
 
     std::vector<finder_func> findOffsets;
     
-    bool printNumbersInDec = false;
-    
     if (argc == 1){
         cmd_help();
         return 0;
@@ -96,10 +113,6 @@ int main_r(int argc, const char * argv[]) {
                             cmd_help();
                             return 0;
                             
-                        case 'd':
-                            printNumbersInDec = true;
-                            break;
-
                         case 'i':
                             infile = (curarg[2]) ? &curarg[2] : argv[++i];
                             break;
@@ -143,9 +156,10 @@ int main_r(int argc, const char * argv[]) {
     info("Init KPF('%s')",infile);
     kpf = kernelpatchfinder64::make_kernelpatchfinder64(infile);
 
+    retassure(templatefile, "templatefile not set");
     std::string templ;
-    if (templatefile){
-        std::vector<uint8_t> templ_f = tihmstar::readFile(templatefile);
+    {
+        std::vector<uint8_t> templ_f = old_readFile(templatefile);
         templ = {(char*)templ_f.data(),(char*)templ_f.data()+templ_f.size()};
     }
     for (auto method : findOffsets) {
@@ -157,9 +171,6 @@ int main_r(int argc, const char * argv[]) {
         }else{
             pp = offsetexporter::reflect_kernelpatchfinder(kpf, method.funcname, method.args);
         }
-        if (!templatefile){
-            templ += method.funcname += "=" + method.templaceName + "\n";
-        }
         
         if (pp._location == offsetexporter::ReturnType_std_string) {
             //first check for "magic" locations
@@ -169,11 +180,7 @@ int main_r(int argc, const char * argv[]) {
             //this is a location, not a patch
             uint64_t loc = pp._location;
             char buf[20] = {};
-            if (printNumbersInDec) {
-                snprintf(buf, sizeof(buf), "%llu",loc);
-            }else{
-                snprintf(buf, sizeof(buf), "0x%llx",loc);
-            }
+            snprintf(buf, sizeof(buf), "0x%llx",loc);
             templ = ReplaceAll(templ, method.templaceName, buf);
         }else{
             reterror("TODO");
@@ -181,7 +188,7 @@ int main_r(int argc, const char * argv[]) {
     }
 
     if (outfile) {
-        tihmstar::writeFile(outfile, {templ.data(),templ.data()+templ.size()});
+        tihmstar::writeFile(outfile, templ.data(), templ.size(), 0644);
         info("Done writing to file '%s'",outfile);
     }else{
         printf("\n\n\n%s",templ.c_str());
