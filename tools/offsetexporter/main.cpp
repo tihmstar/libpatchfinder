@@ -145,7 +145,7 @@ int main_r(int argc, const char * argv[]) {
 
     std::string templ;
     if (templatefile){
-        std::vector<uint8_t> templ_f = tihmstar::readFile(templatefile);
+        auto templ_f = tihmstar::readFile(templatefile);
         templ = {(char*)templ_f.data(),(char*)templ_f.data()+templ_f.size()};
     }
     for (auto method : findOffsets) {
@@ -181,7 +181,7 @@ int main_r(int argc, const char * argv[]) {
     }
 
     if (outfile) {
-        tihmstar::writeFile(outfile, {templ.data(),templ.data()+templ.size()});
+        tihmstar::writeFile(outfile, templ.data(),templ.size());
         info("Done writing to file '%s'",outfile);
     }else{
         printf("\n\n\n%s",templ.c_str());
