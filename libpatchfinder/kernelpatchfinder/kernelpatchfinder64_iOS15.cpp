@@ -17,7 +17,7 @@ using namespace libinsn;
 using namespace arm64;
 
 #pragma mark Offset finders
-patchfinder64::offset_t kernelpatchfinder64_iOS15::find_struct_offset_for_PACed_member(const char *strDesc){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS15::find_struct_offset_for_PACed_member(const char *strDesc){
     loc_t ref = find_PACedPtrRefWithStrDesc(strDesc);
     debug("ref=0x%016llx",ref);
     

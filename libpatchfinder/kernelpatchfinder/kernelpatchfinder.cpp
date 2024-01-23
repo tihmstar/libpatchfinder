@@ -394,7 +394,7 @@ std::vector<patch> kernelpatchfinder::get_harcode_bootargs_patch(std::string boo
     FAIL_UNIMPLEMENTED;
 }
 
-std::vector<patch> kernelpatchfinder::get_harcode_boot_manifest_patch(std::vector<uint8_t> manifestHash){
+std::vector<patch> kernelpatchfinder::get_harcode_boot_manifest_patch(const void *hash, size_t hashSize){
     FAIL_UNIMPLEMENTED;
 }
 
@@ -413,9 +413,3 @@ std::vector<patch> kernelpatchfinder::get_tfp_anyone_allow_patch(){
 std::vector<patch> kernelpatchfinder::get_noemf_patch(){
     FAIL_UNIMPLEMENTED;
 }
-
-#ifdef XCODE
-std::vector<patch> kernelpatchfinder::test(){
-    FAIL_UNIMPLEMENTED;
-}
-#endif

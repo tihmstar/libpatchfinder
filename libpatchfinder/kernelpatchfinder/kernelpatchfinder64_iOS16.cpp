@@ -18,7 +18,7 @@ using namespace libinsn;
 using namespace arm64;
 
 #pragma mark Info finders
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_kernel_el(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_kernel_el(){
     UNCACHELOC;
     
     vmem iter = _vmem->getIter(find_entry());
@@ -33,7 +33,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_kernel_el(){
 }
 
 #pragma mark Offset finders
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_kqworkloop_offset_kqwl_owner(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_struct_kqworkloop_offset_kqwl_owner(){
     UNCACHELOC;
     
     loc_t str = findstr("kq(%p) invalid refcount %d", false);
@@ -65,7 +65,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_kqworkloop_offset
     RETCACHELOC(iter().imm());
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_task_offset_thread_count(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_struct_task_offset_thread_count(){
     UNCACHELOC;
     
     loc_t str = findstr("Panicked task %p: %d threads: ", true);
@@ -89,7 +89,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_task_offset_threa
     RETCACHELOC(iter().imm());
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_thread_offset_thread_id(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_struct_thread_offset_thread_id(){
     UNCACHELOC;
     
     loc_t str = findstr("mach_exception_raise_identity_protected() must be code64 ", false);
@@ -114,7 +114,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_thread_offset_thr
     RETCACHELOC(iter().imm());
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct__vm_map_offset_vmu1_lowest_unnestable_start(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_struct__vm_map_offset_vmu1_lowest_unnestable_start(){
     UNCACHELOC;
     
     loc_t str = findstr("vm_map_clip_unnest(", false);
@@ -143,7 +143,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct__vm_map_offset_vm
     RETCACHELOC(iter().imm());
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_ACT_CONTEXT(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_ACT_CONTEXT(){
     UNCACHELOC;
     
     vmem iter = _vmem->getIter();
@@ -159,7 +159,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_ACT_CONTEXT(){
     reterror("failed to find offset");
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_ACT_CPUDATAP(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_ACT_CPUDATAP(){
     UNCACHELOC;
     /*
      check_exception_stack:
@@ -181,7 +181,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_ACT_CPUDATAP(){
     RETCACHELOC(retval);
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_TH_KSTACKPTR(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_TH_KSTACKPTR(){
     UNCACHELOC;
     /*
                     ldr    x0, [x22, TH_KSTACKPTR]
@@ -198,7 +198,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_TH_KSTACKPTR(){
     RETCACHELOC(iter().imm());
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_thread_offset_map(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_struct_thread_offset_map(){
     UNCACHELOC;
     
     loc_t str = findstr("swap_task_map ", false);
@@ -234,7 +234,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_struct_thread_offset_map
     }
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_elementsize_for_zone(const char *zonedesc){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_elementsize_for_zone(const char *zonedesc){
     loc_t str = -1;
     while (true) {
         str = findstr(zonedesc, true, str+1);
@@ -251,7 +251,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_elementsize_for_zone(con
     return deref(ref+8);
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_proc(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_proc(){
     UNCACHELOC;
     
     loc_t str = findstr("io_telemetry_limit", true);
@@ -275,7 +275,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_proc(){
     RETCACHELOC(retval);
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_task(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_task(){
     UNCACHELOC;
     
     loc_t str = findstr("io_telemetry_limit", true);
@@ -295,7 +295,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_task(){
     RETCACHELOC(iter().imm());
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_thread(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_thread(){
     UNCACHELOC;
     
     loc_t str = findstr("foreground process without thread", false);
@@ -326,7 +326,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_thread(){
     RETCACHELOC(iter().imm());
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_uthread(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_uthread(){
     UNCACHELOC;
     
     loc_t str = findstr("threads", true);
@@ -347,7 +347,7 @@ patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct_uthread(){
     RETCACHELOC(retval);
 }
 
-patchfinder64::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct__vm_map(){
+kernelpatchfinder::offset_t kernelpatchfinder64_iOS16::find_sizeof_struct__vm_map(){
     UNCACHELOC;
     
     loc_t str = findstr("maps", true);

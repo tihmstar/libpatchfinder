@@ -399,9 +399,12 @@ retry_find_ref:
             }else if (insn.rt() == 3) {
                 val_r3 = insn.imm();
             }
-        } else if (insn == arm32::bl){
-            if (val_r2 && val_r3) {
+        } else if (insn.supertype() == arm32::sut_branch_imm){
+            if (insn == arm32::bl && val_r2 && val_r3) {
                 break;
+            }else{
+                val_r2 = 0;
+                val_r3 = 0;
             }
         }
     }
@@ -482,12 +485,14 @@ std::vector<patch> ibootpatchfinder32_base::get_boot_arg_patch(const char *boota
 
         {
             if (++iter != arm32::it) {
+                if (iter() == arm32::b) iter = iter().imm();
                 for (int i=0; i<0x30; i++) {
+                    if (iter() == arm32::b) iter = iter().imm();
                     if (++iter == arm32::it) break;
                 }
                 if (iter() != arm32::it){
                     methodArmv6 = true;
-                    debug("Could not found 'it' insn, switching to armv6 method");
+                    debug("Could not find 'it' insn, switching to armv6 method");
                 }
             }else{
                 //this is expected
@@ -504,6 +509,18 @@ std::vector<patch> ibootpatchfinder32_base::get_boot_arg_patch(const char *boota
             }else{
                 //our register always overwrites the other option now.
                 //this is correct, no need to do anything in this case
+            
+                /* iPad1,1 iOS 4.3.5
+                 0x8400c7c8         ite        ne
+                 0x8400c7ca         movne      r4, r3
+                 0x8400c7cc         moveq      r4, r2
+                 */
+                uint8_t rn = iter().rd();
+                if (++iter == arm32::mov) {
+                    if (iter().rd() == rn){
+                        pushINSN(thumb::new_T2_register_mov(iter, rn, xref_dst_reg));
+                    }
+                }
             }
         }else{
             iter = default_boot_args_xref;

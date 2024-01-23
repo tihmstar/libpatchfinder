@@ -51,7 +51,7 @@ namespace tihmstar {
             /*
                 set root-ticket-hash
              */
-            virtual std::vector<patch> set_root_ticket_hash(std::vector<uint8_t> hash);
+            virtual std::vector<patch> set_root_ticket_hash(const void *hash, size_t hashSize);
 
             
             /*
@@ -166,10 +166,6 @@ namespace tihmstar {
                 Ignore force_dfu in iBoot
              */
             virtual std::vector<patch> get_no_force_dfu_patch();
-
-#ifdef XCODE
-            virtual std::vector<patch> test();
-#endif
         };
     };
 };

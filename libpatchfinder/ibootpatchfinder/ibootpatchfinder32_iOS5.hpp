@@ -25,7 +25,7 @@ namespace tihmstar {
             /*
                 set root-ticket-hash
              */
-            virtual std::vector<patch> set_root_ticket_hash(std::vector<uint8_t> hash) override;
+            virtual std::vector<patch> set_root_ticket_hash(const void *hash, size_t hashSize) override;
 
         };
     };

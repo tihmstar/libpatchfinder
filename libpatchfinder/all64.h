@@ -8,6 +8,8 @@
 #ifndef all64_h
 #define all64_h
 
+#include <stdint.h>
+
 #define pushINSN(pinsn) do {arm64::insn pinsnn = pinsn; uint32_t opcode = pinsnn.opcode();patches.push_back({pinsnn,&opcode,sizeof(opcode)});} while (0)
 #define addPatches(func) do {auto p = func;patches.insert(patches.end(), p.begin(), p.end());} while (0)
 

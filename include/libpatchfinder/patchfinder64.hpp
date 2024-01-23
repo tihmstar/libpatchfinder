@@ -27,7 +27,6 @@ namespace tihmstar {
             using vmem = tihmstar::libinsn::vmem<tihmstar::libinsn::arm64::insn>;
             using vsegment = tihmstar::libinsn::vsegment;
             using loc_t = tihmstar::libinsn::arm64::insn::loc_t;
-            using offset_t = tihmstar::libinsn::arm64::insn::offset_t;
         protected:
             const tihmstar::libinsn::vmem<libinsn::arm64::insn> *_vmem;
             std::vector<std::pair<loc_t, size_t>> _unusedNops;

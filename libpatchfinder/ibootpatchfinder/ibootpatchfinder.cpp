@@ -57,7 +57,7 @@ std::vector<patch> ibootpatchfinder::get_sigcheck_img3_patch(){
     FAIL_UNIMPLEMENTED;
 }
 
-std::vector<patch> ibootpatchfinder::set_root_ticket_hash(std::vector<uint8_t> hash){
+std::vector<patch> ibootpatchfinder::set_root_ticket_hash(const void *hash, size_t hashSize){
     FAIL_UNIMPLEMENTED;
 }
 
@@ -148,9 +148,3 @@ std::vector<patch> ibootpatchfinder::get_atv4k_enable_uart_patch(){
 std::vector<patch> ibootpatchfinder::get_no_force_dfu_patch(){
     FAIL_UNIMPLEMENTED;
 }
-
-#ifdef XCODE
-std::vector<patch> ibootpatchfinder::test(){
-    FAIL_UNIMPLEMENTED;
-}
-#endif

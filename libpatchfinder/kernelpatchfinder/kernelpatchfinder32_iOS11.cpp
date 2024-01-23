@@ -137,3 +137,51 @@ std::vector<patch> kernelpatchfinder32_iOS11::get_mount_patch(){
 
     return patches;
 }
+
+std::vector<patch> kernelpatchfinder32_iOS11::get_allow_UID_key_patch(){
+    UNCACHEPATCHES;
+    
+    loc_t IOAESAccelerator_str = findstr("IOAESAccelerator", true);
+    debug("IOAESAccelerator=0x%08x",IOAESAccelerator_str);
+    
+    loc_t aes_cbc_str = findstr("AES-CBC", true, IOAESAccelerator_str);
+    debug("aes_cbc_str=0x%08x",aes_cbc_str);
+    
+    loc_t aes_cbc_ref = find_literal_ref(aes_cbc_str);
+
+    auto iter = _vmemThumb->getIter(aes_cbc_ref + 2);
+
+    while (--iter != arm32::ldr);
+    aes_cbc_ref = iter;
+
+    debug("aes_cbc_ref=0x%08x",aes_cbc_ref);
+
+    aes_cbc_ref|=1;
+    loc_t vtable_ref = memmem(&aes_cbc_ref, sizeof(uint32_t),aes_cbc_ref);
+    debug("vtable_ref=0x%08x",vtable_ref);
+    
+    vtable_ref += 4;
+    
+    loc_t cryptofunc = deref(vtable_ref) & ~1;
+    debug("cryptofunc=0x%08x",cryptofunc);
+    
+    iter = cryptofunc;
+    
+    while ((++iter).supertype() != sut_branch_imm)
+        ;
+    retassure(iter() != arm32::bl, "shouldn't be bl");
+    
+    loc_t badLoc = iter().imm();
+    debug("badLoc=0x%08x",badLoc);
+    
+    do{
+        if (iter().supertype() == sut_branch_imm && iter().imm() == badLoc){
+            pushINSN(arm32::thumb::new_T2_register_mov(iter(), 0, 0));
+            if (iter().insnsize() != 2){
+                pushINSN(arm32::thumb::new_T2_register_mov(iter.pc()+2, 0, 0));
+            }
+        }
+    }while (++iter != arm32::pop && iter() != arm32::blx);
+    
+    RETCACHEPATCHES;
+}

@@ -19,7 +19,9 @@ namespace tihmstar {
             /*
                 Skip setting BPR by iBoot
              */
-            virtual std::vector<patch> get_skip_set_bpr_patch() override;            
+            virtual std::vector<patch> get_skip_set_bpr_patch() override;
+            
+            virtual std::vector<patch> get_sigcheck_img4_patch() override;
         };
     };
 };
