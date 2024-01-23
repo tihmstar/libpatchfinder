@@ -9,6 +9,8 @@
 #include "ibootpatchfinder32_base.hpp"
 #include "ibootpatchfinder32_iOS4.hpp"
 #include "ibootpatchfinder32_iOS5.hpp"
+#include "ibootpatchfinder32_iOS8.hpp"
+#include "ibootpatchfinder32_iOS9.hpp"
 #include "ibootpatchfinder32_iOS11.hpp"
 #include "ibootpatchfinder32_iOS12.hpp"
 #include "ibootpatchfinder32_iOS13.hpp"
@@ -123,6 +125,12 @@ ibootpatchfinder32 *ibootpatchfinder32::make_ibootpatchfinder32(const void *buff
     } else if (vers >= 4000) {
         info("iOS 11 iBoot detected!");
         return new ibootpatchfinder32_iOS11(buf,bufSize,takeOwnership);
+    } else if (vers >= 2800) {
+        info("iOS 9 iBoot detected!");
+        return new ibootpatchfinder32_iOS9(buf,bufSize,takeOwnership);
+    } else if (vers >= 2200) {
+        info("iOS 8 iBoot detected!");
+        return new ibootpatchfinder32_iOS8(buf,bufSize,takeOwnership);
     } else if (vers >= 1200) {
         info("iOS 5 iBoot detected!");
         return new ibootpatchfinder32_iOS5(buf,bufSize,takeOwnership);

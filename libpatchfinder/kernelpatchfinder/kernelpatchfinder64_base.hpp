@@ -88,7 +88,7 @@ namespace patchfinder {
         
         virtual std::vector<patch> get_harcode_bootargs_patch(std::string bootargs) override;
 
-        virtual std::vector<patch> get_harcode_boot_manifest_patch(std::vector<uint8_t> manifestHash) override;
+        virtual std::vector<patch> get_harcode_boot_manifest_patch(const void *hash, size_t hashSize) override;
 
         
 #pragma mark Util
@@ -97,10 +97,6 @@ namespace patchfinder {
 
 #pragma mark combo utils
         virtual std::vector<patch> get_codesignature_patches() override;
-
-#ifdef XCODE
-        virtual std::vector<patch> test() override;
-#endif
         
 #pragma mark non-override
         virtual std::vector<patch> get_read_bpr_patch_with_params(int syscall, loc_t bpr_reg_addr, loc_t ml_io_map, loc_t kernel_map, loc_t kmem_free);

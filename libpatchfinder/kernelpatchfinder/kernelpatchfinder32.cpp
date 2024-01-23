@@ -7,6 +7,7 @@
 
 #include "../../include/libpatchfinder/kernelpatchfinder/kernelpatchfinder32.hpp"
 #include "kernelpatchfinder32_base.hpp"
+#include "kernelpatchfinder32_iOS3.hpp"
 #include "kernelpatchfinder32_iOS5.hpp"
 #include "kernelpatchfinder32_iOS6.hpp"
 #include "kernelpatchfinder32_iOS9.hpp"
@@ -37,6 +38,9 @@ kernelpatchfinder32 *kernelpatchfinder32::make_kernelpatchfinder32(machopatchfin
     } else if (vers > 1800) {
         info("Detected iOS 5 kernel");
         return new kernelpatchfinder32_iOS5(std::move(helper));
+    } else if (vers > 1300) {
+        info("Detected iOS 3 kernel");
+        return new kernelpatchfinder32_iOS3(std::move(helper));
     }
 
     return new kernelpatchfinder32_base(std::move(helper));

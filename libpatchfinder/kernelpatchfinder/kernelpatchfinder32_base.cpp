@@ -921,10 +921,16 @@ kernelpatchfinder::loc64_t kernelpatchfinder32_base::find_rootvnode() {
 
 #pragma mark combo utils
 std::vector<patch> kernelpatchfinder32_base::get_codesignature_patches(){
-    std::vector<patch> patches;
-    addPatches(get_amfi_validateCodeDirectoryHashInDaemon_patch());
-    addPatches(get_cs_enforcement_disable_amfi_patch());
-    return patches;;
+    UNCACHEPATCHES;
+    
+    loc_t cs_validate_page = find_sym("_cs_validate_page");
+    pushINSN(thumb::new_T2_immediate_ldr(cs_validate_page+2*0, 0, 1));
+    pushINSN(thumb::new_T1_immediate_movs(cs_validate_page+2*1, 0, 0));
+    pushINSN(thumb::new_T1_immediate_str(cs_validate_page+2*2, 0, 1, 0));
+    pushINSN(thumb::new_T1_immediate_movs(cs_validate_page+2*3, 1, 0));
+    pushINSN(thumb::new_T1_general_bx(cs_validate_page+2*4, 14));
+    
+    RETCACHEPATCHES;
 }
 
 #pragma mark non-override

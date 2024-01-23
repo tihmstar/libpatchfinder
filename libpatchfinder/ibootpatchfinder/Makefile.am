@@ -35,6 +35,8 @@ libpatchfinder_ibootpatchfinder32_la_SOURCES =	ibootpatchfinder32.cpp \
 												ibootpatchfinder32_base.cpp \
 												ibootpatchfinder32_iOS4.cpp \
 												ibootpatchfinder32_iOS5.cpp \
+												ibootpatchfinder32_iOS8.cpp \
+												ibootpatchfinder32_iOS9.cpp \
 												ibootpatchfinder32_iOS11.cpp \
 												ibootpatchfinder32_iOS12.cpp \
 												ibootpatchfinder32_iOS13.cpp

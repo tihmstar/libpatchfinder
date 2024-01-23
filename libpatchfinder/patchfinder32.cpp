@@ -228,37 +228,47 @@ uint32_t patchfinder32::find_register_value_thumb(loc_t where, uint8_t reg, loc_
     
     for (;(loc_t)functop.pc() < where;++functop) {
         auto insn = functop();
-        switch (insn.type()) {
-            case arm32::adr:
-                value[insn.rd()] = insn.imm();
-                break;
-            case arm32::add:
-                value[insn.rd()] = value[insn.rn()] + insn.imm();
-                break;
-            case arm32::ldr:
-                if (insn.subtype() == arm32::st_immediate) {
-                    value[insn.rt()] += insn.imm(); // XXX address, not actual value
-                }else{
-                    value[insn.rt()] = value[insn.rn()];
-                }
-                break;
-            case arm32::mov:
-                if (insn.subtype() == arm32::st_immediate) {
-                    value[insn.rd()] = insn.imm(); // XXX address, not actual value
-                }else{
-                    value[insn.rd()] = value[insn.rn()];
-                }
-                break;
-            case arm32::lsl:
-                if (insn.subtype() == arm32::st_immediate) {
-                    value[insn.rd()] = value[insn.rm()] << insn.imm();
-                }else{
-                    value[insn.rd()] = value[insn.rm()] << insn.rn();
-                }
-                break;
-            default:
-                break;
+#ifndef XCODE
+        try{
+#endif
+            switch (insn.type()) {
+                case arm32::adr:
+                    value[insn.rd()] = insn.imm();
+                    break;
+                case arm32::add:
+                    value[insn.rd()] = value[insn.rn()] + insn.imm();
+                    break;
+                case arm32::ldr:
+                    if (insn.subtype() == arm32::st_immediate) {
+                        value[insn.rt()] += insn.imm(); // XXX address, not actual value
+                    }else{
+                        value[insn.rt()] = value[insn.rn()];
+                    }
+                    break;
+                case arm32::mov:
+                    if (insn.subtype() == arm32::st_immediate) {
+                        value[insn.rd()] = insn.imm(); // XXX address, not actual value
+                    }else{
+                        value[insn.rd()] = value[insn.rm()];
+                    }
+                    break;
+                case arm32::lsl:
+                    if (insn.subtype() == arm32::st_immediate) {
+                        value[insn.rd()] = value[insn.rm()] << insn.imm();
+                    }else{
+                        value[insn.rd()] = value[insn.rm()] << insn.rn();
+                    }
+                    break;
+                default:
+                    break;
+            }
+#ifndef XCODE
+        }catch(tihmstar::exception &e){
+#ifdef DEBUG
+            e.dump();
+#endif
         }
+#endif
     }
     return value[reg];
 }

@@ -145,7 +145,7 @@ int main_r(int argc, const char * argv[]) {
 
     std::string templ;
     if (templatefile){
-        auto templ_f = tihmstar::readFile(templatefile);
+        tihmstar::Mem templ_f = tihmstar::readFile(templatefile);
         templ = {(char*)templ_f.data(),(char*)templ_f.data()+templ_f.size()};
     }
     for (auto method : findOffsets) {

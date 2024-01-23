@@ -22,6 +22,8 @@ namespace patchfinder {
         virtual std::vector<patch> get_codesignature_patches() override;
         
         virtual std::vector<patch> get_mount_patch() override;
+        
+        virtual std::vector<patch> get_allow_UID_key_patch() override;
     };
 }
 }

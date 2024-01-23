@@ -12,12 +12,14 @@
 #include <libpatchfinder/patch.hpp>
 #include <libpatchfinder/patchfinder.hpp>
 
+#include <libgeneral/Mem.hpp>
+
 namespace tihmstar {
     namespace patchfinder {
         class kernelpatchfinder{
         public:
             using loc64_t = tihmstar::libinsn::arm64::insn::loc_t;
-            using offset_t = tihmstar::libinsn::arm64::insn::loc_t;
+            using offset_t = tihmstar::libinsn::arm64::insn::offset_t;
         protected:
             std::vector<std::pair<loc64_t, size_t>> _unusedBSS;
         public:
@@ -195,7 +197,7 @@ namespace tihmstar {
             
             virtual std::vector<patch> get_harcode_bootargs_patch(std::string bootargs);
             
-            virtual std::vector<patch> get_harcode_boot_manifest_patch(std::vector<uint8_t> manifestHash);
+            virtual std::vector<patch> get_harcode_boot_manifest_patch(const void *hash, size_t hashSize);
 
             virtual std::vector<patch> get_apfs_root_from_sealed_livefs_patch();
 
@@ -207,9 +209,6 @@ namespace tihmstar {
             virtual std::vector<patch> get_tfp_anyone_allow_patch();
 
             virtual std::vector<patch> get_noemf_patch();
-#ifdef XCODE
-            virtual std::vector<patch> test();
-#endif
         };
     };
 };

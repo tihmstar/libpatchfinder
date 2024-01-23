@@ -6,6 +6,7 @@
 //
 
 #include <libgeneral/macros.h>
+#include <libgeneral/Mem.hpp>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -132,16 +133,12 @@ void machopatchfinder32::loadSegments(){
     _vmemThumb = new vmem_thumb(segments,0, kVMPROTALL);
     _vmemArm = new vmem_arm(segments,0, kVMPROTALL);
 
-    try {
-        _vmemThumb->deref(_entrypoint);
-        info("Detected non-slid kernel.");
-    } catch (tihmstar::out_of_range &e) {
-        reterror("Detected slid kernel. but slid kernel is currently not supported");
-    }
-    try {
-        _vmemThumb->deref(_entrypoint);
-    } catch (tihmstar::out_of_range &e) {
-        reterror("Error occured when handling kernel entry checks");
+    if (_entrypoint){
+        try {
+            _vmemThumb->deref(_entrypoint);
+        } catch (tihmstar::out_of_range &e) {
+            reterror("Error occured when handling kernel entry checks");
+        }
     }
     
     info("Inited machopatchfinder32 %s %s",VERSION_COMMIT_COUNT, VERSION_COMMIT_SHA);
@@ -267,7 +264,7 @@ machopatchfinder32::machopatchfinder32(const char *filename) :
     
 #ifdef HAVE_IMG3TOOL
     {
-        std::vector<uint8_t> img3payload;
+        tihmstar::Mem img3payload;
         try {
             img3payload = img3tool::getPayloadFromIMG3(_buf, _bufSize);
         } catch (...) {

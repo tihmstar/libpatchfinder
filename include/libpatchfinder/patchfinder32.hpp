@@ -27,7 +27,6 @@ namespace tihmstar {
             using vmem_arm = tihmstar::libinsn::vmem<tihmstar::libinsn::arm32::arm>;
             using vsegment = tihmstar::libinsn::vsegment;
             using loc_t = tihmstar::libinsn::arm32::thumb::loc_t;
-            using offset_t = tihmstar::libinsn::arm32::thumb::offset_t;
         protected:
             const vmem_thumb *_vmemThumb;
             const vmem_arm *_vmemArm;

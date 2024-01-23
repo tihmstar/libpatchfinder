@@ -34,7 +34,6 @@ namespace tihmstar {
                 pprot perms;
             };
             using loc_t = tihmstar::libinsn::arm64::insn::loc_t;
-            using offset_t = tihmstar::libinsn::arm64::insn::offset_t;
 
         protected:
             bool _freeBuf;

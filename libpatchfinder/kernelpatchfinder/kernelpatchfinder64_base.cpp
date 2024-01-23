@@ -1153,16 +1153,14 @@ std::vector<patch> kernelpatchfinder64_base::get_harcode_bootargs_patch(std::str
     return patches;
 }
 
-std::vector<patch> kernelpatchfinder64_base::get_harcode_boot_manifest_patch(std::vector<uint8_t> manifestHash){
-    std::vector<patch> patches;
- 
-    while (manifestHash.size() & 3) {
-        manifestHash.push_back(0);
-    }
+std::vector<patch> kernelpatchfinder64_base::get_harcode_boot_manifest_patch(const void *hash, size_t hashSize){
+    UNCACHEPATCHES;
+    size_t realhashSize = hashSize;
+    while (realhashSize & 3) realhashSize++;
     
     loc_t entrypoint = find_entry();
     debug("entry=0x%16llx",entrypoint);
-
+    
     vmem iter = _vmem->getIter(entrypoint);
     
     loc_t hookpos = iter().imm();
@@ -1173,11 +1171,11 @@ std::vector<patch> kernelpatchfinder64_base::get_harcode_boot_manifest_patch(std
     offset_t deviceTreePOffset = (cmdlineOffset - sizeof(uint32_t) - sizeof(uint64_t)) & ~3;
     offset_t virtBaseOffset = 0x08;
     offset_t physBaseOffset = 0x10;
-
+    
     debug("deviceTreePOffset=0x%016llx",deviceTreePOffset);
-
+    
     uint32_t shellcode_insn_cnt = 25; //commitment
-    loc_t shellcode = findnops(shellcode_insn_cnt + manifestHash.size()/4);
+    loc_t shellcode = findnops(shellcode_insn_cnt + realhashSize/4);
     debug("shellcode=0x%016llx",shellcode);
     uint32_t loopdst = 9;
     uint32_t loop2dst = 19;
@@ -1192,11 +1190,11 @@ std::vector<patch> kernelpatchfinder64_base::get_harcode_boot_manifest_patch(std
     pushINSN(insn::new_immediate_movz(cPC, 0x6f62, 6, 0));
     pushINSN(insn::new_immediate_movk(cPC, 0x746f, 6, 16));
     
-//    pushINSN(insn::new_immediate_movk(cPC, 0x6d2d, 6, 32));
-//    pushINSN(insn::new_immediate_movk(cPC, 0x6e61, 6, 48));
+    //    pushINSN(insn::new_immediate_movk(cPC, 0x6d2d, 6, 32));
+    //    pushINSN(insn::new_immediate_movk(cPC, 0x6e61, 6, 48));
     pushINSN(insn::new_immediate_movz(cPC, 0x6d2d, 4, 0));
     pushINSN(insn::new_immediate_movk(cPC, 0x6e61, 4, 16));
-
+    
     assure(loopdst == insnNum);
     
     pushINSN(insn::new_immediate_ldr_unsigned(cPC, 0, 5, 7, true));
@@ -1207,7 +1205,7 @@ std::vector<patch> kernelpatchfinder64_base::get_harcode_boot_manifest_patch(std
     pushINSN(insn::new_register_cmp(cPC, 0, 4, 8, -1));
     pushINSN(insn::new_immediate_bcond(cPC, shellcode+loopdst*4, insn::NE));
     pushINSN(insn::new_immediate_add(cPC, 32, 5, 5));
-
+    
     pushINSN(insn::new_general_adr(cPC, shellcode+shellcode_insn_cnt*4, 6));
     pushINSN(insn::new_immediate_movz(cPC, 0x30, 7, 0));
     assure(loop2dst == insnNum);
@@ -1221,11 +1219,11 @@ std::vector<patch> kernelpatchfinder64_base::get_harcode_boot_manifest_patch(std
     }
     pushINSN(insn::new_immediate_b(cPC, hookpos+4));
     assure(insnNum == shellcode_insn_cnt);
-    patches.push_back({cPC,manifestHash.data(),manifestHash.size()});
+    patches.push_back({cPC,hash,hashSize});
     pushINSN(insn::new_immediate_b(hookpos, shellcode));
 #undef cPC
     
-    return patches;
+    RETCACHEPATCHES;
 }
 
 #pragma mark Util
@@ -1489,19 +1487,6 @@ std::vector<patch> kernelpatchfinder64_base::get_codesignature_patches(){
     addPatches(get_cs_enforcement_disable_amfi_patch());
     RETCACHEPATCHES;
 }
-
-#ifdef XCODE
-std::vector<patch> kernelpatchfinder64_base::test(){
-    
-    vmem iter = _vmem->getIter();
-        
-    while (++iter != insn::movk || iter().imm() != ((uint64_t)0x97f6 << 48));
-    loc_t ad = iter;
-    debug("ad=0x%016llx",ad);
-
-    reterror("todo");
-}
-#endif
 
 #pragma mark non-override
 std::vector<patch> kernelpatchfinder64_base::get_read_bpr_patch_with_params(int syscall, loc_t bpr_reg_addr, loc_t ml_io_map, loc_t kernel_map, loc_t kmem_free){

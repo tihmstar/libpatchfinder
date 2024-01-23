@@ -51,7 +51,11 @@ int main(int argc, const char * argv[]) {
     
 
 //    addpatch(ibpf->get_sigcheck_patch());
-//    addpatch(ibpf->set_root_ticket_hash({hash,hash+0x14}));
+//    addpatch(ibpf->get_sigcheck_img4_patch());
+//    {
+//        const char hash[]="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+//        addpatch(ibpf->set_root_ticket_hash(hash,0x14));
+//    }
 //    addpatch(ibpf->get_always_production_patch());
 //    addpatch(ibpf->get_debug_enabled_patch());
 //    addpatch(ibpf->get_replace_string_patch("recovery mode", "ra1nsn0w mode"));
@@ -96,7 +100,7 @@ int main(int argc, const char * argv[]) {
 //    addpatch(kpf->get_i_can_has_debugger_patch());
 
     
-    addloc(kpf->find_ppl_handler_table());
+//    addloc(kpf->find_ppl_handler_table());
     
 
 //    addloc(kpf->find_IOSurface_MemoryDescriptor_offset());

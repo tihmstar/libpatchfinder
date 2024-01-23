@@ -7,8 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2A102B482ADD3CDD00F86D9E /* ibootpatchfinder32_iOS8.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A102B462ADD3CDD00F86D9E /* ibootpatchfinder32_iOS8.cpp */; };
 		2A32E5DE2A41CD5A007170DA /* kernelpatchfinder64_iOS17.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A32E5DC2A41CD5A007170DA /* kernelpatchfinder64_iOS17.cpp */; };
+		2A44ABC12A84C0650076F87C /* StableHash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739AE2F2A6B48E000630CEA /* StableHash.cpp */; };
+		2A44ABC22A84C0650076F87C /* StableHash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739AE2F2A6B48E000630CEA /* StableHash.cpp */; };
 		2A52CC2A29C1C4F900DF4ACE /* kernelpatchfinder32_iOS6.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A52CC2829C1C4F900DF4ACE /* kernelpatchfinder32_iOS6.cpp */; };
+		2A686DC72B30933A00CF5792 /* kernelpatchfinder32_iOS3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A686DC52B30933A00CF5792 /* kernelpatchfinder32_iOS3.cpp */; };
 		2A6927E12A4D5D0D00D40454 /* patchfinder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A6927DF2A4D5D0D00D40454 /* patchfinder.cpp */; };
 		2A6927E22A4D5EF200D40454 /* libgeneral.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8738E87E26945ECC00C03872 /* libgeneral.0.dylib */; };
 		2A6927E32A4D5EF200D40454 /* libgeneral.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 8738E87E26945ECC00C03872 /* libgeneral.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -23,6 +27,7 @@
 		2A6927F12A4D7DC100D40454 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A6927F02A4D7DC100D40454 /* main.cpp */; };
 		2A76ED8C2A5C0AD30074B9E4 /* ibootpatchfinder32_iOS4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A76ED8A2A5C0AD30074B9E4 /* ibootpatchfinder32_iOS4.cpp */; };
 		2A8F6DFD2A56D56E006CDDEC /* kernelpatchfinder32_iOS5.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A8F6DFB2A56D56E006CDDEC /* kernelpatchfinder32_iOS5.cpp */; };
+		2A9774662A9F952F0056425C /* ibootpatchfinder32_iOS9.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2A9774642A9F952F0056425C /* ibootpatchfinder32_iOS9.cpp */; };
 		2AA306662A4328AB00061919 /* ibootpatchfinder64_iOS17.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2AA306642A4328AB00061919 /* ibootpatchfinder64_iOS17.cpp */; };
 		2ADD4778296D4D0400ECE735 /* ibootpatchfinder32_iOS5.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2ADD4776296D4D0400ECE735 /* ibootpatchfinder32_iOS5.cpp */; };
 		872D0CE42A6E5B2E000CEE15 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 872D0CE32A6E5B2E000CEE15 /* main.cpp */; };
@@ -74,7 +79,6 @@
 		8738E9012695981A00C03872 /* kernelpatchfinder64_iOS9.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E8FC2695981A00C03872 /* kernelpatchfinder64_iOS9.cpp */; };
 		8738E9112695986500C03872 /* ibootpatchfinder32.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E90F2695986500C03872 /* ibootpatchfinder32.cpp */; };
 		8738E91426959AEE00C03872 /* ibootpatchfinder32_base.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8738E91226959AEE00C03872 /* ibootpatchfinder32_base.cpp */; };
-		8739AE302A6B48E000630CEA /* StableHash.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8739AE2F2A6B48E000630CEA /* StableHash.cpp */; };
 		8788A0BD2A75170E003AA19B /* libimg4tool.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 8738E87A26945EC300C03872 /* libimg4tool.0.dylib */; };
 		8788A0BE2A75170E003AA19B /* libimg4tool.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = 8738E87A26945EC300C03872 /* libimg4tool.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		879B2F5F26AECD910077C9CE /* kernelpatchfinder32_iOS9.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 879B2F5D26AECD910077C9CE /* kernelpatchfinder32_iOS9.cpp */; };
@@ -163,10 +167,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2A102B462ADD3CDD00F86D9E /* ibootpatchfinder32_iOS8.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ibootpatchfinder32_iOS8.cpp; sourceTree = "<group>"; };
+		2A102B472ADD3CDD00F86D9E /* ibootpatchfinder32_iOS8.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ibootpatchfinder32_iOS8.hpp; sourceTree = "<group>"; };
 		2A32E5DC2A41CD5A007170DA /* kernelpatchfinder64_iOS17.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kernelpatchfinder64_iOS17.cpp; sourceTree = "<group>"; };
 		2A32E5DD2A41CD5A007170DA /* kernelpatchfinder64_iOS17.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kernelpatchfinder64_iOS17.hpp; sourceTree = "<group>"; };
 		2A52CC2829C1C4F900DF4ACE /* kernelpatchfinder32_iOS6.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kernelpatchfinder32_iOS6.cpp; sourceTree = "<group>"; };
 		2A52CC2929C1C4F900DF4ACE /* kernelpatchfinder32_iOS6.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kernelpatchfinder32_iOS6.hpp; sourceTree = "<group>"; };
+		2A686DC52B30933A00CF5792 /* kernelpatchfinder32_iOS3.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kernelpatchfinder32_iOS3.cpp; sourceTree = "<group>"; };
+		2A686DC62B30933A00CF5792 /* kernelpatchfinder32_iOS3.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kernelpatchfinder32_iOS3.hpp; sourceTree = "<group>"; };
 		2A6927D82A4D502100D40454 /* binrider */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = binrider; sourceTree = BUILT_PRODUCTS_DIR; };
 		2A6927DF2A4D5D0D00D40454 /* patchfinder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = patchfinder.cpp; sourceTree = "<group>"; };
 		2A6927E52A4D5F8C00D40454 /* patchfinder.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = patchfinder.hpp; path = include/libpatchfinder/patchfinder.hpp; sourceTree = SOURCE_ROOT; };
@@ -175,6 +183,8 @@
 		2A76ED8B2A5C0AD30074B9E4 /* ibootpatchfinder32_iOS4.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ibootpatchfinder32_iOS4.hpp; sourceTree = "<group>"; };
 		2A8F6DFB2A56D56E006CDDEC /* kernelpatchfinder32_iOS5.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kernelpatchfinder32_iOS5.cpp; sourceTree = "<group>"; };
 		2A8F6DFC2A56D56E006CDDEC /* kernelpatchfinder32_iOS5.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = kernelpatchfinder32_iOS5.hpp; sourceTree = "<group>"; };
+		2A9774642A9F952F0056425C /* ibootpatchfinder32_iOS9.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ibootpatchfinder32_iOS9.cpp; sourceTree = "<group>"; };
+		2A9774652A9F952F0056425C /* ibootpatchfinder32_iOS9.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ibootpatchfinder32_iOS9.hpp; sourceTree = "<group>"; };
 		2AA306642A4328AB00061919 /* ibootpatchfinder64_iOS17.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ibootpatchfinder64_iOS17.cpp; sourceTree = "<group>"; };
 		2AA306652A4328AB00061919 /* ibootpatchfinder64_iOS17.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ibootpatchfinder64_iOS17.hpp; sourceTree = "<group>"; };
 		2ADD4776296D4D0400ECE735 /* ibootpatchfinder32_iOS5.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ibootpatchfinder32_iOS5.cpp; sourceTree = "<group>"; };
@@ -440,6 +450,10 @@
 				2A76ED8A2A5C0AD30074B9E4 /* ibootpatchfinder32_iOS4.cpp */,
 				2ADD4777296D4D0400ECE735 /* ibootpatchfinder32_iOS5.hpp */,
 				2ADD4776296D4D0400ECE735 /* ibootpatchfinder32_iOS5.cpp */,
+				2A102B472ADD3CDD00F86D9E /* ibootpatchfinder32_iOS8.hpp */,
+				2A102B462ADD3CDD00F86D9E /* ibootpatchfinder32_iOS8.cpp */,
+				2A9774652A9F952F0056425C /* ibootpatchfinder32_iOS9.hpp */,
+				2A9774642A9F952F0056425C /* ibootpatchfinder32_iOS9.cpp */,
 				87ABDA7F276490A9006CF9D1 /* ibootpatchfinder32_iOS11.hpp */,
 				87ABDA7E276490A9006CF9D1 /* ibootpatchfinder32_iOS11.cpp */,
 				87F845392771C93D0018347B /* ibootpatchfinder32_iOS12.hpp */,
@@ -481,6 +495,8 @@
 				87F83B4F26989259006D5C45 /* kernelpatchfinder32.cpp */,
 				87F0A57826A5BDAE0090C657 /* kernelpatchfinder32_base.hpp */,
 				87F83B52269892DA006D5C45 /* kernelpatchfinder32_base.cpp */,
+				2A686DC62B30933A00CF5792 /* kernelpatchfinder32_iOS3.hpp */,
+				2A686DC52B30933A00CF5792 /* kernelpatchfinder32_iOS3.cpp */,
 				2A8F6DFC2A56D56E006CDDEC /* kernelpatchfinder32_iOS5.hpp */,
 				2A8F6DFB2A56D56E006CDDEC /* kernelpatchfinder32_iOS5.cpp */,
 				2A52CC2929C1C4F900DF4ACE /* kernelpatchfinder32_iOS6.hpp */,
@@ -602,6 +618,7 @@
 				2A6927EA2A4D7A2D00D40454 /* patchfinder32.cpp in Sources */,
 				2A6927F12A4D7DC100D40454 /* main.cpp in Sources */,
 				2A6927E72A4D7A2D00D40454 /* patch.cpp in Sources */,
+				2A44ABC12A84C0650076F87C /* StableHash.cpp in Sources */,
 				2A6927E92A4D7A2D00D40454 /* patchfinder.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -642,6 +659,7 @@
 				8738E8F2269597FE00C03872 /* ibootpatchfinder64_iOS10.cpp in Sources */,
 				879B2F5F26AECD910077C9CE /* kernelpatchfinder32_iOS9.cpp in Sources */,
 				87C7D5732850F29D001CE584 /* ibootpatchfinder64_iOS16.cpp in Sources */,
+				2A9774662A9F952F0056425C /* ibootpatchfinder32_iOS9.cpp in Sources */,
 				2A32E5DE2A41CD5A007170DA /* kernelpatchfinder64_iOS17.cpp in Sources */,
 				2ADD4778296D4D0400ECE735 /* ibootpatchfinder32_iOS5.cpp in Sources */,
 				87A141C526C654D3003C20C8 /* kernelpatchfinder32_iOS8.cpp in Sources */,
@@ -650,6 +668,7 @@
 				2AA306662A4328AB00061919 /* ibootpatchfinder64_iOS17.cpp in Sources */,
 				8738E9112695986500C03872 /* ibootpatchfinder32.cpp in Sources */,
 				8738E8F3269597FE00C03872 /* ibootpatchfinder64_iOS14.cpp in Sources */,
+				2A102B482ADD3CDD00F86D9E /* ibootpatchfinder32_iOS8.cpp in Sources */,
 				8738E8FF2695981A00C03872 /* kernelpatchfinder64_base.cpp in Sources */,
 				2A76ED8C2A5C0AD30074B9E4 /* ibootpatchfinder32_iOS4.cpp in Sources */,
 				87F0A57E26A5C1390090C657 /* ibootpatchfinder.cpp in Sources */,
@@ -670,8 +689,9 @@
 				8738E9002695981A00C03872 /* kernelpatchfinder64.cpp in Sources */,
 				8738E8F0269597FE00C03872 /* ibootpatchfinder64_base.cpp in Sources */,
 				8738E88926945FFE00C03872 /* machopatchfinder32.cpp in Sources */,
-				8739AE302A6B48E000630CEA /* StableHash.cpp in Sources */,
 				8738E8FE2695981A00C03872 /* kernelpatchfinder64_iOS12.cpp in Sources */,
+				2A686DC72B30933A00CF5792 /* kernelpatchfinder32_iOS3.cpp in Sources */,
+				2A44ABC22A84C0650076F87C /* StableHash.cpp in Sources */,
 				87A370C127E8799100AA4010 /* kernelpatchfinder64_iOS15.cpp in Sources */,
 				87C7D5702850ED50001CE584 /* kernelpatchfinder64_iOS16.cpp in Sources */,
 				2A8F6DFD2A56D56E006CDDEC /* kernelpatchfinder32_iOS5.cpp in Sources */,
@@ -864,6 +884,7 @@
 					"EXPECTIONNAME='OFexception'",
 					HAVE_IMG4TOOL,
 					HAVE_IMG3TOOL,
+					WITH_WTFPWNDFU,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

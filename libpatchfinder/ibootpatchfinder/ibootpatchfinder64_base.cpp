@@ -869,16 +869,3 @@ std::vector<patch> ibootpatchfinder64_base::get_no_force_dfu_patch(){
     retassure(patches.size(), "Failed to find patches");
     RETCACHEPATCHES;
 }
-
-#ifdef XCODE
-std::vector<patch> ibootpatchfinder64_base::test(){
-    loc_t test = -4;
-    while (true) {
-        test = find_literal_ref(0x2102d0030,0,test+4);
-        debug("test=0x%016llx\n",test);
-    }
-
-
-    reterror("todo");
-}
-#endif

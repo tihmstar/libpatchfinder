@@ -107,11 +107,7 @@ namespace tihmstar {
             /*
                 Ignore force_dfu in iBoot
              */
-            virtual std::vector<patch> get_no_force_dfu_patch() override;
-                        
-#ifdef XCODE
-            virtual std::vector<patch> test() override;
-#endif
+            virtual std::vector<patch> get_no_force_dfu_patch() override;                        
         };
     };
 };

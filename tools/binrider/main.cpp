@@ -8,10 +8,14 @@
 #include <libgeneral/macros.h>
 #include <libpatchfinder/patchfinder32.hpp>
 #include <libpatchfinder/patchfinder64.hpp>
+#include <libpatchfinder/machopatchfinder32.hpp>
+#include <libpatchfinder/machopatchfinder64.hpp>
+
+#include <functional>
+#include <set>
 
 #include <getopt.h>
 #include <stdlib.h>
-#include <functional>
 
 using namespace tihmstar::patchfinder;
 
@@ -21,10 +25,13 @@ static struct option longopts[] = {
     { "base",               required_argument, NULL, 'b' },
     { "raw",                required_argument, NULL, 'r' },
 
-    /* Short opts action */
+    /* action */
     { "xref",               required_argument, NULL,  0  },
     { "cref",               required_argument, NULL,  0  },
     { "bref",               required_argument, NULL,  0  },
+
+    /* prints */
+    { "Preg",            required_argument, NULL,  0  },
 
     { NULL, 0, NULL, 0 }
 };
@@ -43,7 +50,10 @@ void cmd_help(){
     printf("      --cref <address>\t\t\t\tPrint call refs to address\n");
     printf("      --xref <address>\t\t\t\tPrint literal refs to address\n");
 
-    
+
+    /* prints */
+    printf("      --Preg <reg>\t\t\t\tPrint regval\n");
+
     printf("\n");
 }
 
@@ -81,6 +91,7 @@ int main_r(int argc, const char * argv[]) {
     BinaryType bintype = kBinaryTypeDefault;
     
     std::vector<patchfinder::psegment> segments;
+    std::set<int> Pregs;
     
     //actions
     rstruct brefs{
@@ -116,6 +127,8 @@ int main_r(int argc, const char * argv[]) {
                     crefs.refs.push_back(strtoll(optarg, NULL, 16));
                 }else if (curopt == "xref") {
                     xrefs.refs.push_back(strtoll(optarg, NULL, 16));
+                }else if (curopt == "Preg") {
+                    Pregs.insert(atoi(optarg));
                 }else{
                     reterror("Unknown opt '%s'",curopt.c_str());
                 }
@@ -169,7 +182,9 @@ int main_r(int argc, const char * argv[]) {
     }
     
     if (bintype == kBinaryTypeDefault) {
-        reterror("not implemented");
+        if (!pf) try {pf = new machopatchfinder64(lastArg); bintype = kBinaryTypeARM64;} catch (...) {}
+        if (!pf) try {pf = new machopatchfinder32(lastArg); bintype = kBinaryTypeARM32;} catch (...) {}
+        retassure(pf,"not implemented");
     }else{
         info("Setting base to 0x%08llx",base);
         
@@ -195,6 +210,7 @@ int main_r(int argc, const char * argv[]) {
 
     {
         int add = (bintype == kBinaryTypeARM64) ? 4 : 2;
+        char regname = (bintype == kBinaryTypeARM64) ? 'X' : 'R';
         for (auto r : {brefs,crefs,xrefs}){
             for (auto tgt : r.refs) {
                 info("Checking %s to 0x%08llx",r.name.c_str(),tgt);
@@ -206,6 +222,10 @@ int main_r(int argc, const char * argv[]) {
                         break;
                     }
                     info("\tFound %s at 0x%08llx",r.name.c_str(),ref);
+                    for (auto r : Pregs) {
+                        auto rv = pf->find_register_value(ref, r);
+                        info("\t\t%c: 0x%08llx",regname,rv);
+                    }
                 }
             }
         }
