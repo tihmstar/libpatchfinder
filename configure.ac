@@ -38,10 +38,10 @@ CFLAGS+=" -std=c11"
 CXXFLAGS+=" -D EXPECTIONNAME=OFexception"
 
 # Checks for libraries.
-IMG4TOOL_REQUIRES_STR="libimg4tool >= 198"
-IMG3TOOL_REQUIRES_STR="libimg3tool >= 2"
-LIBGENERAL_REQUIRES_STR="libgeneral >= 65"
-LIBINSN_REQUIRES_STR="libinsn >= 38"
+IMG4TOOL_REQUIRES_STR="libimg4tool >= 202"
+IMG3TOOL_REQUIRES_STR="libimg3tool >= 8"
+LIBGENERAL_REQUIRES_STR="libgeneral >= 75"
+LIBINSN_REQUIRES_STR="libinsn >= 49"
 PKG_CHECK_MODULES(libimg4tool, $IMG4TOOL_REQUIRES_STR, have_img4tool=yes, have_img4tool=no)
 PKG_CHECK_MODULES(libimg3tool, $IMG3TOOL_REQUIRES_STR, have_img3tool=yes, have_img3tool=no)
 PKG_CHECK_MODULES(libgeneral, $LIBGENERAL_REQUIRES_STR)
