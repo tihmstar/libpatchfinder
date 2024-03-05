@@ -26,6 +26,7 @@ namespace tihmstar {
         class ibootpatchfinder64 : public patchfinder64, public ibootpatchfinder {
         protected:            
             ibootpatchfinder64(bool freeBuf);
+            ibootpatchfinder64(ibootpatchfinder64 &&mv);
         public:
             
             static ibootpatchfinder64 *make_ibootpatchfinder64(const char *filename);
