@@ -691,7 +691,7 @@ std::vector<patch> ibootpatchfinder64_base::get_freshnonce_patch(){
 
     vmem iter = _vmem->getIter(noncefun2_blref);
     
-    assure((--iter).supertype() == insn::sut_branch_imm);
+    assure((--iter).supertype() == insn::sut_branch_imm || (iter() == insn::movz && (--iter).supertype() == insn::sut_branch_imm));
 
     loc_t branchloc = iter;
     debug("branchloc=0x%016llx\n",branchloc);
