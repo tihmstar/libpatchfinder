@@ -158,6 +158,20 @@ fi
 AM_CONDITIONAL(WITH_WTFPWNDFU, test x$with_wtfpwndfu == xyes)
 
 # Checks for header files.
+
+AC_CHECK_HEADERS([mach-o/loader.h mach-o/nlist.h], [
+  AC_DEFINE(HAVE_MACHO_O_HEADER, 1, [Define if you have apple cctools headers])
+  AC_SUBST([HAVE_MACHO_O_HEADER], [1])
+  have_macho_header=yes;
+], [
+  AC_SUBST([HAVE_MACHO_O_HEADER], [0])
+  have_macho_header=no;
+], [])
+
+if test "x$have_macho_header" != "xyes"; then
+  AC_MSG_ERROR(["Macho-O headers not found, are apple cctools headers installed?"])
+fi
+
 AC_CHECK_HEADERS([fcntl.h stdint.h stdlib.h string.h unistd.h arpa/inet.h winsock.h])
 
 # Check for functions
@@ -183,6 +197,7 @@ Configuration for $PACKAGE-$VERSION:
   install prefix ..........: $prefix
   have img4tool ...........: $with_img4tool
   have img3tool ...........: $with_img3tool
+  have mach-o header.......: $have_macho_header
   debug build  ............: $debug_build
   asan build  .............: $asan_build
   with binrider ...........: $with_binrider
