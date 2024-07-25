@@ -16,11 +16,6 @@ namespace tihmstar {
         class ibootpatchfinder64_iOS10 : public ibootpatchfinder64_iOS9{
         public:
             using ibootpatchfinder64_iOS9::ibootpatchfinder64_iOS9;
-
-            /*
-             replace command with: "memcpy <dst> <src> <size>"
-             */
-            virtual std::vector<patch> replace_cmd_with_memcpy(const char *cmd_handler_str) override;
             
             /*
                 Skip setting BPR by iBoot

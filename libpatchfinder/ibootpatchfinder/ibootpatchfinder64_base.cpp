@@ -31,23 +31,18 @@ using namespace tihmstar::libinsn::arm64;
 ibootpatchfinder64_base::ibootpatchfinder64_base(const char * filename) :
     ibootpatchfinder64(true)
 {
-    int fd = 0;
-    void *buf = NULL;
+    int fd = -1;
     cleanup([&]{
         safeClose(fd);
-        safeFree(buf);
     })
-    size_t bufSize = 0;
     struct stat fs = {};
-
+    
     assure((fd = open(filename, O_RDONLY)) != -1);
     assure(!fstat(fd, &fs));
-    assure((buf = (uint8_t*)malloc( bufSize = fs.st_size)));
-    assure(read(fd,(void*)buf,bufSize)==bufSize);
+    assure((_buf = (uint8_t*)malloc(_bufSize = fs.st_size)));
+    assure(read(fd,(void*)_buf,_bufSize)==_bufSize);
     
-    assure(bufSize > 0x1000);
-    this->make_ibootpatchfinder64(buf, bufSize, true);
-    buf = NULL;
+    init();
 }
 
 ibootpatchfinder64_base::ibootpatchfinder64_base(const void *buffer, size_t bufSize, bool takeOwnership)
@@ -55,6 +50,10 @@ ibootpatchfinder64_base::ibootpatchfinder64_base(const void *buffer, size_t bufS
 {
     _bufSize = bufSize;
     _buf = (uint8_t*)buffer;
+    init();
+}
+
+void ibootpatchfinder64_base::init(){
     assure(_bufSize > 0x1000);
     
     assure(!strncmp((char*)&_buf[IBOOT_VERS_STR_OFFSET], "iBoot", sizeof("iBoot")-1));
@@ -65,6 +64,7 @@ ibootpatchfinder64_base::ibootpatchfinder64_base(const void *buffer, size_t bufS
     
     _entrypoint = _base = (loc_t)*(uint64_t*)&_buf[iBOOT_BASE_OFFSET];
     debug("iBoot base at=0x%016llx\n", _base);
+    safeDelete(_vmem);
     _vmem = new vmem({{_buf,_bufSize,_base, (vmprot)(kVMPROTREAD | kVMPROTWRITE | kVMPROTEXEC)}});
     retassure(_vers = atoi((char*)&_buf[IBOOT_VERS_STR_OFFSET+6]), "No iBoot version found!\n");
     debug("iBoot-%d inputted\n", _vers);
@@ -74,6 +74,7 @@ ibootpatchfinder64_base::~ibootpatchfinder64_base(){
     //
 }
 
+#pragma mark public
 bool ibootpatchfinder64_base::has_kernel_load(){
     try {
         return (bool) (_vmem->memstr(KERNELCACHE_PREP_STRING) != 0);
@@ -457,6 +458,9 @@ std::vector<patch> ibootpatchfinder64_base::replace_cmd_with_memcpy(const char *
 
     pushINSN(insn::new_immediate_cmp(cPC, 4, 0));
     pushINSN(insn::new_immediate_bcond(cPC, shellcode+insnRet*4, insn::cond::NE));
+    /*
+        iPhone 5s iOS 12 still uses 0x30+0x28*x formula
+     */
     pushINSN(insn::new_immediate_ldr_unsigned(cPC, 0x30+0x28*2, 1, 2));
     pushINSN(insn::new_immediate_ldr_unsigned(cPC, 0x30+0x28*0, 1, 0));
     pushINSN(insn::new_immediate_ldr_unsigned(cPC, 0x30+0x28*1, 1, 1));
@@ -518,40 +522,58 @@ std::vector<patch> ibootpatchfinder64_base::get_ra1nra1n_patch(){
     loc_t findloc = memmem("\x12\x00\x80\xd2", 4);
     debug("findloc=0x%016llx\n",findloc);
 
-    constexpr const char patch[] = "\xE8\x03\x1D\xAA\xE9\x03\x1D\xAA\x1B\x01\xC0\xD2\x1B\x00\xA3\xF2\xFD\x03\x1B\xAA";
+    auto iter = _vmem->getIter(findloc);
+    while (++iter != insn::mov && iter().rd() != 30){
+        retassure(iter() != insn::ret, "got unexpected ret!");
+    }
+    uint8_t srcreg = iter().rm();
+    
+    findloc-=4;
+    pushINSN(insn::new_register_mov(findloc+=4, 0, 8, srcreg));
+    pushINSN(insn::new_register_mov(findloc+=4, 0, 9, srcreg));
+    /*
+        0x7000 iOS 12 buffers the ramdisk at 0x818000000. If we write ra1nra1n there, the ramdisk gets corrupted
+     */
+    pushINSN(insn::new_immediate_movz(findloc+=4, 0x8, 27, 32));
+    pushINSN(insn::new_immediate_movk(findloc+=4, 0x2000, 27, 16));
+    pushINSN(insn::new_register_mov(findloc+=4, 0, 29, 27));
 
-    patches.push_back({findloc,patch,sizeof(patch)-1});
-
+    
+    /*
+        Disable bzero above 0x818000000
+     */
+    
     loc_t findloc2 = memmem("\x23\x74\x0b\xd5", 4);
     debug("findloc2=0x%016llx\n",findloc2);
 
     loc_t bzero = find_bof(findloc2);
     debug("bzero=0x%016llx\n",bzero);
     
-    int shellcodesize = 10*sizeof(uint32_t); //commitment
-    
-    loc_t shellcode = findnops(shellcodesize/4);
-    debug("shellcode=0x%016llx\n",shellcode);
+    uint32_t shellcode_insn_cnt = 10; //commitment
+    loc_t shellcode = findnops((shellcode_insn_cnt/2)+1, true, 0x00000000);
+    debug("shellcode=0x%016llx",shellcode);
     
     pushINSN(insn::new_immediate_b(bzero, shellcode));
     
-    constexpr const char patch2[] = "\x03\x01\xC0\xD2\x03\x00\xA3\xF2\x1F\x00\x03\xEB\xA8\x00\x00\x54\x22\x00\x00\x8B\x5F\x00\x03\xEB\x43\x00\x00\x54\xC0\x03\x1F\xD6";
-    patches.push_back({shellcode,patch2,sizeof(patch2)-1});
-    shellcodesize -= sizeof(patch2)-1;
-    
-    loc_t aftershellcode = shellcode+sizeof(patch2)-1;
-    debug("aftershellcode=0x%016llx\n",aftershellcode);
-    
-    uint32_t backUpProloge = (uint32_t)deref(bzero);
-    
-    patches.push_back({aftershellcode, &backUpProloge, 4});
-    aftershellcode +=4;
-    shellcodesize -=4;
+#define cPC (shellcode+(insnNum++)*4)
+    int insnNum = 0;
+    uint32_t shellend = 8;
 
-    pushINSN(insn::new_immediate_b(aftershellcode, (int64_t)bzero+4));
-    shellcodesize -=4;
+    pushINSN(insn::new_immediate_movz(cPC, 0x8, 3, 32));
+    pushINSN(insn::new_immediate_movk(cPC, 0x1800, 3, 16));
+    pushINSN(insn::new_register_cmp(cPC, 0, 0, 3, -1));
+    pushINSN(insn::new_immediate_bcond(cPC, shellcode+shellend*4, insn::HI));
+    pushINSN(insn::new_register_add(cPC, 0, 1, 0, 2));
+    pushINSN(insn::new_register_cmp(cPC, 0, 2, 3, -1));
+    pushINSN(insn::new_immediate_bcond(cPC, shellcode+shellend*4, insn::CC));
+    pushINSN(insn::new_general_br(cPC, 30));
+    assure(shellend == insnNum);
+    uint32_t backUpProloge = (uint32_t)deref(bzero);
+    patches.push_back({shellcode+insnNum*4, &backUpProloge, 4});insnNum++;
+    pushINSN(insn::new_immediate_b(cPC, (int64_t)bzero+4));
+    assure(insnNum == shellcode_insn_cnt);
+#undef cPC
     
-    assure(shellcodesize >=0);
     return patches;
 }
 

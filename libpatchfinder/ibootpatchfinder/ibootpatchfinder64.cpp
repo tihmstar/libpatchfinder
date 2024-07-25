@@ -38,12 +38,6 @@ ibootpatchfinder64::ibootpatchfinder64(bool freeBuf)
     //
 }
 
-ibootpatchfinder64::ibootpatchfinder64(ibootpatchfinder64 &&mv)
-: patchfinder64(std::move(mv))
-{
-    _vers = mv._vers;
-}
-
 ibootpatchfinder64 *ibootpatchfinder64::make_ibootpatchfinder64(const char * filename){
     bool didConstructSuccessfully = false;
     int fd = 0;

@@ -31,34 +31,17 @@ using namespace tihmstar::libinsn::arm32;
 ibootpatchfinder32_base::ibootpatchfinder32_base(const char * filename) :
     ibootpatchfinder32(true)
 {
-    struct stat fs = {0};
-    int fd = 0;
-    bool didConstructSuccessfully = false;
+    int fd = -1;
     cleanup([&]{
-        if (fd>0) close(fd);
-        if (!didConstructSuccessfully) {
-            safeFreeConst(_buf);
-        }
+        safeClose(fd);
     })
-    
+    struct stat fs = {0};
+
     assure((fd = open(filename, O_RDONLY)) != -1);
     assure(!fstat(fd, &fs));
     assure((_buf = (uint8_t*)malloc( _bufSize = fs.st_size)));
     assure(read(fd,(void*)_buf,_bufSize)==_bufSize);
-    
-    assure(_bufSize > 0x1000);
-    
-    assure(!strncmp((char*)&_buf[IBOOT_VERS_STR_OFFSET], "iBoot", sizeof("iBoot")-1));
-    retassure(*(uint32_t*)&_buf[0] == IBOOT32_RESET_VECTOR_BYTES, "invalid magic");
-
-    _entrypoint = _base = (loc_t)((*(uint32_t*)&_buf[0x20]) & ~0xFFF);
-    debug("iBoot base at=0x%08x", _base);
-    _vmemThumb = new vmem_thumb({{_buf,_bufSize,_base, (vmprot)(kVMPROTREAD | kVMPROTWRITE | kVMPROTEXEC)}});
-    _vmemArm = new vmem_arm({{_buf,_bufSize,_base, (vmprot)(kVMPROTREAD | kVMPROTWRITE | kVMPROTEXEC)}});
-    retassure(_vers = atoi((char*)&_buf[IBOOT_VERS_STR_OFFSET+6]), "No iBoot version found!\n");
-    debug("iBoot-%d inputted", _vers);
-    
-    didConstructSuccessfully = true;
+    init();
 }
 
 ibootpatchfinder32_base::ibootpatchfinder32_base(const void *buffer, size_t bufSize, bool takeOwnership)
@@ -66,12 +49,18 @@ ibootpatchfinder32_base::ibootpatchfinder32_base(const void *buffer, size_t bufS
 {
     _bufSize = bufSize;
     _buf = (uint8_t*)buffer;
+    init();
+}
+
+void ibootpatchfinder32_base::init(){
     assure(_bufSize > 0x1000);
     
     retassure(*(uint32_t*)&_buf[0] == IBOOT32_RESET_VECTOR_BYTES, "invalid magic");
 
     _entrypoint = _base = (loc_t)((*(uint32_t*)&_buf[0x20]) & ~0xFFF);
     debug("iBoot base at=0x%08x", _base);
+    safeDelete(_vmemThumb);
+    safeDelete(_vmemArm);
     _vmemThumb = new vmem_thumb({{_buf,_bufSize,_base, (vmprot)(kVMPROTREAD | kVMPROTWRITE | kVMPROTEXEC)}});
     _vmemArm = new vmem_arm({{_buf,_bufSize,_base, (vmprot)(kVMPROTREAD | kVMPROTWRITE | kVMPROTEXEC)}});
 
@@ -79,7 +68,7 @@ ibootpatchfinder32_base::ibootpatchfinder32_base(const void *buffer, size_t bufS
         retassure(_vers = atoi((char*)&_buf[IBOOT_VERS_STR_OFFSET+6]), "No iBoot version found!\n");
     }else{
         //iOS 1 iBoot??
-        loc_t ibootstrloc = memmem("iBoot-", sizeof("iBoot-")-1);
+        loc_t ibootstrloc = (loc_t)memmem("iBoot-", sizeof("iBoot-")-1);
         retassure(ibootstrloc, "No iBoot version found!\n");
         const char *ibootstr = (char*)memoryForLoc(ibootstrloc);
         retassure(_vers = atoi(ibootstr+6), "No iBoot version found!\n");
@@ -91,6 +80,7 @@ ibootpatchfinder32_base::~ibootpatchfinder32_base(){
     //
 }
 
+#pragma mark public
 bool ibootpatchfinder32_base::has_kernel_load(){
     try {
         return (bool) (memstr(KERNELCACHE_PREP_STRING) != 0);

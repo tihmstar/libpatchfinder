@@ -44,8 +44,8 @@ kernelpatchfinder64_base::~kernelpatchfinder64_base(){
 
 #pragma mark utils
 static void slide_ptr(class patch *p, uint64_t slide){
-    slide += *(uint64_t*)p->_patch;
-    memcpy((void*)p->_patch, &slide, 8);
+    slide += *(uint64_t*)p->getPatch();
+    memcpy((void*)p->getPatch(), &slide, 8);
 }
 
 #pragma mark Location finders
@@ -53,7 +53,7 @@ patchfinder64::loc_t kernelpatchfinder64_base::find_syscall0(){
     UNCACHELOC;
     constexpr char sig_syscall_3[] = "\x06\x00\x00\x00\x03\x00\x0c\x00";
     patchfinder64::loc_t sys3 = memmem(sig_syscall_3, sizeof(sig_syscall_3)-1);
-    loc_t retval = sys3 - (3 * 0x18) + 0x8;
+    loc_t retval = sys3 - (3 * 0x20) + 0x8;
     RETCACHELOC(retval);
 }
 
@@ -97,7 +97,7 @@ foundpos:
 
 patchfinder64::loc_t kernelpatchfinder64_base::find_table_entry_for_syscall(int syscall){
     patchfinder64::loc_t syscallTable = find_syscall0();
-    return (syscallTable + 3*(syscall-1)*sizeof(uint64_t));
+    return (syscallTable + 4*(syscall-1)*sizeof(uint64_t));
 }
 
 patchfinder64::loc_t kernelpatchfinder64_base::find_function_for_syscall(int syscall){
@@ -451,7 +451,9 @@ std::vector<patch> kernelpatchfinder64_base::get_mount_patch(){
     vmem iter = _vmem->getIter(mount);
     
     while (++iter != insn::bl);
-    
+    loc_t mount_internal_bl = iter;
+    debug("mount_internal_bl=0x%016llx\n",mount_internal_bl);
+
     patchfinder64::loc_t mount_internal = iter().imm();
     debug("mount_internal=0x%016llx\n",mount_internal);
 
@@ -502,16 +504,28 @@ std::vector<patch> kernelpatchfinder64_base::get_cs_enforcement_disable_amfi_pat
     debug("ref=0x%016llx",ref);
 
     vmem cbz = _vmem->getIter(ref);
-    while (--cbz != insn::cbz);
+    while (--cbz != insn::cbz && cbz() != insn::cbnz){
+        retassure(cbz() != insn::stp, "Failed to find cbz!");
+    }
+    
+    if (cbz() == insn::cbz) {
+        vmem movz(cbz);
+        while (++movz != insn::movz);
+        --movz;
 
-    vmem movz(cbz);
-    while (++movz != insn::movz);
-    --movz;
+        int anz = static_cast<int>((movz.pc()-cbz.pc())/4 +1);
 
-    int anz = static_cast<int>((movz.pc()-cbz.pc())/4 +1);
-
-    for (int i=0; i<anz; i++) {
-        pushINSN(insn::new_general_nop(cbz.pc()+4*i));
+        for (int i=0; i<anz; i++) {
+            pushINSN(insn::new_general_nop(cbz.pc()+4*i));
+        }
+    }else if (cbz() == insn::cbnz){
+        pushINSN(insn::new_immediate_b(cbz, cbz().imm()));
+        loc_t nopos = cbz().imm();
+        pushINSN(insn::new_general_nop(nopos+4*0));
+        pushINSN(insn::new_general_nop(nopos+4*1));
+        pushINSN(insn::new_general_nop(nopos+4*2));
+    }else{
+        reterror("This should not have happened!");
     }
 
     RETCACHEPATCHES;

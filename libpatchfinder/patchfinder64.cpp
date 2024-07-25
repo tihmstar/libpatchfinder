@@ -25,23 +25,25 @@ using namespace arm64;
 
 #pragma mark constructor/destructor
 
-patchfinder64::patchfinder64(bool freeBuf) :
-    patchfinder(freeBuf),
-    _vmem(nullptr)
+patchfinder64::patchfinder64(bool freeBuf) 
+: patchfinder(freeBuf)
+, _vmem(nullptr)
 {
     //
 }
 
-patchfinder64::patchfinder64(patchfinder64 &&mv) :
-    patchfinder(std::move(mv))
+patchfinder64::patchfinder64(patchfinder64 &&mv) 
+: patchfinder(std::move(mv))
+, _vmem(nullptr)
 {
     _unusedNops = std::move(mv._unusedNops);
     _savedPatches = std::move(mv._savedPatches);
     _vmem = mv._vmem; mv._vmem = NULL;
 }
 
-patchfinder64::patchfinder64(loc_t base, const char *filename, std::vector<psegment> segments) :
-    patchfinder(true)
+patchfinder64::patchfinder64(loc_t base, const char *filename, std::vector<psegment> segments)
+: patchfinder(true)
+, _vmem(nullptr)
 {
     struct stat fs = {0};
     int fd = 0;
@@ -83,8 +85,9 @@ patchfinder64::patchfinder64(loc_t base, const char *filename, std::vector<psegm
     _vmem = new vmem(vsegs);
 }
 
-patchfinder64::patchfinder64(loc_t base, const void *buffer, size_t bufSize, bool takeOwnership, std::vector<psegment> segments) :
-    patchfinder(takeOwnership)
+patchfinder64::patchfinder64(loc_t base, const void *buffer, size_t bufSize, bool takeOwnership, std::vector<psegment> segments) 
+: patchfinder(takeOwnership)
+, _vmem(nullptr)
 {
     _bufSize = bufSize;
     _buf = (uint8_t*)buffer;

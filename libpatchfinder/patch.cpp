@@ -13,26 +13,32 @@
 
 using namespace tihmstar::patchfinder;
 
-patch::patch(uint64_t location, const void *patch, size_t patchSize, void(*slidefunc)(class patch *patch, uint64_t slide), bool dofree)
-: _location(location), _patchSize(patchSize), _slidefunc(slidefunc), _dofree(dofree)
+patch::patch(uint64_t location, const void *patch, size_t patchSize, void(*slidefunc)(class patch *patch, uint64_t slide))
+: _patch(NULL), _patchSize(patchSize), _location(location), _slidefunc(slidefunc)
 {
-    _patch = malloc(_patchSize);
-    memcpy((void*)_patch, patch, _patchSize);
+    if (_patchSize){
+        _patch = malloc(_patchSize);
+        memcpy((void*)_patch, patch, _patchSize);
+    }
     _slideme = (_slidefunc) ? true : false;
 }
 
-patch::patch(const patch& cpy) noexcept : _location(cpy._location), _patchSize(cpy._patchSize){
-    _patch = malloc(_patchSize);
-    memcpy((void*)_patch, cpy._patch, _patchSize);
+patch::patch(const patch& cpy) noexcept 
+: _patch(NULL), _location(cpy._location), _patchSize(cpy._patchSize) {
+    if (_patchSize){
+        _patch = malloc(_patchSize);
+        memcpy((void*)_patch, cpy._patch, _patchSize);
+    }
     _slidefunc = cpy._slidefunc;
     _slideme = cpy._slideme;
 }
 
 patch::~patch(){
-    if (_dofree) safeFreeConst(_patch);
+    safeFree(_patch);
 }
 
 patch &patch::operator=(const patch& cpy){
+    safeFree(_patch);
     _location = cpy._location;
     _patchSize = cpy._patchSize;
     _patch = malloc(_patchSize);

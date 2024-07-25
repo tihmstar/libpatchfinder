@@ -9,13 +9,13 @@
 #ifndef kernelpatchfinder64_iOS9_hpp
 #define kernelpatchfinder64_iOS9_hpp
 
-#include "kernelpatchfinder64_base.hpp"
+#include "kernelpatchfinder64_iOS8.hpp"
 
 namespace tihmstar {
 namespace patchfinder {
-    class kernelpatchfinder64_iOS9 : public kernelpatchfinder64_base{
+    class kernelpatchfinder64_iOS9 : public kernelpatchfinder64_iOS8{
     public:
-        using kernelpatchfinder64_base::kernelpatchfinder64_base;
+        using kernelpatchfinder64_iOS8::kernelpatchfinder64_iOS8;
         
         virtual std::vector<patch> get_mount_patch() override;
     };

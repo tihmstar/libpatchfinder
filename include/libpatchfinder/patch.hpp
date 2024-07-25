@@ -15,17 +15,19 @@
 namespace tihmstar {
     namespace patchfinder{
         class patch{
+            void *_patch;
+            size_t _patchSize;
             bool _slideme;
-            bool _dofree;
             void(*_slidefunc)(class patch *patch, uint64_t slide);
         public:
             uint64_t _location;
-            size_t _patchSize;
-            const void *_patch;
-            patch(uint64_t location, const void *patch, size_t patchSize, void(*slidefunc)(class patch *patch, uint64_t slide) = NULL, bool dofree = true);
+            patch(uint64_t location, const void *patch, size_t patchSize, void(*slidefunc)(class patch *patch, uint64_t slide) = NULL);
             patch(const patch& cpy) noexcept;
             ~patch();
-
+            
+            inline const void *getPatch(){return _patch;}
+            inline size_t getPatchSize(){return  _patchSize;}
+            
             patch &operator=(const patch& cpy);
             void slide(uint64_t slide);
         };
