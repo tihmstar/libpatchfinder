@@ -33,7 +33,7 @@ case $host_os in
 esac
 
 
-CXXFLAGS+=" -std=c++11 -O3"
+CXXFLAGS+=" -std=c++20 -O3"
 CFLAGS+=" -std=c11"
 CXXFLAGS+=" -D EXPECTIONNAME=OFexception"
 
