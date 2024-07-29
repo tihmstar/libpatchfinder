@@ -294,7 +294,7 @@ int main_r(int argc, const char * argv[]) {
                     }
                 }
                 if (!didFind) {
-                    info("\tNo refs found to 0x%08llx",r.name.c_str());
+                    info("\tNo refs found to 0x%08llx",tgt);
                 }
             }
         }
