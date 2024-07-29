@@ -102,6 +102,7 @@ void machopatchfinder64::loadSegments(){
     struct mach_header_64 *mh = (struct mach_header_64*)_buf;
     struct load_command *lcmd = (struct load_command *)(mh + 1);
     bool has_text_exec = false;
+    bool hasEntrypoint = false;
     for (uint32_t i=0; i<mh->ncmds; i++, lcmd = (struct load_command *)((uint8_t *)lcmd + lcmd->cmdsize)) {
         if (lcmd->cmd == LC_SEGMENT_64){
             struct segment_command_64* seg = (struct segment_command_64*)lcmd;
@@ -133,6 +134,7 @@ void machopatchfinder64::loadSegments(){
             } *thread = (struct _tread*)(ptr + 2);
             if (flavor == 6) {
                 _entrypoint = (patchfinder64::patchfinder64::loc_t)(thread->pc);
+                hasEntrypoint = true;
             }
         }
         if (lcmd->cmd == LC_FILESET_ENTRY) {
@@ -168,16 +170,18 @@ void machopatchfinder64::loadSegments(){
     }
     _vmem = new vmem(segments,0,kVMPROTALL);
     
-    try {
-        deref(_entrypoint);
-        info("Detected non-slid kernel.");
-    } catch (tihmstar::out_of_range &e) {
-        reterror("Detected slid kernel. but slid kernel is currently not supported");
-    }
-    try {
-        deref(_entrypoint);
-    } catch (tihmstar::out_of_range &e) {
-        reterror("Error occured when handling kernel entry checks");
+    if (hasEntrypoint) {
+        try {
+            deref(_entrypoint);
+            info("Detected non-slid kernel.");
+        } catch (tihmstar::out_of_range &e) {
+            reterror("Detected slid kernel. but slid kernel is currently not supported");
+        }
+        try {
+            deref(_entrypoint);
+        } catch (tihmstar::out_of_range &e) {
+            reterror("Error occured when handling kernel entry checks");
+        }
     }
     
     info("Inited machopatchfinder64 %s %s",VERSION_COMMIT_COUNT, VERSION_COMMIT_SHA);
