@@ -54,8 +54,8 @@ void cmd_help(){
     printf("      --bref <address>\t\t\t\tPrint branch refs to address\n");
     printf("      --cref <address>\t\t\t\tPrint call refs to address\n");
     printf("      --fof <address>\t\t\t\tPrint fileoffset of virtual address\n");
-    printf("      --stringloc <string>\t\t\t\tPrint addr of null terminated string\n");
-    printf("      --stringloc2 <string>\t\t\t\tPrint addr of not null terminated string\n");
+    printf("      --stringloc <string>\t\t\tPrint addr of null terminated string\n");
+    printf("      --stringloc2 <string>\t\t\tPrint addr of not null terminated string\n");
     printf("      --xref <address>\t\t\t\tPrint literal refs to address\n");
 
 
