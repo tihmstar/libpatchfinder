@@ -15,8 +15,8 @@ AC_SUBST([VERSION_COMMIT_COUNT], ["m4_esyscmd([git rev-list --count HEAD | tr -d
 AC_SUBST([VERSION_COMMIT_SHA], ["m4_esyscmd([git rev-parse HEAD | tr -d '\n'])"])
 
 # Checks for programs.
-AC_PROG_CXX
-AC_PROG_CC
+AC_PROG_CXX([clang++])
+AC_PROG_CC([clang])
 
 # Check for operating system
 AC_MSG_CHECKING([whether we need platform-specific build settings])
