@@ -23,6 +23,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq
 
+          wget https://github.com/apple-oss-distributions/cctools/archive/refs/tags/cctools-973.0.1.tar.gz -O cctools.tar.gz
+          mkdir tmp
+          tar -xvzf cctools.tar.gz -C tmp
+          mv tmp/cctoo* tmp/cctools
+          sed -i 's_#include_//_g' tmp/cctools/include/mach-o/loader.h
+          sed -i -e 's=<stdint.h>=\n#include <stdint.h>\ntypedef int integer_t;\ntypedef integer_t cpu_type_t;\ntypedef integer_t cpu_subtype_t;\ntypedef integer_t cpu_threadtype_t;\ntypedef int vm_prot_t;=g' tmp/cctools/include/mach-o/loader.h
+          cp -r tmp/cctools/include/* /usr/local/include/
+          rm -rf tmp cctools.tar.gz
+
          elif [ "$RUNNER_OS" == "macOS" ]; then
           brew install autoconf automake libtool jq pkg-config
 
