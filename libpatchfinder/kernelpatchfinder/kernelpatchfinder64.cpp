@@ -8,6 +8,7 @@
 
 #include "../../include/libpatchfinder/kernelpatchfinder/kernelpatchfinder64.hpp"
 #include "kernelpatchfinder64_base.hpp"
+#include "kernelpatchfinder64_iOS8.hpp"
 #include "kernelpatchfinder64_iOS9.hpp"
 #include "kernelpatchfinder64_iOS12.hpp"
 #include "kernelpatchfinder64_iOS13.hpp"
@@ -46,6 +47,9 @@ kernelpatchfinder64 *kernelpatchfinder64::make_kernelpatchfinder64(machopatchfin
     }else if (vers > 3200) {
         info("Detected iOS 9 kernel");
         return new kernelpatchfinder64_iOS9(std::move(helper));
+    }else if (vers > 2700) {
+        info("Detected iOS 8 kernel");
+        return new kernelpatchfinder64_iOS8(std::move(helper));
     }
 
     return new kernelpatchfinder64_base(std::move(helper));

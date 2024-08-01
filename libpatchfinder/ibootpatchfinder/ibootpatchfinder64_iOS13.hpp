@@ -18,7 +18,12 @@ namespace tihmstar {
             using ibootpatchfinder64_iOS12::ibootpatchfinder64_iOS12;
                     
             virtual std::vector<patch> get_force_septype_local_patch() override;
-            
+
+            /*
+             replace command with: "memcpy <dst> <src> <size>"
+             */
+            virtual std::vector<patch> replace_cmd_with_memcpy(const char *cmd_handler_str) override;
+
             /*
                 Make iBoot think we're in production mode, even if we demoted
              */
@@ -27,6 +32,8 @@ namespace tihmstar {
             virtual uint32_t get_el1_pagesize() override;
 
             virtual std::vector<patch> get_rw_and_x_mappings_patch_el1() override;
+            
+            virtual std::vector<patch> get_ra1nra1n_patch() override;
         };
     };
 };

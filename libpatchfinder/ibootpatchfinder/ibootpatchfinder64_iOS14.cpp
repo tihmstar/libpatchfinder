@@ -25,6 +25,7 @@ ibootpatchfinder64_iOS14::ibootpatchfinder64_iOS14(const char *filename)
     : ibootpatchfinder64_iOS13(filename)
 {
     _entrypoint = _base = (loc_t)*(uint64_t*)&_buf[iBOOT_BASE_OFFSET];
+    safeDelete(_vmem);
     _vmem = new vmem({{_buf,_bufSize,_base, (vmprot)(kVMPROTREAD | kVMPROTWRITE | kVMPROTEXEC)}});
     debug("iBoot base at=0x%016llx\n", _base);
 }
@@ -33,6 +34,7 @@ ibootpatchfinder64_iOS14::ibootpatchfinder64_iOS14(const void *buffer, size_t bu
     : ibootpatchfinder64_iOS13(buffer,bufSize,takeOwnership)
 {
     _entrypoint = _base = (loc_t)*(uint64_t*)&_buf[iBOOT_BASE_OFFSET];
+    safeDelete(_vmem);
     _vmem = new vmem({{_buf,_bufSize,_base, (vmprot)(kVMPROTREAD | kVMPROTWRITE | kVMPROTEXEC)}});
     debug("iBoot base at=0x%016llx\n", _base);
 }

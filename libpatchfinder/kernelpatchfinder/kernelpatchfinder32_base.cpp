@@ -970,6 +970,6 @@ std::vector<patch> kernelpatchfinder32_base::get_read_bpr_patch_with_params(int 
 
 #pragma mark utils
 void kernelpatchfinder32_base::slide_ptr(class patch *p, uint64_t slide){
-    slide += *(uint32_t*)p->_patch;
-    memcpy((void*)p->_patch, &slide, 4);
+    slide += *(uint32_t*)p->getPatch();
+    memcpy((void*)p->getPatch(), &slide, 4);
 }

@@ -168,6 +168,7 @@ void machopatchfinder64::loadSegments(){
         }
         segments = newsegments;
     }
+    safeDelete(_vmem);
     _vmem = new vmem(segments,0,kVMPROTALL);
     
     if (hasEntrypoint) {

@@ -21,6 +21,7 @@
 namespace tihmstar {
     namespace patchfinder {
         class ibootpatchfinder32_base : public ibootpatchfinder32{
+            void init();
         public:
             ibootpatchfinder32_base(const char *filename);
             ibootpatchfinder32_base(const void *buffer, size_t bufSize, bool takeOwnership = false);

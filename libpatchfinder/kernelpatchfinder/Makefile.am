@@ -17,6 +17,7 @@ libpatchfinder_kernelpatchfinder64_la_CXXFLAGS = $(AM_CXXFLAGS)
 libpatchfinder_kernelpatchfinder64_la_LIBADD = $(AM_LDFLAGS)
 libpatchfinder_kernelpatchfinder64_la_SOURCES =	kernelpatchfinder64.cpp \
                                                 kernelpatchfinder64_base.cpp \
+                                                kernelpatchfinder64_iOS8.cpp \
                                                 kernelpatchfinder64_iOS9.cpp \
                                                 kernelpatchfinder64_iOS12.cpp \
                                                 kernelpatchfinder64_iOS13.cpp \
