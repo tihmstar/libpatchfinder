@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
     env:
       BUILDROOT: "buildroot_${{ matrix.platform }}"
-      GIT_DEPENDENCIES: libgeneral,img3tool,img4tool,libinsn
+      GIT_DEPENDENCIES: img3tool,img4tool,libgeneral,libinsn,libplist
 
     steps:
     - uses: actions/checkout@v4
