@@ -153,7 +153,7 @@ int main_r(int argc, const char * argv[]) {
         std::string static_str;
         if (method.funcname == "static") {
             retassure(method.args.size() == 1, "bad number of args for 'static' call! Needs 1");
-            pp = patch(offsetexporter::ReturnType_std_string,method.args.at(0).data(),method.args.at(0).size(),NULL,false);
+            pp = patch(offsetexporter::ReturnType_std_string,method.args.at(0).data(),method.args.at(0).size(),NULL);
         }else{
             pp = offsetexporter::reflect_kernelpatchfinder(kpf, method.funcname, method.args);
         }
@@ -163,9 +163,9 @@ int main_r(int argc, const char * argv[]) {
         
         if (pp._location == offsetexporter::ReturnType_std_string) {
             //first check for "magic" locations
-            std::string rs = {(char*)pp._patch,(char*)pp._patch+pp._patchSize};
+            std::string rs = {(char*)pp.getPatch(),(char*)pp.getPatch()+pp.getPatchSize()};
             templ = ReplaceAll(templ, method.templaceName, rs);
-        }else if (pp._patchSize == 0){
+        }else if (pp.getPatchSize() == 0){
             //this is a location, not a patch
             uint64_t loc = pp._location;
             char buf[20] = {};
