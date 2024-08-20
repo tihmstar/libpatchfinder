@@ -29,6 +29,8 @@ static struct option longopts[] = {
     { "bof",                required_argument, NULL,  0  },
     { "bref",               required_argument, NULL,  0  },
     { "cref",               required_argument, NULL,  0  },
+    { "derefmem",           required_argument, NULL,  0  },
+    { "derefstr",           required_argument, NULL,  0  },
     { "fof" ,               required_argument, NULL,  0  },
     { "stringloc",          required_argument, NULL,  0  },
     { "stringloc2",         required_argument, NULL,  0  },
@@ -53,6 +55,8 @@ void cmd_help(){
     printf("      --bof <address>\t\t\t\tPrint beginning of function for address\n");
     printf("      --bref <address>\t\t\t\tPrint branch refs to address\n");
     printf("      --cref <address>\t\t\t\tPrint call refs to address\n");
+    printf("      --derefmem <address>,<len>\tDump memory at address\n");
+    printf("      --derefstr <address>\t\t\tDump string at address\n");
     printf("      --fof <address>\t\t\t\tPrint fileoffset of virtual address\n");
     printf("      --stringloc <string>\t\t\tPrint addr of null terminated string\n");
     printf("      --stringloc2 <string>\t\t\tPrint addr of not null terminated string\n");
@@ -83,6 +87,11 @@ struct fstruct {
     std::vector<uint8_t> data;
     std::vector<uint64_t> refs;
     bool isString;
+};
+
+struct mstruct {
+    uint64_t addr;
+    uint64_t size;
 };
 
 MAINFUNCTION
@@ -144,7 +153,8 @@ int main_r(int argc, const char * argv[]) {
         }
     };
     std::vector<fstruct> memLocs;
-    
+    std::vector<mstruct> derefLocs;
+
     while ((opt = getopt_long(argc, (char * const*)argv, "hb:r:", longopts, &optindex)) >= 0) {
         switch (opt) {
             case 0:
@@ -156,6 +166,27 @@ int main_r(int argc, const char * argv[]) {
                     brefs.refs.push_back(strtoll(optarg, NULL, 16));
                 }else if (curopt == "cref") {
                     crefs.refs.push_back(strtoll(optarg, NULL, 16));
+                }else if (curopt == "derefmem" || curopt == "derefstr") {
+                    bool isString = (curopt == "derefstr");
+                    uint64_t addr = strtoull(optarg, NULL, 16);
+                    uint64_t memsize = 0;
+                    if (!isString){
+                        char *smem = strstr(optarg, ",");
+                        if (!smem) {
+                            error("Failed to parse derefmem size");
+                            return -1;
+                        }
+                        smem++;
+                        if (smem[0] == '0' && tolower(smem[1]) == 'x') {
+                            memsize = strtoull(smem, NULL, 16);
+                        }else{
+                            memsize = strtoull(smem, NULL, 10);
+                        }
+                    }
+                    derefLocs.push_back({
+                        .addr = addr,
+                        .size = memsize,
+                    });
                 }else if (curopt == "fof") {
                     fofs.refs.push_back(strtoll(optarg, NULL, 16));
                 }else if (curopt.starts_with("stringloc")) {
@@ -331,6 +362,33 @@ int main_r(int argc, const char * argv[]) {
                 }else{
                     reterror("TODO");
                 }
+            }
+        }
+    }
+    
+    {
+        //deref
+        for (auto dm : derefLocs) {
+            if (dm.size == 0) {
+                printf("Deref string at 0x%08llx: ",dm.addr);
+                try {
+                    const char *ms = (const char*)pf->memoryForLoc(dm.addr);
+                    printf("%s\n",ms);
+                } catch (...) {
+                    printf("[FAILED]\n");
+                }
+            }else{
+                printf("Deref mem at 0x%08llx: ",dm.addr);
+                try {
+                    const uint8_t *mem = (const uint8_t*)pf->memoryForLoc(dm.addr);
+                    for (int i=0; i<dm.size; i++) {
+                        printf("%02x",mem[i]);
+                    }
+                    printf("\n");
+                } catch (...) {
+                    printf("[FAILED]\n");
+                }
+
             }
         }
     }
