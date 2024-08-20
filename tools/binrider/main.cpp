@@ -165,8 +165,8 @@ int main_r(int argc, const char * argv[]) {
                         .data = {str.begin(), str.end()},
                         .isString = true,
                     };
-                    if (!isNullTerminated && mLoc.data.size()) {
-                        mLoc.data.pop_back();
+                    if (isNullTerminated) {
+                        mLoc.data.push_back('\0');
                     }
                     memLocs.push_back(mLoc);
                 }else if (curopt == "xref") {
