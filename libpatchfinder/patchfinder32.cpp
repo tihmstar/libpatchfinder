@@ -80,6 +80,7 @@ patchfinder32::patchfinder32(loc_t base, const char *filename, std::vector<psegm
     }
     _vmemThumb = new vmem_thumb(vsegs);
     _vmemArm = new vmem_arm(vsegs);
+    didConstructSuccessfully = true;
 }
 
 patchfinder32::patchfinder32(loc_t base, const void *buffer, size_t bufSize, bool takeOwnership, std::vector<psegment> segments) :
