@@ -67,9 +67,9 @@ int main(int argc, const char * argv[]) {
 //    addpatch(ibpf->get_force_septype_local_patch());
 //    addpatch(ibpf->get_always_sepfw_booted_patch());
 //    addpatch(ibpf->get_atv4k_enable_uart_patch());
-    addpatch(ibpf->get_ra1nra1n_patch());
+//    addpatch(ibpf->get_ra1nra1n_patch());
 //    addpatch(ibpf->replace_cmd_with_memcpy("reboot"));
-//    addpatch(ibpf->get_boot_arg_patch("-v serial=3 rd=md0"));
+    addpatch(ibpf->get_boot_arg_patch("-v serial=3"));
 //    addpatch(ibpf->get_no_force_dfu_patch());
 //    addpatch(ibpf->get_wtf_pwndfu_patch());
 //    addpatch(ibpf->get_sep_load_raw_patch());

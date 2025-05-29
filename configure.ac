@@ -68,6 +68,12 @@ AC_ARG_WITH([img3tool],
             [with_img3tool=no],
             [with_img3tool=yes])
 
+AC_ARG_WITH([macho],
+            [AS_HELP_STRING([--without-macho],
+            [do not build with macho @<:@default=yes@:>@])],
+            [with_macho=no],
+            [with_macho=yes])
+
 AC_ARG_ENABLE([asan],
             [AS_HELP_STRING([--enable-asan],
             [enable ASAN build(default is no)])],
@@ -159,21 +165,29 @@ AM_CONDITIONAL(WITH_WTFPWNDFU, test x$with_wtfpwndfu == xyes)
 
 # Checks for header files.
 
-ORIG_CFLAGS=${CFLAGS}
-CFLAGS+=" -I${lt_sysroot}/include -I${lt_sysroot}/${prefix}/include -I${lt_sysroot}/${ac_default_prefix}/include"
-AC_CHECK_HEADERS([mach-o/loader.h mach-o/nlist.h], [
-  AC_DEFINE(HAVE_MACHO_O_HEADER, 1, [Define if you have apple cctools headers])
-  AC_SUBST([HAVE_MACHO_O_HEADER], [1])
-  have_macho_header=yes;
-], [
-  AC_SUBST([HAVE_MACHO_O_HEADER], [0])
-  have_macho_header=no;
-], [])
-CFLAGS=${ORIG_CFLAGS}
+if test "x$with_macho" = "xyes"; then
+  ORIG_CFLAGS=${CFLAGS}
+  CFLAGS+=" -I${lt_sysroot}/include -I${lt_sysroot}/${prefix}/include -I${lt_sysroot}/${ac_default_prefix}/include"
+  AC_CHECK_HEADERS([mach-o/loader.h mach-o/nlist.h], [
+    AC_DEFINE(HAVE_MACHO_O_HEADER, 1, [Define if you have apple cctools headers])
+    AC_SUBST([HAVE_MACHO_O_HEADER], [1])
+    have_macho_header=yes;
+  ], [
+    AC_SUBST([HAVE_MACHO_O_HEADER], [0])
+    have_macho_header=no;
+  ], [])
+  CFLAGS=${ORIG_CFLAGS}
 
-if test "x$have_macho_header" != "xyes"; then
-  AC_MSG_ERROR(["Macho-O headers not found, are apple cctools headers installed?"])
+  if test "x$have_macho_header" != "xyes"; then
+    AC_MSG_ERROR(["Macho-O headers not found, are apple cctools headers installed?"])
+  fi
+  with_kernelpatchfinder=yes;
+else
+  echo "*** Note: wtfpwndfu has been disabled ***"
+  with_kernelpatchfinder=no;
 fi
+AM_CONDITIONAL(WITH_MACHO, test x$with_macho == xyes)
+AM_CONDITIONAL(WITH_KERNELPATCHFINDER, test x$with_kernelpatchfinder == xyes)
 
 AC_CHECK_HEADERS([fcntl.h stdint.h stdlib.h string.h unistd.h arpa/inet.h winsock.h])
 
@@ -200,9 +214,10 @@ Configuration for $PACKAGE-$VERSION:
   install prefix ..........: $prefix
   have img4tool ...........: $with_img4tool
   have img3tool ...........: $with_img3tool
-  have mach-o header.......: $have_macho_header
+  have mach-o header.......: $with_macho
   debug build  ............: $debug_build
   asan build  .............: $asan_build
+  with kernelpatchfinder ..: $with_kernelpatchfinder
   with binrider ...........: $with_binrider
   with offsetexporter .....: $with_offsetexporter
   with wtfpwndfu ..........: $with_wtfpwndfu"
