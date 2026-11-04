@@ -16,6 +16,7 @@ namespace tihmstar {
     namespace patchfinder {
         
         class machopatchfinder64 : public patchfinder64{
+            const struct mach_header_64 *_mh;
             std::vector<std::pair<const struct symtab_command *,uint8_t *>> __symtabs;
             
             std::vector<libinsn::vsegment> loadSegmentsForMachHeader(void *mh);
@@ -36,6 +37,7 @@ namespace tihmstar {
             std::string sym_for_addr(loc_t addr);
             loc_t bl_jump_stub_ptr_loc(loc_t bl_insn);
             
+            std::string get_source_version_string();
         };
         
     };

@@ -4,9 +4,9 @@
 //
 //  Created by tihmstar on 19.07.21.
 //
+#include <libgeneral/macros.h>
 
 #include "../../include/libpatchfinder/ibootpatchfinder/ibootpatchfinder.hpp"
-#include <libgeneral/macros.h>
 #include "../../include/libpatchfinder/OFexception.hpp"
 
 using namespace std;
@@ -61,7 +61,15 @@ std::vector<patch> ibootpatchfinder::set_root_ticket_hash(const void *hash, size
     FAIL_UNIMPLEMENTED;
 }
 
+std::vector<patch> ibootpatchfinder::set_boot_manifest_hash(const void *hash, size_t hashSize){
+    FAIL_UNIMPLEMENTED;
+}
+
 std::vector<patch> ibootpatchfinder::get_boot_arg_patch(const char *bootargs){
+    FAIL_UNIMPLEMENTED;
+}
+
+std::vector<patch> ibootpatchfinder::get_honor_nvram_boot_arg_patch(){
     FAIL_UNIMPLEMENTED;
 }
 
@@ -78,6 +86,10 @@ std::vector<patch> ibootpatchfinder::get_cmd_handler_callfunc_patch(const char *
 }
 
 std::vector<patch> ibootpatchfinder::replace_cmd_with_memcpy(const char *cmd_handler_str){
+    FAIL_UNIMPLEMENTED;
+}
+
+std::vector<patch> ibootpatchfinder::replace_cmd_with_ra1nra1n(const char *cmd_handler_str){
     FAIL_UNIMPLEMENTED;
 }
 
@@ -110,6 +122,14 @@ std::vector<patch> ibootpatchfinder::get_change_reboot_to_fsboot_patch(){
 }
 
 ibootpatchfinder::loc64_t ibootpatchfinder::find_iBoot_logstr(uint64_t loghex, int skip, uint64_t shortdec){
+    FAIL_UNIMPLEMENTED;
+}
+
+ibootpatchfinder::loc64_t ibootpatchfinder::find_malloc(){
+    FAIL_UNIMPLEMENTED;
+}
+
+ibootpatchfinder::loc64_t ibootpatchfinder::find_env_get(){
     FAIL_UNIMPLEMENTED;
 }
 
@@ -146,5 +166,9 @@ std::vector<patch> ibootpatchfinder::get_atv4k_enable_uart_patch(){
 }
 
 std::vector<patch> ibootpatchfinder::get_no_force_dfu_patch(){
+    FAIL_UNIMPLEMENTED;
+}
+
+std::vector<patch> ibootpatchfinder::get_no_img3_dumplist_patch(){
     FAIL_UNIMPLEMENTED;
 }

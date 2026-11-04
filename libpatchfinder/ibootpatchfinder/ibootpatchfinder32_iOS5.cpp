@@ -4,6 +4,7 @@
 //
 //  Created by Elcomsoft R&D on 10.01.23.
 //
+#include <libgeneral/macros.h>
 
 #include "ibootpatchfinder32_iOS5.hpp"
 #include "../../include/libpatchfinder/OFexception.hpp"
@@ -67,10 +68,7 @@ std::vector<patch> ibootpatchfinder32_iOS5::set_root_ticket_hash(const void *has
     debug("imm=0x%08x",imm);
     
     uint8_t reg = iter().rt();
-    
-    nopspace -= 8;
-    patches.push_back({imm,&nopspace,sizeof(uint32_t)});
-    
+        
     while (++iter != arm32::ldr) {
         assure(iter() != arm32::pop);
     }
@@ -79,5 +77,22 @@ std::vector<patch> ibootpatchfinder32_iOS5::set_root_ticket_hash(const void *has
     assure(iter().insnsize() == 4);
     
     pushINSN(thumb::new_T3_register_mov(iter().pc(), iter().rt(), iter().rn()));
+
+    while (++iter != arm32::bl) {
+        uint8_t rd = -1;
+        try {
+            rd = iter().rd();
+        } catch (...) {
+            continue;
+        }
+        if (rd != 1) continue;
+        if (iter() == arm32::add && iter().rn() == reg) {
+            nopspace += 8; //correction for -8 down below (in case we don't find this)
+            nopspace -= iter().imm();
+            break;
+        }
+    }
+    nopspace -= 8;
+    patches.push_back({imm,&nopspace,sizeof(uint32_t)});
     return patches;
 }

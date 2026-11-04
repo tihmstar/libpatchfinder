@@ -4,9 +4,9 @@
 //
 //  Created by tihmstar on 19.07.21.
 //
+#include <libgeneral/macros.h>
 
 #include "../../include/libpatchfinder/kernelpatchfinder/kernelpatchfinder.hpp"
-#include <libgeneral/macros.h>
 #include "../../include/libpatchfinder/OFexception.hpp"
 
 using namespace std;
@@ -16,6 +16,10 @@ using namespace libinsn;
 
 kernelpatchfinder::~kernelpatchfinder(){
     //
+}
+
+uint32_t kernelpatchfinder::get_cpid(){
+    FAIL_UNIMPLEMENTED;
 }
 
 const void *kernelpatchfinder::memoryForLoc(loc64_t loc){
@@ -281,6 +285,10 @@ kernelpatchfinder::loc64_t kernelpatchfinder::find_ppl_handler_table(){
     FAIL_UNIMPLEMENTED;
 }
 
+kernelpatchfinder::loc64_t kernelpatchfinder::find_query_trustcache(){
+    FAIL_UNIMPLEMENTED;
+}
+
 kernelpatchfinder::loc64_t kernelpatchfinder::find_IOGeneralMemoryDescriptor_ranges_offset(){
     FAIL_UNIMPLEMENTED;
 }
@@ -334,7 +342,7 @@ std::vector<patch> kernelpatchfinder::get_apfs_snapshot_patch(){
     FAIL_UNIMPLEMENTED;
 }
 
-std::vector<patch> kernelpatchfinder::get_AppleImage3NORAccess_hide_failure_patch(){
+std::vector<patch> kernelpatchfinder::get_AppleImage3NORAccess_sigcheck_patch(){
     FAIL_UNIMPLEMENTED;
 }
 
@@ -411,5 +419,21 @@ std::vector<patch> kernelpatchfinder::get_tfp_anyone_allow_patch(){
 }
 
 std::vector<patch> kernelpatchfinder::get_noemf_patch(){
+    FAIL_UNIMPLEMENTED;
+}
+
+std::vector<patch> kernelpatchfinder::get_allow_sep_boot_skip_stage1(){
+    FAIL_UNIMPLEMENTED;
+}
+
+std::vector<patch> kernelpatchfinder::get_raw_sep_romcmd_patch(){
+    FAIL_UNIMPLEMENTED;
+}
+
+std::vector<patch> kernelpatchfinder::get_sep_is_obliterating_patch(){
+    FAIL_UNIMPLEMENTED;
+}
+
+std::vector<patch> kernelpatchfinder::get_no_nonce_entanglement_patch(){
     FAIL_UNIMPLEMENTED;
 }

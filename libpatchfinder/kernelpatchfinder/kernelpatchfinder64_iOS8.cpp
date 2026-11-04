@@ -4,6 +4,7 @@
 //
 //  Created by erd on 15.05.24.
 //
+#include <libgeneral/macros.h>
 
 #include "kernelpatchfinder64_iOS8.hpp"
 #include <libinsn/insn.hpp>

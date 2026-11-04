@@ -4,11 +4,14 @@
 //
 //  Created by tihmstar on 09.07.21.
 //
+#include <libgeneral/macros.h>
 
 #include "kernelpatchfinder32_base.hpp"
 #include <libinsn/insn.hpp>
 #include "../all32.h"
 #include <string.h>
+
+#include <set>
 
 using namespace std;
 using namespace tihmstar;
@@ -570,6 +573,7 @@ std::vector<patch> kernelpatchfinder32_base::get_amfi_validateCodeDirectoryHashI
     ret0_gadget |= 1;
     debug("ret0_gadget=0x%08x",ret0_gadget);
 
+    loc_t ref = 0;
     {
         loc_t str = 0;
         try {
@@ -579,7 +583,7 @@ std::vector<patch> kernelpatchfinder32_base::get_amfi_validateCodeDirectoryHashI
         }
         debug("str=0x%08x",str);
         
-        loc_t ref = find_literal_ref_thumb(str);
+        ref = find_literal_ref_thumb(str);
         if (!ref) ref = find_literal_ref_arm(str);
         debug("ref=0x%08x",ref);
         retassure(ref, "failed to find ref");
@@ -602,6 +606,38 @@ std::vector<patch> kernelpatchfinder32_base::get_amfi_validateCodeDirectoryHashI
             }
         }
     }
+    
+    auto iter = _vmemArm->getIter(ref);
+    
+    while (++iter != arm32::pop || iter().reglist().pc == 0)
+        ;
+    
+    loc_t eof = iter;
+    debug("eof=0x%08x",eof);
+
+    {
+        for (int i=0; i<4; i++) {
+            auto isn = --iter;
+            uint8_t rd = 99;
+            try {
+                rd = isn.rd();
+            } catch (...) {
+                //
+            }
+            try {
+                rd = isn.rt();
+            } catch (...) {
+                //
+            }
+            if (isn.supertype() == sut_memory && rd == 0) {
+                pushINSN(arm32::arm::new_A1_immediate_mov(isn, 1, 0));
+                goto found;
+            }
+        }
+        reterror("Failed to find funcret load");
+    found:;
+    }
+    
     RETCACHEPATCHES;
 }
 
@@ -774,6 +810,9 @@ std::vector<patch> kernelpatchfinder32_base::get_sandbox_patch(){
 }
 
 std::vector<patch> kernelpatchfinder32_base::get_allow_UID_key_patch(){
+    /*
+        iOS 3.1.3 iPhone1,1
+     */
     UNCACHEPATCHES;
 
     loc_t aes_cbc_str = findstr("AES-CBC", true);
@@ -809,6 +848,11 @@ std::vector<patch> kernelpatchfinder32_base::get_allow_UID_key_patch(){
         }
     }while (++iter != arm32::pop);
     
+    /*
+        Don't disable UID / GID keys
+     */
+    addPatches(get_replace_string_patch("function-disable_keys", "function-keep_my_keys"));
+
     RETCACHEPATCHES;
 }
 
@@ -859,15 +903,81 @@ std::vector<patch> kernelpatchfinder32_base::get_i_can_has_debugger_patch(){
 }
 
 
-std::vector<patch> kernelpatchfinder32_base::get_AppleImage3NORAccess_hide_failure_patch(){
-    std::vector<patch> patches;
+std::vector<patch> kernelpatchfinder32_base::get_AppleImage3NORAccess_sigcheck_patch(){
+    UNCACHEPATCHES;
+    /*
+        iPhone1,1 iOS 2.0
+     
+     Patches ported from: https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/iphone-img3-flasher/spirit2pwn_r3.zip
+     */
     
-    loc_t pos = find_literal_ref_thumb(0x80000061);
-    debug("pos=0x%08x",pos);
+    loc_t str = findstr("Apple Secure Boot Certification Authority", true);
+    debug("str=0x%08x",str);
 
+    loc_t ref = find_literal_ref_arm(str);
+    debug("ref=0x%08x",ref);
     
-    reterror("todo");
-    return patches;
+    loc_t bof = find_bof_arm(ref);
+    debug("bof=0x%08x",bof);
+    
+    auto iter = _vmemArm->getIter(bof);
+    while (++iter != arm32::b)
+        ;
+    
+    loc_t p1 = iter().imm();
+    debug("p1=0x%08x",p1);
+
+    {
+        uint32_t opcode = 0xE3A00000;   //mov r0, #0x0
+        patches.push_back({p1,&opcode,sizeof(opcode)});
+    }
+    
+    loc_t ref_ecid = find_literal_ref_arm('ECID');
+    debug("ref_ecid=0x%08x",ref_ecid);
+    iter = ref_ecid;
+    while (++iter != arm32::bl)
+        ;
+    
+    loc_t img3_val_compare = iter().imm();
+    debug("img3_val_compare=0x%08x",img3_val_compare);
+    {
+        {
+            uint32_t opcode = 0xE3A00000;   //mov r0, #0x0
+            patches.push_back({img3_val_compare,&opcode,sizeof(opcode)});
+        }
+        {
+            uint32_t opcode = 0xE12FFF1E;   //bx lr
+            patches.push_back({img3_val_compare+4,&opcode,sizeof(opcode)});
+        }
+    }
+    
+    loc_t ref_shsh = find_literal_ref_arm('SHSH');
+    debug("ref_shsh=0x%08x",ref_shsh);
+    iter = ref_shsh;
+    while (++iter != arm32::b)
+        ;
+    
+    for (int i=0; i<2; i++) {
+        while (++iter != arm32::b)
+            ;
+        loc_t hit = iter;
+        debug("hit=0x%08x",hit); //nop this
+        {
+            uint32_t opcode = 0xE3A00000;   //mov r0, #0x0
+            patches.push_back({hit,&opcode,sizeof(opcode)});
+        }
+    }
+    
+    while (++iter != arm32::bl)
+        ;
+    loc_t hit_kill = iter;
+    debug("hit_kill=0x%08x",hit_kill);
+    {
+        uint32_t opcode = 0xE3A00001;   //mov r0, #0x1
+        patches.push_back({hit_kill,&opcode,sizeof(opcode)});
+    }
+
+    RETCACHEPATCHES;
 }
 
 std::vector<patch> kernelpatchfinder32_base::get_read_bpr_patch(){
@@ -880,23 +990,16 @@ std::vector<patch> kernelpatchfinder32_base::get_read_bpr_patch(){
     loc_t kmem_free = find_sym("_kmem_free") | 1;
     debug("kmem_free=0x%08x",kmem_free);
     
-    loc_t release_uname_str = findstr("RELEASE_ARM_", false);
-    debug("release_uname_str=0x%08x",release_uname_str);
-    const char *release_uname_str_ptr = (const char*)memoryForLoc(release_uname_str);
-    release_uname_str_ptr+=sizeof("RELEASE_ARM_")-1;
-    while (*release_uname_str_ptr && isalpha(*release_uname_str_ptr)) release_uname_str_ptr++;
-    
     loc_t bpr_addr = 0;
-    int cpid = atoi(release_uname_str_ptr);
-    debug("cpid=0x%d",cpid);
+    int cpid = get_cpid();
     switch (cpid) {
-        case 8004:
-        case 8002: //I'm not sure why, but leave this here :o
+        case 0x8004:
+        case 0x8002: //I'm not sure why, but leave this here :o
             bpr_addr = 0x481d0030/*t8004*/;
             break;
             
         default:
-            reterror("unimplemented CPID=%d",cpid);
+            reterror("unimplemented CPID=0x%08x",cpid);
     }
 
     debug("bpr_addr=0x%08x",bpr_addr);
@@ -913,6 +1016,173 @@ std::vector<patch> kernelpatchfinder32_base::get_noemf_patch(){
     RETCACHEPATCHES;
 }
 
+std::vector<patch> kernelpatchfinder32_base::get_always_get_task_allow_patch(){
+    /*
+        WatchOS 8
+     */
+    UNCACHEPATCHES;
+
+    loc_t str = findstr("mac_vnode_check_signature: MAC hook", false);
+    debug("str=0x%08x",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%08x",ref);
+
+    loc_t bof = find_bof(ref);
+    debug("bof=0x%08x",bof);
+    
+    uint8_t spImm = 0;
+    
+    auto iter = _vmemThumb->getIter(bof);
+    
+    while (++iter != arm32::strd || (iter().rt() != 3 && iter().rt2() != 3))
+        ;
+    spImm = iter().imm();
+    if (iter().rt2() == 3){
+        spImm += 4;
+    }
+    
+    debug("spImm=0x%x",spImm);
+
+    while (++iter != arm32::add || iter().rd() != 13 || iter().rn() != 13) //add sp, sp, xxx
+        ;
+    loc_t eof = iter;
+    debug("eof=0x%08x",eof);
+    
+    loc_t str2 = findstr("mac_vnode_check_signature: MAC hook returned no error", false);
+    debug("str2=0x%08x",str2);
+    
+    loc_t ref2 = find_literal_ref(str2);
+    debug("ref2=0x%08x",ref2);
+
+    retassure(ref2 - eof < 0x200, "assumption failed");
+    
+    pushINSN(arm32::thumb::new_T2_immediate_b(eof, ref2));
+    pushINSN(arm32::thumb::new_T2_immediate_ldr(ref2, spImm, 5));
+    pushINSN(arm32::thumb::new_T1_immediate_ldr(ref2+2, 0, 5, 4));
+    {uint32_t opcode = 0x6480F044; patches.push_back({ref2+4,&opcode,4});} //orr r4, #0x4000000
+    {uint32_t opcode = 0x404F044; patches.push_back({ref2+8,&opcode,4});} //orr r4, #0x4
+    pushINSN(arm32::thumb::new_T1_immediate_str(ref2+0xc, 0, 5, 4));
+    {uint32_t opcode = iter().opcode(); patches.push_back({ref2+0xe,&opcode,iter().insnsize()});} //orig add sp
+    pushINSN(arm32::thumb::new_T2_immediate_b(ref2+ 0xe +iter().insnsize(), iter.pc()+iter().insnsize()));
+
+    RETCACHEPATCHES;
+};
+
+std::vector<patch> kernelpatchfinder32_base::get_ramdisk_detection_patch(){
+    UNCACHEPATCHES;
+    
+    std::set<loc_t> badbofs;
+
+    auto iter = _vmemThumb->getIter();
+    
+    {
+        loc_t bsd_str = findstr("BSD root: %s, major", false);
+        loc_t bsd_str_ref = find_literal_ref(bsd_str);
+        loc_t bsd_str_bof = find_bof(bsd_str_ref);
+        badbofs.insert(bsd_str_bof);
+    }
+
+    {
+        loc_t s = findstr("rootvp not authenticated", false);
+        loc_t r = find_literal_ref(s);
+        loc_t b = find_bof(r);
+        badbofs.insert(b);
+    }
+    
+    while (true) {
+        try {
+            while (++iter != arm32::cmp || iter().subtype() != arm32::st_immediate || iter().imm() != 0x6d)
+                ;
+        } catch (...) {
+            break;
+        }
+        auto iter2 = iter;
+        for (int i=0; i<4; i++) {
+            if (++iter2 == arm32::cmp && iter2().imm() == 0x64 /*&& iter2().rd() == iter().rd()*/) {
+                loc_t ref = iter2;
+                loc_t bof = find_bof(ref);
+                if (badbofs.find(bof) != badbofs.end()) continue;
+                debug("ref=0x%016llx",ref);
+                pushINSN(arm32::thumb::new_T1_immediate_cmp(iter2.pc(), 0x41, iter2().rn()));
+                break;
+            }
+        }
+    }
+    
+    loc_t rd_str = memmem("\x00rd\x00", 4)+1;
+    debug("rd_str=0x%016llx",rd_str);
+    
+    loc_t rd_ref = -4;
+    
+    while ((rd_ref = find_literal_ref(rd_str,0,rd_ref+4))) {
+        debug("rd_ref=0x%016llx",rd_ref);
+        loc_t bof = find_bof(rd_ref);
+        if (badbofs.find(bof) != badbofs.end()) continue;
+
+        auto iter = _vmemThumb->getIter(rd_ref);
+        
+        {
+            reterror("not implemented");
+        }
+    }
+    RETCACHEPATCHES;
+}
+
+std::vector<patch> kernelpatchfinder32_base::get_force_boot_ramdisk_patch(){
+    /*
+        WatchOS 8
+     */
+    UNCACHEPATCHES;
+
+    {
+        //no rootfs auth patch
+        loc_t str = findstr("rootvp not authenticated after mounting", false);
+        debug("str=0x%08x",str);
+
+        loc_t ref = find_literal_ref(str);
+        debug("ref=0x%08x",ref);
+
+        auto iter = _vmemThumb->getIter(ref);
+        
+        loc_t bref = 0;
+        for (int i=0; i<10; i++) {
+            try {
+                bref = find_branch_ref((--iter).pc(), -0x300);
+            } catch (...) {
+                continue;
+            }
+            if (bref) goto found_patch;
+        }
+        
+        reterror("Failed to find function");
+    found_patch:
+        iter = bref;
+        pushINSN(arm32::thumb::new_T1_general_nop(bref));
+        if (iter().insnsize() == 4) {
+            pushINSN(arm32::thumb::new_T1_general_nop(bref + 2));
+        }
+    }
+    
+    {
+        //IOFindBSDRoot patch
+        loc_t str = findstr("rootdev", true);
+        debug("str=0x%08x",str);
+
+        loc_t ref = find_literal_ref(str);
+        debug("ref=0x%08x",ref);
+        
+        auto iter = _vmemThumb->getIter(ref);
+        while (++iter != arm32::bl)
+            ;
+        loc_t tgt = iter;
+        debug("tgt=0x%08x",tgt);
+        char shellcode[] = "\x46\xF2\x6D\x40\x40\xF4\x40\x10\x08\x60\x00\xBF";
+        patches.push_back({(loc_t)tgt,&shellcode,sizeof(shellcode)-1});
+    }
+    RETCACHEPATCHES;
+}
+
 #pragma mark Util
 kernelpatchfinder::loc64_t kernelpatchfinder32_base::find_rootvnode() {
     return find_sym("_rootvnode");
@@ -923,13 +1193,22 @@ kernelpatchfinder::loc64_t kernelpatchfinder32_base::find_rootvnode() {
 std::vector<patch> kernelpatchfinder32_base::get_codesignature_patches(){
     UNCACHEPATCHES;
     
-    loc_t cs_validate_page = find_sym("_cs_validate_page");
-    pushINSN(thumb::new_T2_immediate_ldr(cs_validate_page+2*0, 0, 1));
-    pushINSN(thumb::new_T1_immediate_movs(cs_validate_page+2*1, 0, 0));
-    pushINSN(thumb::new_T1_immediate_str(cs_validate_page+2*2, 0, 1, 0));
-    pushINSN(thumb::new_T1_immediate_movs(cs_validate_page+2*3, 1, 0));
-    pushINSN(thumb::new_T1_general_bx(cs_validate_page+2*4, 14));
+    {
+        loc_t cs_validate_page = find_sym("_cs_validate_page");
+        pushINSN(thumb::new_T2_immediate_ldr(cs_validate_page+2*0, 0, 1));
+        pushINSN(thumb::new_T1_immediate_movs(cs_validate_page+2*1, 0, 0));
+        pushINSN(thumb::new_T1_immediate_str(cs_validate_page+2*2, 0, 1, 0));
+        pushINSN(thumb::new_T1_immediate_movs(cs_validate_page+2*3, 1, 0));
+        pushINSN(thumb::new_T1_general_bx(cs_validate_page+2*4, 14));
+    }
     
+    {
+        loc_t cs_invalid_page = find_sym("_cs_invalid_page");
+        pushINSN(thumb::new_T1_immediate_movs(cs_invalid_page+2*0, 0, 0));
+        pushINSN(thumb::new_T1_general_bx(cs_invalid_page+2*1, 14));
+    }
+    
+    addPatches(get_amfi_validateCodeDirectoryHashInDaemon_patch());
     RETCACHEPATCHES;
 }
 

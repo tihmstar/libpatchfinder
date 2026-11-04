@@ -40,6 +40,8 @@ namespace tihmstar {
             virtual std::vector<patch> get_always_sepfw_booted_patch() override;
             
             virtual std::vector<patch> get_tz0_lock_patch() override;
+
+            virtual std::vector<patch> get_ra1nra1n_patch() override;
         };
     };
 };

@@ -4,9 +4,11 @@
 //
 //  Created by tihmstar on 07.07.21.
 //
+#include <libgeneral/macros.h>
 
 #include "../../include/libpatchfinder/ibootpatchfinder/ibootpatchfinder32.hpp"
 #include "ibootpatchfinder32_base.hpp"
+#include "ibootpatchfinder32_iOS3.hpp"
 #include "ibootpatchfinder32_iOS4.hpp"
 #include "ibootpatchfinder32_iOS5.hpp"
 #include "ibootpatchfinder32_iOS8.hpp"
@@ -23,38 +25,33 @@ static void *memmem(const void *haystack_start, size_t haystack_len, const void 
     const unsigned char *h = NULL;
     const unsigned char *n = NULL;
     size_t x = needle_len;
-    
+
     /* The first occurrence of the empty string is deemed to occur at
-     the beginning of the string.  */
+    the beginning of the string.  */
     if (needle_len == 0) {
         return (void *)haystack_start;
     }
-    
+
     /* Sanity check, otherwise the loop might search through the whole
-     memory.  */
+        memory.  */
     if (haystack_len < needle_len) {
         return NULL;
     }
-    
+
     for (; haystack_len--; haystack++) {
         x = needle_len;
         n = needle;
         h = haystack;
-        
+
         if (haystack_len < needle_len)
             break;
-        
-        if ((*haystack != *needle) || (*haystack + needle_len != *needle + needle_len))
+
+        if ((haystack[0] != needle[0]) || (haystack[needle_len-1] != needle[needle_len-1]))
             continue;
-        
-        for (; x; h++, n++) {
-            x--;
-            
-            if (*h != *n)
-                break;
-            
-            if (x == 0)
-                return (void *)haystack;
+
+        for (; x--; h++, n++) {
+            if (*h != *n) break;
+            if (x == 0) return (void *)haystack;
         }
     }
     return NULL;
@@ -137,6 +134,9 @@ ibootpatchfinder32 *ibootpatchfinder32::make_ibootpatchfinder32(const void *buff
     } else if (vers >= 820) {
         info("iOS 4 iBoot detected!");
         return new ibootpatchfinder32_iOS4(buf,bufSize,takeOwnership);
+    } else if (vers >= 500) {
+        info("iOS 3 iBoot detected!");
+        return new ibootpatchfinder32_iOS3(buf,bufSize,takeOwnership);
     }
 
     return new ibootpatchfinder32_base(buf,bufSize,takeOwnership);

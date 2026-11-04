@@ -5,8 +5,8 @@
 //  Created by tihmstar on 10.01.18.
 //  Copyright © 2018 tihmstar. All rights reserved.
 //
-
 #include <libgeneral/macros.h>
+
 #include "all64.h"
 #include "../include/libpatchfinder/patchfinder64.hpp"
 #include "StableHash.h"
@@ -160,7 +160,44 @@ patchfinder64::loc_t patchfinder64::find_bof(loc_t pos, bool mayLackPrologue){
         //
     }
     
-    return functop;
+    //cursed compiler outlining AppleTV11,1 iOS 26.6
+    /*
+         0x000000019c0ea358         pacibsp
+         0x000000019c0ea35c         mov        x4, lr
+         0x000000019c0ea360         bl         prologue_helper2
+         0x000000019c0ea364         mov        lr, x4
+         0x000000019c0ea368         stp        fp, lr, [sp, #0xb0] <--- we are here
+         0x000000019c0ea36c         add        fp, sp, #0xb0
+     */
+    loc_t ret = functop;
+    try {
+        for (int i=0; i<5; i++){
+            auto isn = --functop;
+            if (isn == insn::pacibsp) return functop; //we are done
+            retassure(isn != insn::ret, "we went too far");
+            if (isn == insn::bl) {
+                /*
+                    If we encouter a bl, we need to make sure this is a prologue not a previous function stack_check fail or stg
+                 */
+                auto iter2 = _vmem->getIter(isn.imm());
+                --iter2;
+                for (int j = 0; j<10; j++) {
+                    auto isn2 = ++iter2;
+                    if (isn2 == insn::sub && isn2.rd() == 0x1f) continue; //sub on stack is ok
+                    if ((isn2 == insn::stp || isn2 == insn::str) && isn2.rn() == 0x1f) continue; //store to stack is ok
+                    if (isn2 == insn::ret) goto is_prologue_helper; //eof. guess we're good
+
+                    break; //something unexpected
+                }
+                reterror("not a prologue helper");
+                is_prologue_helper:;
+            }
+        }
+    } catch (...) {
+        //
+    }
+    
+    return ret;
 }
 
 patchfinder64::loc_t patchfinder64::find_bof_with_sting_ref(const char *str, bool hasNullTerminator){
@@ -214,7 +251,7 @@ uint64_t patchfinder64::find_register_value(loc_t where, int reg, loc_t startAdd
                 value[insn.rd()] = value[insn.rm()];
                 break;
             case insn::orr:
-                if (insn.subtype() == libinsn::arm64::insn::st_general) {
+                if (insn.subtype() == libinsn::arm64::insn::st_immediate) {
                     value[insn.rd()] = ((insn.rn() == 0x1f) ? /*wzr*/0 : value[insn.rn()]) + insn.imm();
                 }
                 break;
@@ -226,37 +263,74 @@ uint64_t patchfinder64::find_register_value(loc_t where, int reg, loc_t startAdd
 }
 
 patchfinder64::loc_t patchfinder64::find_literal_ref(loc_t pos, int ignoreTimes, loc_t startPos){
-    auto adrp = _vmem->getIter(startPos);
+    auto siter = _vmem->getIter(startPos);
     
     try {
-        for (;;++adrp){
-            if (adrp() == insn::adr) {
-                if (adrp().imm() == (uint64_t)pos){
+        for (;;++siter){
+            auto sisn = siter();
+            if (sisn == insn::adr) {
+                if (sisn.imm() == (uint64_t)pos){
                     if (ignoreTimes) {
                         ignoreTimes--;
                         continue;
                     }
-                    return (loc_t)adrp.pc();
+                    return (loc_t)sisn.pc();
                 }
-            }
-            
-            if (adrp() == insn::adrp) {
+            }else if (sisn == insn::orr){
+                if (sisn.subtype() == insn::st_immediate && sisn.rn() == 31 /*xzr*/) {
+                    uint8_t rd = 0xff;
+                    uint64_t imm = 0;
+                    rd = sisn.rd();
+                    try {
+                        imm = sisn.imm();
+                    } catch (...) {
+                        continue;
+                    }
+
+                    vmem iter = _vmem->getIter(siter);
+                                    
+                    for (int i=0; i<10; i++) {
+                        ++iter;
+                    retry1:
+                        if (iter() == insn::movk && rd == iter().rd()){
+                            imm |= iter().imm();
+                            if (imm == (int64_t)pos){
+                                if (ignoreTimes) {
+                                    ignoreTimes--;
+                                    break;
+                                }
+                                return (loc_t)iter.pc();
+                            }
+                        }else if (iter() == insn::movz && rd == iter().rd()){
+                            break;
+                        } else if (iter() == insn::b){
+                            if (iter.pc() == iter().imm()) break; //found b .
+                            try {
+                                iter = iter().imm(); //this can go out of memory and fail, ignore failure
+                            } catch (...) {
+                                break;
+                            }
+                            goto retry1;
+                        }
+                    }
+                }
+            } else if (sisn == insn::adrp) {
                 uint8_t rd = 0xff;
                 uint64_t imm = 0;
-                rd = adrp().rd();
-                imm = adrp().imm();
+                rd = sisn.rd();
+                imm = sisn.imm();
                 
-                vmem iter = _vmem->getIter(adrp);
+                vmem iter2 = _vmem->getIter(sisn);
                 
                 for (int i=0; i<10; i++) {
-                    auto isn = ++iter;
+                    auto isn = ++iter2;
                     if (isn == insn::add && rd == isn.rn()){
                         if (imm + isn.imm() == (int64_t)pos){
                             if (ignoreTimes) {
                                 ignoreTimes--;
                                 break;
                             }
-                            return (loc_t)iter.pc();
+                            return (loc_t)iter2.pc();
                         }
                     }else if (isn.supertype() == insn::sut_memory && isn.subtype() == insn::st_immediate && rd == isn.rn()){
                         if (imm + isn.imm() == (int64_t)pos){
@@ -264,54 +338,55 @@ patchfinder64::loc_t patchfinder64::find_literal_ref(loc_t pos, int ignoreTimes,
                                 ignoreTimes--;
                                 break;
                             }
-                            return (loc_t)iter.pc();
+                            return (loc_t)iter2.pc();
                         }
                     }else if ((isn == insn::adr || isn == insn::adrp) && isn.rd() == rd){
                         //rd gets overwritten
                         break;
                     }
                 }
-            }
-            
-            if (adrp() == insn::movz) {
+            } else if (sisn == insn::movz) {
                 uint8_t rd = 0xff;
                 uint64_t imm = 0;
-                rd = adrp().rd();
-                imm = adrp().imm();
+                rd = sisn.rd();
+                imm = sisn.imm();
                 
                 if (imm == pos) {
                     if (ignoreTimes) {
                         ignoreTimes--;
                         continue;
                     }
-                    return (loc_t)adrp.pc();
+                    return (loc_t)sisn.pc();
                 }
                 
-                vmem iter = _vmem->getIter(adrp);
-                                
-                for (int i=0; i<10; i++) {
-                    ++iter;
-                retry:
-                    if (iter() == insn::movk && rd == iter().rd()){
-                        imm |= iter().imm();
-                        if (imm == (int64_t)pos){
-                            if (ignoreTimes) {
-                                ignoreTimes--;
+                vmem iter = _vmem->getIter(siter);
+                try {
+                    for (int i=0; i<10; i++) {
+                        ++iter;
+                    retry:
+                        if (iter() == insn::movk && rd == iter().rd()){
+                            imm |= iter().imm();
+                            if (imm == (int64_t)pos){
+                                if (ignoreTimes) {
+                                    ignoreTimes--;
+                                    break;
+                                }
+                                return (loc_t)iter.pc();
+                            }
+                        }else if (iter() == insn::movz && rd == iter().rd()){
+                            break;
+                        } else if (iter() == insn::b){
+                            if (iter.pc() == iter().imm()) break; //found b .
+                            try {
+                                iter = iter().imm(); //this can go out of memory and fail, ignore failure
+                            } catch (...) {
                                 break;
                             }
-                            return (loc_t)iter.pc();
+                            goto retry;
                         }
-                    }else if (iter() == insn::movz && rd == iter().rd()){
-                        break;
-                    } else if (iter() == insn::b){
-                        if (iter.pc() == iter().imm()) break; //found b .
-                        try {
-                            iter = iter().imm(); //this can go out of memory and fail, ignore failure
-                        } catch (...) {
-                            break;
-                        }
-                        goto retry;
                     }
+                } catch (tihmstar::out_of_range &e) {
+                    //
                 }
             }
         }
@@ -407,13 +482,15 @@ patchfinder64::loc_t patchfinder64::findnops(uint16_t nopCnt, bool useNops, uint
         
         bool isrunning = false;
         loc_t start = 0;
+        uint32_t curOP = 0;
         
         try {
             while (true) {
                 uint32_t op = (++exec_mem).opcode();
-                if (op == nopOpcode || op == 0) {
+                if ((isrunning && op == curOP) || (!isrunning && (op == nopOpcode || op == 0))) {
                     if (!isrunning) {
                         isrunning = true;
+                        curOP = op;
                         start = exec_mem.pc();
                     }
                 }else{
@@ -439,6 +516,7 @@ patchfinder64::loc_t patchfinder64::findnops(uint16_t nopCnt, bool useNops, uint
         auto np = _unusedNops.at(i);
         if (tgtSize <= np.second) {
             if (besti == -1 || np.second < bestSize) {
+                if ((uint32_t)deref(np.first) != nopOpcode) continue;
                 besti = i;
                 bestSize = np.second;
             }

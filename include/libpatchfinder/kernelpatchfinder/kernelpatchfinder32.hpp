@@ -25,6 +25,7 @@ namespace tihmstar {
             virtual ~kernelpatchfinder32();
             
 
+            virtual uint32_t get_cpid() override;
             virtual std::string get_xnu_kernel_version_number_string() override;
             virtual std::string get_kernel_version_string() override;
             virtual const void *memoryForLoc(loc64_t loc) override;

@@ -4,9 +4,9 @@
 //
 //  Created by tihmstar on 20.07.21.
 //
+#include <libgeneral/macros.h>
 
 #include "ibootpatchfinder32_iOS13.hpp"
-#include <libgeneral/macros.h>
 
 #include "../../include/libpatchfinder/OFexception.hpp"
 #include "../all32.h"

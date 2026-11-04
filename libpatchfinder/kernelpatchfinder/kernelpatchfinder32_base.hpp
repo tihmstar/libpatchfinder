@@ -49,10 +49,9 @@ namespace patchfinder {
         virtual std::vector<patch> get_i_can_has_debugger_patch() override;
 
         /*
-            calls to AppleImage3NORAccessUserClient always report success to userspace, even if they failed internally
+            calls to AppleImage3NORAccessUserClient doesn't check img3 signature anymore
          */
-        virtual std::vector<patch> get_AppleImage3NORAccess_hide_failure_patch() override;
-        
+        virtual std::vector<patch> get_AppleImage3NORAccess_sigcheck_patch() override;
         /*
          Allows reading BPR status with syscall 213
          */
@@ -60,6 +59,12 @@ namespace patchfinder {
         virtual std::vector<patch> get_read_bpr_patch() override;
         
         virtual std::vector<patch> get_noemf_patch() override;
+
+        virtual std::vector<patch> get_always_get_task_allow_patch() override;
+
+        virtual std::vector<patch> get_ramdisk_detection_patch() override;
+        
+        virtual std::vector<patch> get_force_boot_ramdisk_patch() override;
 
 #pragma mark Util
         virtual loc64_t find_rootvnode() override;

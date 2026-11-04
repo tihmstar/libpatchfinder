@@ -4,8 +4,8 @@
 //
 //  Created by tihmstar on 06.07.21.
 //
-
 #include <libgeneral/macros.h>
+
 #include <libgeneral/Mem.hpp>
 
 #include <stdio.h>
@@ -87,6 +87,7 @@ void machopatchfinder32::loadSegments(){
     struct mach_header *mh = (struct mach_header*)_buf;
     struct load_command *lcmd = (struct load_command *)(mh + 1);
     bool has_text_exec = false;
+    bool didSetBase = false;
     for (uint32_t i=0; i<mh->ncmds; i++, lcmd = (struct load_command *)((uint8_t *)lcmd + lcmd->cmdsize)) {
         if (lcmd->cmd == LC_SEGMENT){
             struct segment_command* seg = (struct segment_command*)lcmd;
@@ -101,8 +102,9 @@ void machopatchfinder32::loadSegments(){
             bool isWeirdPrelinkText = (strcmp(seg->segname, "__PRELINK_TEXT") == 0 && !(seg->maxprot & kVMPROTEXEC ));
             if (strcmp(seg->segname, "__TEXT_EXEC") == 0) has_text_exec = true;
             segments.push_back({_buf+seg->fileoff,seg->filesize, (loc_t)seg->vmaddr, (vmprot)(isWeirdPrelinkText ? (kVMPROTEXEC | kVMPROTREAD) : seg->maxprot), seg->segname});
-            if (i==0){
-                _base = (loc_t)seg->vmaddr; //first segment is base. Is this correct??
+            if (!didSetBase){
+                didSetBase = true;
+                _base = (loc_t)seg->vmaddr;
             }
         }
         if (lcmd->cmd == LC_UNIXTHREAD) {
@@ -118,6 +120,10 @@ void machopatchfinder32::loadSegments(){
             if (flavor == 1) {
                 _entrypoint = (patchfinder32::loc_t)(thread->pc);
             }
+        }
+        if (lcmd->cmd == LC_MAIN) {
+            struct entry_point_command *entry = (struct entry_point_command*)lcmd;
+            _entrypoint = entry->entryoff + _base;
         }
     }
     if (has_text_exec) {

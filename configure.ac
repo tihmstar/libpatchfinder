@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([liboffsetfinder64], m4_esyscmd([git rev-list --count HEAD | tr -d '\n']), [tihmstar@gmail.com])
+AC_INIT([libpatchfinder], m4_esyscmd([git rev-list --count HEAD | tr -d '\n']), [tihmstar@gmail.com])
 
 AC_CANONICAL_SYSTEM
 AC_CANONICAL_HOST
@@ -36,12 +36,13 @@ esac
 CXXFLAGS+=" -std=c++20 -O3"
 CFLAGS+=" -std=c11"
 CXXFLAGS+=" -D EXPECTIONNAME=OFexception"
+CXXFLAGS+=" -D__LP64__" # Needed for correct usage of mach-o headers
 
 # Checks for libraries.
 IMG4TOOL_REQUIRES_STR="libimg4tool >= 198"
 IMG3TOOL_REQUIRES_STR="libimg3tool >= 2"
 LIBGENERAL_REQUIRES_STR="libgeneral >= 65"
-LIBINSN_REQUIRES_STR="libinsn >= 38"
+LIBINSN_REQUIRES_STR="libinsn >= 173"
 PKG_CHECK_MODULES(libimg4tool, $IMG4TOOL_REQUIRES_STR, have_img4tool=yes, have_img4tool=no)
 PKG_CHECK_MODULES(libimg3tool, $IMG3TOOL_REQUIRES_STR, have_img3tool=yes, have_img3tool=no)
 PKG_CHECK_MODULES(libgeneral, $LIBGENERAL_REQUIRES_STR)
@@ -167,7 +168,7 @@ AM_CONDITIONAL(WITH_WTFPWNDFU, test x$with_wtfpwndfu == xyes)
 
 if test "x$with_macho" = "xyes"; then
   ORIG_CFLAGS=${CFLAGS}
-  CFLAGS+=" -I${lt_sysroot}/include -I${lt_sysroot}/${prefix}/include -I${lt_sysroot}/${ac_default_prefix}/include"
+  CFLAGS+=" -I${lt_sysroot}/include -I${lt_sysroot}/${prefix}/include -I${lt_sysroot}/${ac_default_prefix}/include -I${lt_sysroot}${prefix}/include -I${lt_sysroot}${ac_default_prefix}/include"
   AC_CHECK_HEADERS([mach-o/loader.h mach-o/nlist.h], [
     AC_DEFINE(HAVE_MACHO_O_HEADER, 1, [Define if you have apple cctools headers])
     AC_SUBST([HAVE_MACHO_O_HEADER], [1])
@@ -182,12 +183,16 @@ if test "x$with_macho" = "xyes"; then
     AC_MSG_ERROR(["Macho-O headers not found, are apple cctools headers installed?"])
   fi
   with_kernelpatchfinder=yes;
+  with_txmpatchfinder=yes;
 else
-  echo "*** Note: wtfpwndfu has been disabled ***"
+  echo "*** Note: kernelpatchfinder has been disabled ***"
   with_kernelpatchfinder=no;
+  echo "*** Note: txmpatchfinder has been disabled ***"
+  with_txmpatchfinder=no;
 fi
 AM_CONDITIONAL(WITH_MACHO, test x$with_macho == xyes)
 AM_CONDITIONAL(WITH_KERNELPATCHFINDER, test x$with_kernelpatchfinder == xyes)
+AM_CONDITIONAL(WITH_TXMPATCHFINDER, test x$with_txmpatchfinder == xyes)
 
 AC_CHECK_HEADERS([fcntl.h stdint.h stdlib.h string.h unistd.h arpa/inet.h winsock.h])
 
@@ -196,11 +201,15 @@ AC_CHECK_FUNCS([memmem])
 
 LT_INIT
 
+# check for large file support
+AC_SYS_LARGEFILE
+
 AC_CONFIG_FILES([Makefile
                  include/Makefile
                  libpatchfinder/Makefile
                  libpatchfinder/ibootpatchfinder/Makefile
                  libpatchfinder/kernelpatchfinder/Makefile
+                 libpatchfinder/txmpatchfinder/Makefile
                  tools/Makefile
                  tools/binrider/Makefile
                  tools/offsetexporter/Makefile
@@ -218,6 +227,7 @@ Configuration for $PACKAGE-$VERSION:
   debug build  ............: $debug_build
   asan build  .............: $asan_build
   with kernelpatchfinder ..: $with_kernelpatchfinder
+  with txmpatchfinder .....: $with_txmpatchfinder
   with binrider ...........: $with_binrider
   with offsetexporter .....: $with_offsetexporter
   with wtfpwndfu ..........: $with_wtfpwndfu"

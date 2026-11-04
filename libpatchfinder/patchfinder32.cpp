@@ -19,6 +19,10 @@ using namespace tihmstar;
 using namespace patchfinder;
 using namespace libinsn;
 
+#ifdef XCODE
+#define DEBUG_ENCODING
+#endif
+
 #pragma mark constructor/destructor
 
 patchfinder32::patchfinder32(bool freeBuf) :
@@ -225,11 +229,11 @@ uint32_t patchfinder32::find_register_value_thumb(loc_t where, uint8_t reg, loc_
         functop = startAddr;
     }
     
-    uint32_t value[15] = {0};
+    uint32_t value[16] = {0};
     
     for (;(loc_t)functop.pc() < where;++functop) {
         auto insn = functop();
-#ifndef XCODE
+#ifndef DEBUG_ENCODING
         try{
 #endif
             switch (insn.type()) {
@@ -274,7 +278,7 @@ uint32_t patchfinder32::find_register_value_thumb(loc_t where, uint8_t reg, loc_
                 default:
                     break;
             }
-#ifndef XCODE
+#ifndef DEBUG_ENCODING
         }catch(tihmstar::exception &e){
 #ifdef DEBUG
             e.dump();
@@ -359,7 +363,7 @@ patchfinder32::loc_t patchfinder32::find_literal_ref_thumb(loc_t pos, int ignore
                     if (val != -1 && val + insn.imm() == pos){
                         if (! ignoreTimes--) return iter;
                     }
-                    refval[insn.rt()] = -1;
+                    refval[insn.rt()] = 0;
                 } catch (...) {
                     //
                 }
@@ -381,6 +385,8 @@ patchfinder32::loc_t patchfinder32::find_literal_ref_thumb(loc_t pos, int ignore
                 if (refval[mov_reg] == pos) {
                     if (! ignoreTimes--) return iter;
                 }
+            }else if (insn == arm32::bl){
+                refval[0] = 0;
             }
         }
     } catch (tihmstar::out_of_range &e) {

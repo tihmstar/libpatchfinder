@@ -4,9 +4,9 @@
 //
 //  Created by tihmstar on 08.06.22.
 //
+#include <libgeneral/macros.h>
 
 #include "ibootpatchfinder64_iOS16.hpp"
-#include <libgeneral/macros.h>
 #include "../all64.h"
 #include <string.h>
 #include <set>
@@ -34,7 +34,7 @@ std::vector<patch> ibootpatchfinder64_iOS16::get_skip_set_bpr_patch(){
 0x00000001800cf130         b          call_to_store
      */
     
-    std::set<uint64_t> bpr_regs = {0x2102d0030/*t8010*/, 0x2352d0030/*t8015*/, 0x23d2dc030/*t8110*/};
+    std::set<uint64_t> bpr_regs = {0x2102d0030/*t8010*/, 0x2352d0030/*t8015*/, 0x23d2d0030/*t8030,t8020,t8006*/, 0x23d2dc030/*t8110*/};
     
     vmem iter = _vmem->getIter();
     try {

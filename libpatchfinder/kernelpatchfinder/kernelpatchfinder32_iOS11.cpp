@@ -4,6 +4,7 @@
 //
 //  Created by tihmstar on 21.07.21.
 //
+#include <libgeneral/macros.h>
 
 #include "kernelpatchfinder32_iOS11.hpp"
 #include <libinsn/insn.hpp>
@@ -69,7 +70,7 @@ std::vector<patch> kernelpatchfinder32_iOS11::get_mount_patch(){
     //patch MNT_RDONLY check
     debug("patching MNT_RDONLY check ...");
     if (iter().insnsize() == 2) {
-        pushINSN(arm32::thumb::new_T2_immediate_b(iter, pos));
+        pushINSN(arm32::thumb::new_T2_immediate_b(iter, pos+4));
     }else{
         reterror("unimplemented");
     }

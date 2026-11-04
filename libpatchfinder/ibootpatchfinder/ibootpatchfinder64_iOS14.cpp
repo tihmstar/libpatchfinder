@@ -5,8 +5,8 @@
 //  Created by tihmstar on 28.07.20.
 //  Copyright © 2020 tihmstar. All rights reserved.
 //
-
 #include <libgeneral/macros.h>
+
 #include "ibootpatchfinder64_iOS14.hpp"
 #include "../all64.h"
 #include <string.h>
@@ -60,13 +60,32 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_sigcheck_img4_patch(){
      0x00000001800312fc         b.ne       loc_180031a88
      */
     
-    while (!findpos) {
-        if (++iter != insn::cmp) continue;
-        
-        if (iter().imm() != 1) continue;
-        
-        if ((++iter).supertype() != insn::sut_branch_imm) continue;
+    /*
+        iOS 14.5 iPhone11,2
+     0x000000019c066628         ldrb       w8, [x8, #0x220]
+     0x000000019c06662c         cbz        w8, loc_19c066738
 
+     0x000000019c066630         ldr        x8, [x22, #0x10]
+     0x000000019c066634         cmp        x8, #0x4
+     0x000000019c066638         b.eq       loc_19c0666d4
+
+     0x000000019c06663c         cmp        x8, #0x2
+     0x000000019c066640         b.eq       loc_19c066690
+
+     0x000000019c066644         cmp        x8, #0x1
+     0x000000019c066648         b.ne       loc_19c0667ac
+     */
+    
+    while (!findpos) {
+        if (++iter == insn::cmp) {
+            if (iter().imm() != 1) continue;
+            if ((++iter).supertype() != insn::sut_branch_imm) continue;
+        }else if (iter() == insn::cbz){
+            //
+        }else{
+            continue;
+        }
+        
         if (++iter != insn::ldr || iter().imm() != 0x10) continue;
 
         if (++iter != insn::cmp || iter().imm() != 4) continue;
@@ -219,6 +238,17 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_boot_arg_patch(const char *boot
         }else{
             reterror("Bad reference insn");
         }
+        uint8_t rd = iter().rd();
+        ++iter;
+        if (++iter == insn::add && iter().rn() == rd) {
+            /*
+                Hello firebloom :)
+                The size of the string is now also checked :o
+                iOS 14.5 iPhone11,2
+             */
+            retassure(iter().imm() == 1, "The old string len should have been 1, what's going on?");
+            pushINSN(insn::new_immediate_add(iter, strlen(bootargs)+1, iter().rn(), iter().rd()));
+        }
     }
 
     debug("Applying custom boot-args \"%s\"\n", bootargs);
@@ -250,7 +280,15 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_sep_load_raw_patch(bool localSE
         continue;
     pass_filter1:
         uint64_t x1 = find_register_value(iter, 1, iter.pc()-0x20);
-        if (x1 != 'sepi') continue;
+        if (x1 != 'sepi') {
+            /*
+                A12 firebloom ._.
+             */
+            uint64_t x4 = find_register_value(iter, 4, iter.pc()-0x20);
+            if (x4 != 'sepi') {
+                continue;
+            }
+        }
         
         loc_t bof = find_bof(iter);
         debug("bof=0x%016llx",bof);
@@ -292,15 +330,17 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_sep_load_raw_patch(bool localSE
                 }
                 {   //check for proxy
                     iter3 = iter2().imm();
-                    for (int i=0; i<5; i++) {
+                    for (int i=0; i<10; i++) {
                         if (++iter3 == insn::b) break;
                     }
                     if (iter3() == insn::b){
-                        for (int i=0; i<5; i++) {
-                            if (--iter3 == insn::add && iter3().rd() == 2 && iter3().rn() == 31) {
+                        for (int i=0; i<10; i++) {
+                            if (--iter3 == insn::add && (iter3().rd() == 2 || iter3().rd() == 5) && iter3().rn() == 31) {
                                 debug("fs_load_file is a proxy!");
                                 fs_load_file_func_is_proxy = true;
                                 goto found_fs_load_file;
+                            }else if (iter3() == insn::b){
+                                break;
                             }
                         }
                     }
@@ -373,7 +413,7 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_skip_set_bpr_patch(){
 0x00000001800c8c90         ret
      */
     
-    std::set<uint64_t> bpr_regs = {0x2102d0030/*t8010*/, 0x2352d0030/*t8015*/, 0x23d2dc030/*t8110*/};
+    std::set<uint64_t> bpr_regs = {0x2102d0030/*t8010*/, 0x2352d0030/*t8015*/, 0x23d2d0030/*t8030,t8020,t8006*/, 0x23d2dc030/*t8110*/};
     
     vmem iter = _vmem->getIter();
     try {
@@ -456,7 +496,9 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_always_sepfw_booted_patch(){
     debug("ref=0x%016llx",ref);
     
     vmem iter = _vmem->getIter(ref);
-    --iter;
+    
+    if (--iter == insn::adrp)
+        --iter;
     
     retassure(iter().supertype() == insn::sut_branch_imm, "not implemented other case");
     
@@ -467,7 +509,7 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_always_sepfw_booted_patch(){
 
 std::vector<patch> ibootpatchfinder64_iOS14::get_tz0_lock_patch(){
     UNCACHEPATCHES;
-
+    
     vmem iter = _vmem->getIter();
     
     /* iPhone 7 iOS_15.3.1 wtf???
@@ -526,6 +568,39 @@ std::vector<patch> ibootpatchfinder64_iOS14::get_tz0_lock_patch(){
         //will fail eventually. this is fine
     }
     
+    if (!patches.size()) {
+        debug("Failed to find iPhone 7 style patches, performing fallback to old patchfinder");
+        try {
+            addPatches(ibootpatchfinder64_iOS13::get_tz0_lock_patch());
+        } catch (...) {
+            //
+        }
+    }
+    
     retassure(patches.size(), "Failed to find patches");
+    RETCACHEPATCHES;
+}
+
+std::vector<patch> ibootpatchfinder64_iOS14::get_ra1nra1n_patch(){
+    UNCACHEPATCHES;
+
+    addPatches(ibootpatchfinder64_iOS7::get_ra1nra1n_patch());
+    
+    /*
+        disable dc zva in trampoline (i.e. don't clear iBoot)
+     */
+    loc_t findloc = memmem("\x12\x00\x80\xd2", 4);
+    debug("findloc=0x%016llx",findloc);
+
+    auto iter = _vmem->getIter(findloc);
+    int dcinsns = 0;
+    while (--iter != insn::nop) {
+        uint32_t opcpde = iter().opcode();
+        if (opcpde == 0xD50B7420 /*dc zva x0*/) {
+            pushINSN(insn::new_general_nop(iter));
+            dcinsns++;
+        }
+    }
+    
     RETCACHEPATCHES;
 }

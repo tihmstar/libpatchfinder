@@ -4,8 +4,8 @@
 //
 //  Created by tihmstar on 24.07.23.
 //
-
 #include <libgeneral/macros.h>
+
 #include <libgeneral/Utils.hpp>
 #include <libpatchfinder/kernelpatchfinder/kernelpatchfinder64.hpp>
 #include "reflector_kernelpatchfinder.hpp"

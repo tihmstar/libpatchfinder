@@ -5,7 +5,6 @@
 //  Created by tihmstar on 28.09.19.
 //  Copyright © 2019 tihmstar. All rights reserved.
 //
-
 #include <libgeneral/macros.h>
 
 #include "ibootpatchfinder64_base.hpp"
@@ -21,6 +20,7 @@ using namespace tihmstar::libinsn::arm64;
 
 
 #define IBOOT_VERS_STR_OFFSET 0x280
+#define MBOOT_VERS_STR_OFFSET 0x300
 #define iBOOT_BASE_OFFSET 0x318
 #define KERNELCACHE_PREP_STRING "__PAGEZERO"
 #define ENTERING_RECOVERY_CONSOLE "Entering recovery mode, starting command prompt"
@@ -56,7 +56,7 @@ ibootpatchfinder64_base::ibootpatchfinder64_base(const void *buffer, size_t bufS
 void ibootpatchfinder64_base::init(){
     assure(_bufSize > 0x1000);
     
-    assure(!strncmp((char*)&_buf[IBOOT_VERS_STR_OFFSET], "iBoot", sizeof("iBoot")-1));
+    assure(!strncmp((char*)&_buf[IBOOT_VERS_STR_OFFSET], "iBoot", sizeof("iBoot")-1) || !strncmp((char*)&_buf[IBOOT_VERS_STR_OFFSET], "mBoot", sizeof("mBoot")-1));
     retassure(*(uint32_t*)&_buf[0] == 0x90000000
               || (((uint32_t*)_buf)[0] == 0x14000001 && ((uint32_t*)_buf)[4] == 0x90000000)
               || (((uint32_t*)_buf)[0] == 0xD53C1102 && ((uint32_t*)_buf)[3] == 0xD51C1102)
@@ -66,8 +66,19 @@ void ibootpatchfinder64_base::init(){
     debug("iBoot base at=0x%016llx\n", _base);
     safeDelete(_vmem);
     _vmem = new vmem({{_buf,_bufSize,_base, (vmprot)(kVMPROTREAD | kVMPROTWRITE | kVMPROTEXEC)}});
-    retassure(_vers = atoi((char*)&_buf[IBOOT_VERS_STR_OFFSET+6]), "No iBoot version found!\n");
-    debug("iBoot-%d inputted\n", _vers);
+    
+    bool isMboot = false;
+    _vers = atoi((char*)&_buf[IBOOT_VERS_STR_OFFSET+6]);
+    if (!_vers) {
+        _vers = atoi((char*)&_buf[MBOOT_VERS_STR_OFFSET+6]);
+        isMboot = true;
+    }
+    retassure(_vers, "No iBoot version found!");
+    if (isMboot){
+        debug("mBoot-%d (%s) inputted\n", _vers, &_buf[MBOOT_VERS_STR_OFFSET]);
+    }else{
+        debug("iBoot-%d (%s) inputted\n", _vers, &_buf[IBOOT_VERS_STR_OFFSET]);
+    }
 }
 
 ibootpatchfinder64_base::~ibootpatchfinder64_base(){
@@ -89,6 +100,17 @@ bool ibootpatchfinder64_base::has_recovery_console(){
     } catch (...) {
         return 0;
     }
+}
+
+ibootpatchfinder64_base::loc_t ibootpatchfinder64_base::find_malloc(){
+    UNCACHELOC;
+    loc_t str = findstr("_malloc", false);
+    debug("str=0x%016llx\n",str);
+
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx\n",ref);
+    
+    return find_bof(ref);
 }
 
 std::vector<patch> ibootpatchfinder64_base::get_always_production_patch(){
@@ -163,6 +185,10 @@ std::vector<patch> ibootpatchfinder64_base::get_always_production_patch(){
     
     
     return patches;
+}
+
+std::vector<patch> ibootpatchfinder64_base::get_sigcheck_patch(){
+    return get_sigcheck_img4_patch();
 }
 
 std::vector<patch> ibootpatchfinder64_base::get_sigcheck_img4_patch(){
@@ -243,20 +269,26 @@ std::vector<patch> ibootpatchfinder64_base::get_boot_arg_patch(const char *boota
     assure(default_boot_args_xref = find_literal_ref(default_boot_args_str_loc));
     debug("default_boot_args_xref=0x%016llx\n",default_boot_args_xref);
 
-    if (strlen(bootargs) > strlen(DEFAULT_BOOTARGS_STR)) {
-        loc_t cert_str_loc = 0;
+    size_t bootargslen = strlen(bootargs);
+    
+    if (bootargslen > strlen(DEFAULT_BOOTARGS_STR)) {
         debug("Relocating boot-args string...\n");
 
-        /* Find the "Reliance on this cert..." string. */
-        retassure(cert_str_loc = _vmem->memstr(CERT_STR), "Unable to find \"%s\" string!\n", CERT_STR);
+        if (bootargslen > 70){
+            /*
+                iOS 9.0 iPhone7,1 sigcheck fails if bootarg grow above 70
+             */
+            default_boot_args_str_loc = findnops((bootargslen+5)/4,true,0);
+        }else{
+            loc_t cert_str_loc = 0;
+            /* Find the "Reliance on this cert..." string. */
+            retassure(cert_str_loc = _vmem->memstr(CERT_STR), "Unable to find \"%s\" string!\n", CERT_STR);
+            debug("\"%s\" string found at 0x%016llx\n", CERT_STR, cert_str_loc);
+            /* Point the boot-args xref to the "Reliance on this cert..." string. */
+            default_boot_args_str_loc = cert_str_loc;
+        }
+        debug("Pointing default boot-args xref to 0x%016llx...\n", default_boot_args_str_loc);
 
-        debug("\"%s\" string found at 0x%016llx\n", CERT_STR, cert_str_loc);
-
-        /* Point the boot-args xref to the "Reliance on this cert..." string. */
-        debug("Pointing default boot-args xref to 0x%016llx...\n", cert_str_loc);
-
-        default_boot_args_str_loc = cert_str_loc;
-        
         vmem iter = _vmem->getIter(default_boot_args_xref);
         
         if (iter() == insn::adr) {
@@ -319,12 +351,19 @@ std::vector<patch> ibootpatchfinder64_base::get_boot_arg_patch(const char *boota
 }
 
 std::vector<patch> ibootpatchfinder64_base::get_debug_enabled_patch(){
-    std::vector<patch> patches;
+    UNCACHEPATCHES;
     
-    loc_t debug_enabled = findstr("debug-enabled", true);
+    loc_t debug_enabled = -1;
+    while (true) {
+        debug_enabled = findstr("debug-enabled", true, debug_enabled+1);
+        assure(debug_enabled);
+        if ((_vmem->deref(debug_enabled-1) & 0xFF) == 0) break;
+        //iOS 18 introduces "dev-unset-debug-enabled" which appears before the actual "debug-enabled". We need to skip that
+    }
     debug("debug_enabled=0x%016llx\n",debug_enabled);
     
     loc_t xref = find_literal_ref(debug_enabled);
+    assure(xref);
     debug("xref=0x%016llx\n",xref);
     
     vmem iter = _vmem->getIter(xref);
@@ -334,7 +373,7 @@ std::vector<patch> ibootpatchfinder64_base::get_debug_enabled_patch(){
     
     patches.push_back({iter,"\x20\x00\x80\xD2" /* mov x0,1 */,4});
     
-    return patches;
+    RETCACHEPATCHES;
 }
 
 std::vector<patch> ibootpatchfinder64_base::get_cmd_handler_patch(const char *cmd_handler_str, uint64_t ptr){
@@ -343,17 +382,26 @@ std::vector<patch> ibootpatchfinder64_base::get_cmd_handler_patch(const char *cm
     handler_str+= cmd_handler_str;
     ((char*)handler_str.c_str())[0] = '\0';
     
-    loc_t handler_str_loc = memmem(handler_str.c_str(), handler_str.size());
-    debug("handler_str_loc=0x%016llx\n",handler_str_loc);
-    
-    handler_str_loc++;
-    
-    loc_t tableref = memmem(&handler_str_loc, sizeof(handler_str_loc));
-    debug("tableref=0x%016llx\n",tableref);
-    
-    patches.push_back({tableref+8,&ptr,8});
-    
-    return patches;
+    loc_t handler_str_loc = -1;
+    while (true) {
+        handler_str_loc = memmem(handler_str.c_str(), handler_str.size(), handler_str_loc+1);
+        debug("handler_str_loc=0x%016llx\n",handler_str_loc);
+        
+        handler_str_loc++;
+        
+        loc_t tableref = 0;
+        try {
+            tableref = memmem(&handler_str_loc, sizeof(handler_str_loc));
+            debug("tableref=0x%016llx\n",tableref);
+        } catch (tihmstar::out_of_range &e) {
+            debug("Faile to find tableref, trying to find other string match...");
+            continue;
+        }
+        
+        patches.push_back({tableref+8,&ptr,8});
+        
+        return patches;
+    }
 }
 
 std::vector<patch> ibootpatchfinder64_base::get_cmd_handler_callfunc_patch(const char *cmd_handler_str){
@@ -442,7 +490,10 @@ std::vector<patch> ibootpatchfinder64_base::replace_cmd_with_memcpy(const char *
     loc_t tableref = memmem(&handler_str_loc, sizeof(handler_str_loc));
     debug("tableref=0x%016llx\n",tableref);
 
-    loc_t scratchbuf = _vmem->memstr("failed to execute upgrade command from new");
+    loc_t scratchbuf = 0;
+    if (!scratchbuf) try {scratchbuf = _vmem->memstr("failed to execute upgrade command from new");} catch (...) {}
+    if (!scratchbuf) try {scratchbuf = _vmem->memstr("Enabling early boot tracing");} catch (...) {}
+    retassure(scratchbuf, "Failed to find scratchbuf for string");
     debug("scratchbuf=0x%016llx\n",scratchbuf);
     
     uint32_t shellcode_insn_cnt = 10; //commitment
@@ -496,6 +547,67 @@ std::vector<patch> ibootpatchfinder64_base::replace_cmd_with_memcpy(const char *
     return patches;
 }
 
+std::vector<patch> ibootpatchfinder64_base::replace_cmd_with_ra1nra1n(const char *cmd_handler_str){
+    std::vector<patch> patches;
+    retassure(cmd_handler_str, "unexpected NULL cmd_handler_str");
+    
+    loc_t handler_str_loc = findstr(cmd_handler_str, true);
+    debug("handler_str_loc=0x%016llx\n",handler_str_loc);
+
+    loc_t tableref = memmem(&handler_str_loc, sizeof(handler_str_loc));
+    debug("tableref=0x%016llx\n",tableref);
+
+    loc_t scratchbuf = 0;
+    if (!scratchbuf) try {scratchbuf = _vmem->memstr("failed to execute upgrade command from new");} catch (...) {}
+    if (!scratchbuf) try {scratchbuf = _vmem->memstr("Enabling early boot tracing");} catch (...) {}
+    retassure(scratchbuf, "Failed to find scratchbuf for string");
+    debug("scratchbuf=0x%016llx\n",scratchbuf);
+    
+    uint32_t shellcode_insn_cnt = 16; //commitment
+    loc_t shellcode = findnops(shellcode_insn_cnt);
+    debug("shellcode=0x%016llx\n",shellcode);
+    
+    loc_t malloc = find_malloc();
+    debug("malloc=0x%016llx\n",malloc);
+    
+    int insnRet = 15; //commitment
+    int insnLoopRef = 10; //commitment
+
+    
+#define cPC (shellcode+(insnNum++)*4)
+    int insnNum = 0;
+
+    pushINSN(insn::new_immediate_cmp(cPC, 3, 0));
+    pushINSN(insn::new_immediate_bcond(cPC, shellcode+insnRet*4, insn::cond::NE));
+    /*
+        iPhone 5s iOS 12 still uses 0x30+0x28*x formula
+     */
+    pushINSN(insn::new_immediate_sub(cPC, 0x10, 31, 31));
+    pushINSN(insn::new_general_stp_offset(cPC, 0, 1, 30, 31));
+    pushINSN(insn::new_immediate_ldr_unsigned(cPC, 0x30+0x28*1, 1, 0));
+    pushINSN(insn::new_immediate_bl(cPC, malloc));
+    pushINSN(insn::new_general_ldp_offset(cPC, 0, 1, 30, 31));
+    pushINSN(insn::new_immediate_add(cPC, 0x10, 31, 31));
+    pushINSN(insn::new_immediate_ldr_unsigned(cPC, 0x30+0x28*1, 1, 2));
+    pushINSN(insn::new_immediate_ldr_unsigned(cPC, 0x30+0x28*0, 1, 1));
+    assure(insnLoopRef == insnNum); //memcpy loop
+    pushINSN(insn::new_immediate_subs(cPC, 1, 2, 2));
+    pushINSN(insn::new_register_ldrb(cPC, 2, 1, 3));
+    pushINSN(insn::new_register_strb(cPC, 2, 0, 3));
+    pushINSN(insn::new_immediate_bcond(cPC, shellcode+insnLoopRef*4, insn::cond::NE));
+    pushINSN(insn::new_register_mov(cPC, 0, 18, 0));
+    assure(insnNum == insnRet);
+    pushINSN(insn::new_general_ret(cPC));
+    assure(insnNum == shellcode_insn_cnt);
+#undef cPC
+    
+    patches.push_back({scratchbuf,"ra1nra1n",sizeof("ra1nra1n")}); //overwrite name
+    patches.push_back({tableref,&scratchbuf,8}); //overwrite pointer to name
+    patches.push_back({tableref+8,&shellcode,8}); //overwrite function pointer
+    
+    return patches;
+}
+
 
 std::vector<patch> ibootpatchfinder64_base::get_ra1nra1n_patch(){
     std::vector<patch> patches;
@@ -533,9 +645,15 @@ std::vector<patch> ibootpatchfinder64_base::get_ra1nra1n_patch(){
     pushINSN(insn::new_register_mov(findloc+=4, 0, 9, srcreg));
     /*
         0x7000 iOS 12 buffers the ramdisk at 0x818000000. If we write ra1nra1n there, the ramdisk gets corrupted
+                0x81c000000 doesn't work either, still corrupting end of ramdisk
+        0x7001 iOS 11.4.1 buffers kernel at 0x820000000. If we write ra1nra1n there, it gets overwritten
      */
-    pushINSN(insn::new_immediate_movz(findloc+=4, 0x8, 27, 32));
-    pushINSN(insn::new_immediate_movk(findloc+=4, 0x2000, 27, 16));
+//    {
+//        uint64_t loadTarget = 0x820000000;
+//        pushINSN(insn::new_immediate_movz(findloc+=4, (loadTarget >> 32) & 0xFFFF, 27, 32));
+//        pushINSN(insn::new_immediate_movk(findloc+=4, (loadTarget >> 16) & 0xFFFF, 27, 16));
+//    }
+    pushINSN(insn::new_register_mov(findloc+=4, 0, 27, 18));
     pushINSN(insn::new_register_mov(findloc+=4, 0, 29, 27));
 
     
@@ -774,7 +892,7 @@ std::vector<patch> ibootpatchfinder64_base::get_atv4k_enable_uart_patch(){
     debug("ref=0x%016llx",ref);
     
     vmem iter = _vmem->getIter(ref);
-    retassure((iter() == insn::adr || iter == insn::adrp) && iter().rd() == 0, "unexpected ref");
+    retassure((iter() == insn::adr || iter() == insn::adrp || (iter() == insn::add && (iter-1) == insn::adrp)) && iter().rd() == 0, "unexpected ref");
     
     while (++iter != insn::movz)
         retassure(iter() != insn::bl, "unexpected bl");
@@ -889,5 +1007,56 @@ std::vector<patch> ibootpatchfinder64_base::get_no_force_dfu_patch(){
     }
 
     retassure(patches.size(), "Failed to find patches");
+    RETCACHEPATCHES;
+}
+
+std::vector<patch> ibootpatchfinder64_base::set_boot_manifest_hash(const void *hash, size_t hashSize){
+    UNCACHEPATCHES;
+
+    hashSize += (4-(hashSize & 3)) & 3;
+    
+    loc_t str = (loc_t)findstr("boot-manifest-hash", true);
+    debug("str=0x%016llx",str);
+    assure(str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+    assure(ref);
+
+    
+    auto iter = _vmem->getIter(ref);
+
+    while (++iter != insn::bl)
+        ;
+    while (++iter != insn::bl)
+        ;
+
+    loc_t manifest_get_hash_func = iter().imm();
+    debug("manifest_get_hash_func=0x%016llx",manifest_get_hash_func);
+
+    loc_t shellcode = manifest_get_hash_func;
+    debug("shellcode=0x%016llx",shellcode);
+    
+    iter=shellcode;
+    uint32_t hashloc = 3+(hashSize/4)*2; //commitment
+
+    pushINSN(insn::new_general_adr(iter, shellcode+4*hashloc, 1));
+    int mghf_hasret = 0; //the function is allowed to have 1 ret in the middle of the function
+    
+    for (int i=0; i<hashSize; i+=4) {
+        retassure(++iter != insn::ret || !mghf_hasret++, "reach end of function");
+        pushINSN(insn::new_immediate_ldr_unsigned(iter, i, 1, 2, true));
+        retassure(++iter != insn::ret || !mghf_hasret++, "reach end of function");
+        pushINSN(insn::new_immediate_str_unsigned(iter, i, 0, 2, true));
+    }
+    retassure(++iter != insn::ret || !mghf_hasret++, "reach end of function");
+    pushINSN(insn::new_immediate_movz(iter, 0, 0, 0));
+    retassure(++iter != insn::ret || !mghf_hasret++, "reach end of function");
+    pushINSN(insn::new_general_ret(iter));
+
+    retassure(++iter != insn::ret || !mghf_hasret++, "reach end of function");
+    assure(iter.pc()-shellcode == 4*hashloc);
+    patches.push_back({iter, hash, hashSize});
+
     RETCACHEPATCHES;
 }

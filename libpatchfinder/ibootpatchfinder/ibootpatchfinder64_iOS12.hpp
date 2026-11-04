@@ -9,17 +9,15 @@
 #ifndef ibootpatchfinder64_iOS12_hpp
 #define ibootpatchfinder64_iOS12_hpp
 
-#include "ibootpatchfinder64_iOS10.hpp"
+#include "ibootpatchfinder64_iOS11.hpp"
 
 namespace tihmstar {
     namespace patchfinder {
-        class ibootpatchfinder64_iOS12 : public ibootpatchfinder64_iOS10{
+        class ibootpatchfinder64_iOS12 : public ibootpatchfinder64_iOS11{
         public:
-            using ibootpatchfinder64_iOS10::ibootpatchfinder64_iOS10;
+            using ibootpatchfinder64_iOS11::ibootpatchfinder64_iOS11;
             
-            virtual std::vector<patch> get_tz0_lock_patch() override;
-
-            virtual std::vector<patch> get_force_septype_local_patch() override;
+            virtual std::vector<patch> get_force_septype_local_patch() override;            
         };
     };
 };

@@ -18,6 +18,8 @@ namespace patchfinder {
         using kernelpatchfinder64_iOS8::kernelpatchfinder64_iOS8;
         
         virtual std::vector<patch> get_mount_patch() override;
+        
+        virtual std::vector<patch> get_harcode_boot_manifest_patch(const void *hash, size_t hashSize) override;
     };
 }
 }

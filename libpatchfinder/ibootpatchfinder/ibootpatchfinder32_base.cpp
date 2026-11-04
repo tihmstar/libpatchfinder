@@ -4,7 +4,6 @@
 //
 //  Created by tihmstar on 07.07.21.
 //
-
 #include <libgeneral/macros.h>
 
 #include "ibootpatchfinder32_base.hpp"
@@ -95,6 +94,22 @@ bool ibootpatchfinder32_base::has_recovery_console(){
     } catch (...) {
         return 0;
     }
+}
+
+ibootpatchfinder32_base::loc64_t ibootpatchfinder32_base::find_env_get(){
+    UNCACHELOC;
+    loc_t str = findstr("boot-ramdisk", true);
+    debug("str=0x%08x",str);
+    
+    loc_t ref = find_literal_ref_thumb(str);
+    debug("ref=0x%08x",ref);
+    
+    auto iter = _vmemThumb->getIter(ref);
+    while (++iter != arm32::bl)
+        ;
+    
+    loc_t env_get = iter().imm();
+    RETCACHELOC(env_get);
 }
 
 std::vector<patch> ibootpatchfinder32_base::get_wtf_pwndfu_patch(){
@@ -312,13 +327,14 @@ std::vector<patch> ibootpatchfinder32_base::get_sigcheck_img3_patch(){
     pushINSN(thumb::new_T1_immediate_movs(bref+2, 0, 0));
     
     vmem_thumb iter = _vmemThumb->getIter(data_ref);
+    loc_t data_ref_fixed = data_ref;
     for (int i=0; i<2; i++){
         auto isn = --iter;
         if (isn == arm32::str && isn.rn() == 13){
             uint8_t rt = iter().rt();
             if ((--iter == arm32::mov || --iter == arm32::mov) && iter().rd() == rt){
                 debug("Fixing data_ref");
-                data_ref = iter;
+                data_ref_fixed = iter;
                 pushINSN(thumb::new_T1_immediate_movs(iter, 0, rt));
                 if (iter().insnsize() != 2) {
                     pushINSN(thumb::new_T1_immediate_movs(iter.pc()+2, 0, rt));
@@ -331,13 +347,22 @@ std::vector<patch> ibootpatchfinder32_base::get_sigcheck_img3_patch(){
             if (iter().insnsize() != 2) {
                 pushINSN(thumb::new_T1_immediate_movs(iter.pc()+2, 0, isn.rd()));
             }
-            data_ref = iter;
+            data_ref_fixed = iter;
             break;
         }
     }
-    
-    pushINSN(thumb::new_T2_immediate_b(dbref+2, data_ref));
-    pushINSN(thumb::new_T2_immediate_b(dbref+4, data_ref));
+    if (data_ref_fixed == data_ref) {
+        iter = data_ref;
+        iter-=2;
+        if (iter() == arm32::mov && iter().imm() == 0) {
+            debug("Perform iOS 2.0 data_ref fixing");
+            data_ref_fixed = iter;
+        }
+    }
+    debug("data_ref_fixed=0x%08x",data_ref_fixed);
+
+    pushINSN(thumb::new_T2_immediate_b(dbref+2, data_ref_fixed));
+    pushINSN(thumb::new_T2_immediate_b(dbref+4, data_ref_fixed));
     
     return patches;
 }
@@ -523,7 +548,7 @@ std::vector<patch> ibootpatchfinder32_base::get_boot_arg_patch(const char *boota
                 bool foundPatch = false;
                 for (int i=0; i<2; i++){
                     try{
-                        loc_t bref = find_branch_ref_thumb(default_boot_args_xref-i*2, -0x10);
+                        loc_t bref = find_branch_ref_thumb(default_boot_args_xref-i*2, -0x80);
                         debug("bref=0x%08x",bref);
                         pushINSN(thumb::new_T2_immediate_b(bref,default_boot_args_xref-i*2));
                         foundPatch = true;
@@ -532,12 +557,118 @@ std::vector<patch> ibootpatchfinder32_base::get_boot_arg_patch(const char *boota
                         //
                     }
                 }
-                retassure(foundPatch, "Failed to find patch!");
+                if (!foundPatch) {
+                    debug("Failed to find always bootarg patch!");
+                }
             }
         }
     }
     
     return patches;
+}
+
+std::vector<patch> ibootpatchfinder32_base::get_honor_nvram_boot_arg_patch(){
+    UNCACHEPATCHES;
+    /*
+        iPhone1,1 iOS 2.0
+     */
+    loc_t default_boot_args_str_loc = findstr(DEFAULT_BOOTARGS_STR, false);
+    debug("default_boot_args_str_loc=0x%08x",default_boot_args_str_loc);
+    
+    loc_t default_boot_args_data_xref = memmem(&default_boot_args_str_loc, sizeof(default_boot_args_str_loc));
+    debug("default_boot_args_data_xref=0x%08x",default_boot_args_data_xref);
+
+    loc_t default_boot_args_xref = find_literal_ref_thumb(default_boot_args_str_loc);
+    debug("default_boot_args_xref=0x%08x",default_boot_args_xref);
+
+    loc_t bref = 0;
+    loc_t bdst_skip = 0;
+    vmem_thumb iter = _vmemThumb->getIter(default_boot_args_xref);
+    {
+        bool methodArmv6 = false;
+        
+        uint8_t xref_dst_reg = iter().rt();
+
+        {
+            if (++iter != arm32::it) {
+                if (iter() == arm32::b) iter = iter().imm();
+                for (int i=0; i<0x30; i++) {
+                    if (iter() == arm32::b) iter = iter().imm();
+                    if (++iter == arm32::it) break;
+                }
+                if (iter() != arm32::it){
+                    methodArmv6 = true;
+                    debug("Could not find 'it' insn, switching to armv6 method");
+                }
+            }else{
+                //this is expected
+            }
+        }
+        if (!methodArmv6) {
+            reterror("TODO");
+        }else{
+            iter = default_boot_args_xref;
+            bdst_skip = iter.pc() + iter().insnsize();
+            if (--iter == arm32::bcond){
+                pushINSN(thumb::new_T1_general_nop(iter.pc()));
+            } else if (--iter == arm32::bcond){
+                pushINSN(thumb::new_T1_general_nop(iter.pc()));
+                pushINSN(thumb::new_T1_general_nop(iter.pc()+2));
+            }else{
+                for (int i=0; i<2; i++){
+                    try{
+                        bref = find_branch_ref_thumb(default_boot_args_xref-i*2, -0x80);
+                        break;
+                    }catch(...){
+                        //
+                    }
+                }
+            }
+        }
+    }
+    retassure(bref, "Failed to find bref");
+    debug("bref=0x%08x",bref);
+    debug("bdst_skip=0x%08x",bdst_skip);
+    loc_t env_get = find_env_get();
+    uint8_t dstreg = -1;
+
+    iter = bref;
+    {
+        for (int i=0; i<3; i++) {
+            if (--iter == arm32::ldr && iter().subtype() == arm32::st_literal) goto ok;
+        }
+        reterror("sanity check failed");
+        ok:;
+    }
+    dstreg = iter().rt();
+    debug("dstreg=0x%x",dstreg);
+    loc_t patch = iter;
+    debug("patch=0x%08x",patch);
+    retassure(bref-patch == 6, "unexpected layout");
+    
+    //1) ldr r0=tgt
+    pushINSN(arm32::thumb::new_T1_literal_ldr(iter, iter().imm(), 0));
+    
+    //2) move tgt to shellcode are and put in our string
+    {
+        //5) old "restore" bootargs are now the default bootargs (we cannot do restore from recovery mode anymore now :/)
+        char argstr[] = "\x00" "boot-args";
+        loc_t shellcode = default_boot_args_str_loc+1;
+        patches.push_back({default_boot_args_str_loc, argstr, sizeof(argstr)});
+        patches.push_back({(loc_t)iter().imm(), &shellcode, sizeof(shellcode)});
+    }
+    ++iter;
+    //3) call env_get
+    pushINSN(arm32::thumb::new_T1_immediate_bl(iter, env_get));
+
+    //4) check if zero and commit or clear args
+    {
+        uint16_t opcpde = 0x0000 | (dstreg & 0b111);    //movs  rX, r0
+        patches.push_back({iter.pc()+4, &opcpde, sizeof(opcpde)});
+    }
+    pushINSN(arm32::thumb::new_T1_immediate_bcond(iter.pc()+6, default_boot_args_xref, arm32::EQ));
+
+    RETCACHEPATCHES;
 }
 
 std::vector<patch> ibootpatchfinder32_base::get_debug_enabled_patch(){

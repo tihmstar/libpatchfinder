@@ -4,10 +4,10 @@
 //
 //  Created by tihmstar on 08.06.22.
 //
+#include <libgeneral/macros.h>
 
 #include "kernelpatchfinder64_iOS16.hpp"
 #include "../../include/libpatchfinder/OFexception.hpp"
-#include <libgeneral/macros.h>
 #include "../all64.h"
 #include "sbops64.h"
 #include <string.h>
@@ -1044,6 +1044,36 @@ patchfinder64::loc_t kernelpatchfinder64_iOS16::find_ppl_handler_table(){
     RETCACHELOC(retval);
 }
 
+patchfinder64::loc_t kernelpatchfinder64_iOS16::find_query_trustcache(){
+    UNCACHELOC;
+    try {
+        return find_sym("_query_trust_cache");
+    } catch (...) {
+        //
+    }
+    /*
+        A12 PPL stuff
+     */
+    auto iter = _vmem->getIter();
+    loc_t target = 0;
+    while (!target) {
+        while (++iter != insn::movz || iter().subtype() != insn::st_immediate || iter().rd() != 15 || iter().imm() != 0x63)
+            ;
+        target = iter;
+        if (++iter != insn::b)
+            target = 0;
+    }
+    debug("target=0x%016llx",target);
+
+    loc_t bref = find_branch_ref(target, 0);
+    debug("bref=0x%016llx",bref);
+    
+    iter = bref;
+    while (--iter != insn::bti)
+        ;
+    RETCACHELOC(iter);
+}
+
 #pragma mark Patch finders
 std::vector<patch> kernelpatchfinder64_iOS16::get_trustcache_true_patch(){
     UNCACHEPATCHES;
@@ -1124,19 +1154,31 @@ std::vector<patch> kernelpatchfinder64_iOS16::get_codesignature_patches(){
     
     {
         //Hello iOS 16.4!
-        loc_t query_trust_cache = find_sym("_query_trust_cache");
+        loc_t query_trust_cache = find_query_trustcache();
         if (!query_trust_cache) {
             warning("Failed to get query_trust_cache symbol, ignoring...");
         }else{
             debug("query_trust_cache=0x%016llx",query_trust_cache);
-            loc_t stub_ptr = memmem(&query_trust_cache, sizeof(query_trust_cache));
+            loc_t stub_ptr = 0;
+            loc_t stub_query_trust_cache = 0;
+            try {
+                stub_ptr = memmem(&query_trust_cache, sizeof(query_trust_cache));
+            } catch (...) {
+                //
+            }
             debug("stub_ptr=0x%016llx",stub_ptr);
             
-            loc_t stub_query_trust_cache = find_literal_ref(stub_ptr);
-            assure(stub_query_trust_cache);
-            stub_query_trust_cache -=4;
-            debug("stub_query_trust_cache=0x%016llx",stub_query_trust_cache);
-            
+            if (stub_ptr) stub_query_trust_cache = find_literal_ref(stub_ptr);
+            if (!stub_query_trust_cache){
+                /*
+                    On A12 it's not a stub
+                 */
+                stub_query_trust_cache = query_trust_cache;
+            }else{
+                assure(stub_query_trust_cache);
+                stub_query_trust_cache -=4;
+                debug("stub_query_trust_cache=0x%016llx",stub_query_trust_cache);
+            }
             try {
                 loc_t trustcache_check_call = find_call_ref(stub_query_trust_cache,1);
                 debug("trustcache_check_call=0x%016llx",trustcache_check_call);
@@ -1312,8 +1354,15 @@ std::vector<patch> kernelpatchfinder64_iOS16::get_read_bpr_patch_with_params(int
 #undef cPC
     
     //hello linkerinfo in pointers
-    uint64_t funcptr = deref(table) & 0xffffffff00000000;
-    funcptr |= (shellcode & 0xffffffff);
+    uint64_t funcptr = deref(table);
+    if ((funcptr & (1LLU<<63)) && ((funcptr>>36) != 0xfffffff)) {
+        /* PACed pointers (iPhone11,2) */
+        funcptr = funcptr & 0xffffffff00000000;
+        funcptr |= (shellcode - _base) & 0xffffffff;
+    }else{
+        funcptr = funcptr & 0xffffffff00000000;
+        funcptr |= (shellcode & 0xffffffff);
+    }
     patches.push_back({table,&funcptr,sizeof(funcptr)});
     
     RETCACHEPATCHES;
@@ -1391,7 +1440,7 @@ std::vector<patch> kernelpatchfinder64_iOS16::get_sandbox_patch(){
         
     do{
         ++iter;
-        while (++iter != insn::ret);
+        while (++iter != insn::ret || iter().pactype() != insn::pac_none);
     }while (--iter != insn::movz || iter().rd() != 0 || iter().imm() != 0);
         
     patchfinder64::loc_t ret0gadget = iter;
@@ -1468,6 +1517,25 @@ std::vector<patch> kernelpatchfinder64_iOS16::get_sandbox_patch(){
     PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_posixshm_label_associate));
     PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_posixshm_label_destroy));
     PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_posixshm_label_init));
+
+    //watchOS??
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_vnode_notify_create));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_proc_check_fork));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_iokit_check_get_property));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_accept));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_accepted));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_bind));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_connect));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_create));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_label_update));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_listen));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_receive));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_received));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_select));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_send));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_stat));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_setsockopt));
+    PATCH_OP(sbops+offsetof(struct mac_policy_ops,mpo_socket_check_getsockopt));
 #undef PATCH_OP
 
     RETCACHEPATCHES;
@@ -1523,5 +1591,117 @@ std::vector<patch> kernelpatchfinder64_iOS16::get_task_conversion_eval_patch(){
     reterror("failed to find patch");
 gotpatches:;
     retassure(patches.size(), "Failed to find a patch");
+    RETCACHEPATCHES;
+}
+
+std::vector<patch> kernelpatchfinder64_iOS16::get_allow_UID_key_patch() {
+    /*
+        This was developed while looking at TVOS 17.0
+        Doesn't work with 13.0. / 15.0
+            - _kauth_getuid unavailable
+            - old cmp compiler structure
+     */
+    UNCACHEPATCHES;
+
+    loc_t kauth_getuid = find_sym("_kauth_getuid");
+    debug("kauth_getuid=0x%016llx",kauth_getuid);
+
+    vmem iter = _vmem->getIter();
+    while (true) {
+        while (++iter != insn::cmp || iter().subtype() != insn::st_immediate)
+            ;
+        if (iter().imm() != 0x3e8 && iter().imm() != 0x7d0 && iter().imm() != 0x835) {
+            continue;
+        }
+        uint8_t cmpreg = iter().rn();
+        uint64_t val = iter().imm();
+#ifdef XCODE
+        loc_t candidate = iter;
+        debug("candidate=0x%016llx val=0x%x",candidate,val);
+#endif
+        vmem iter2 = iter;
+        loc_t bof = find_bof(iter);
+        debug("bof=0x%16llx",bof);
+        loc_t eof = 0;
+        {
+            loc_t bof2 = bof;
+            while (bof2 == bof) {
+                while (++iter2 != insn::ret)
+                    ;
+                bof2 = find_bof(iter2);
+            }
+            eof = bof2 - 4;
+            retassure(eof > bof, "Failed to find function boundaries");
+        }
+        debug("eof=0x%16llx",eof);
+
+        {
+            iter2 = bof;
+            while ((++iter2).pc() < eof) {
+                if (iter2() == insn::bl) {
+                    if (iter2().imm() == kauth_getuid) goto has_func_call;
+                    try {
+                        loc_t dst = bl_jump_stub_ptr_loc(iter2);
+                        if (_vmem->deref(dst) == kauth_getuid) goto has_func_call;
+                    } catch (...) {
+                        //
+                    }
+                }
+            }
+            continue;
+            has_func_call:;
+        }
+        debug("found function!");
+        iter2 = bof;
+        bool has0x835 = false;
+        bool has0x7dX = false;
+        while ((++iter2).pc() < eof) {
+            auto isn = iter2();
+            if (isn == insn::cmp) {
+                if (isn.imm() == 0x835) {
+                    pushINSN(insn::new_immediate_cmp(isn, 0xff, isn.rn()));
+                    has0x835 = true;
+                }else if (isn.imm() == 0x7d0) {
+                    pushINSN(insn::new_immediate_cmp(isn, 0xff, isn.rn()));
+                    has0x7dX = true;
+                }else if (isn.imm() == 0x7d2) {
+                    pushINSN(insn::new_immediate_cmp(isn, 0xff, isn.rn()));
+                    has0x7dX = true;
+                }
+            }else if (isn == insn::sub && isn.subtype() == insn::st_immediate){
+                if (isn.imm() == 0x7d0) {
+                    pushINSN(insn::new_immediate_sub(iter2, 0xf, isn.rn(), isn.rd()));
+                    has0x7dX = true;
+                } else if (isn.imm() == 0x7d2) {
+                    pushINSN(insn::new_immediate_sub(iter2, 0xf, isn.rn(), isn.rd()));
+                    has0x7dX = true;
+                }
+            }
+        }
+        retassure(has0x835 && has0x7dX, "Failed to find patches!");
+        RETCACHEPATCHES;
+    }
+    
+    reterror("Failed to find patches");
+}
+
+std::vector<patch> kernelpatchfinder64_iOS16::get_sep_is_obliterating_patch(){
+    UNCACHEPATCHES;
+    loc_t str = findstr("Didn't find oblit-inprogress in NVRAM", false);
+    assure(str);
+    while (deref(str) & 0xff) str--;
+    str++;
+    debug("str=0x%16llx",str);
+
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%16llx",ref);
+    
+    auto iter = _vmem->getIter(ref);
+    
+    while (--iter != insn::bl)
+        ;
+    
+    pushINSN(insn::new_immediate_movz(iter, 1, 0, 0));
+    
     RETCACHEPATCHES;
 }

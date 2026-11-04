@@ -25,6 +25,7 @@ namespace tihmstar {
         public:
             virtual ~kernelpatchfinder();
 
+            virtual uint32_t get_cpid();
             virtual std::string get_xnu_kernel_version_number_string();
             virtual std::string get_kernel_version_string();
             virtual const void *memoryForLoc(loc64_t loc);
@@ -113,6 +114,7 @@ namespace tihmstar {
             virtual loc64_t find_pmap_remove_options();
             virtual loc64_t find_ppl_bootstrap_dispatch();
             virtual loc64_t find_ppl_handler_table();
+            virtual loc64_t find_query_trustcache();
 
             
             virtual loc64_t find_IOGeneralMemoryDescriptor_ranges_offset();
@@ -142,9 +144,9 @@ namespace tihmstar {
             virtual std::vector<patch> get_insert_setuid_patch();
             
             /*
-                calls to AppleImage3NORAccessUserClient always report success to userspace, even if they failed internally
+                calls to AppleImage3NORAccessUserClient doesn't check img3 signature anymore
              */
-            virtual std::vector<patch> get_AppleImage3NORAccess_hide_failure_patch();
+            virtual std::vector<patch> get_AppleImage3NORAccess_sigcheck_patch();
 
             /*
                 Disables a few sandbox checks required for jailbreaks
@@ -209,6 +211,18 @@ namespace tihmstar {
             virtual std::vector<patch> get_tfp_anyone_allow_patch();
 
             virtual std::vector<patch> get_noemf_patch();
+
+            virtual std::vector<patch> get_allow_sep_boot_skip_stage1();
+
+            /*
+                Remove any restrictions on messages sent to SEP mailbox using the ROMCmd API
+                and receive raw SEPROM mailbox replies back to userspace
+             */
+            virtual std::vector<patch> get_raw_sep_romcmd_patch();
+
+            virtual std::vector<patch> get_sep_is_obliterating_patch();
+
+            virtual std::vector<patch> get_no_nonce_entanglement_patch();
         };
     };
 };

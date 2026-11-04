@@ -24,6 +24,7 @@ namespace patchfinder {
                 
         virtual loc_t find_cs_blob_generation_count() override;
         
+        virtual std::vector<patch> get_allow_sep_boot_skip_stage1() override;
     };
 }
 }

@@ -1,4 +1,4 @@
-SUBDIRS=ibootpatchfinder kernelpatchfinder
+SUBDIRS=ibootpatchfinder kernelpatchfinder txmpatchfinder
 
 AM_CFLAGS = -I$(top_srcdir)/include $(libimg4tool_CFLAGS) $(libimg3tool_CFLAGS) $(libgeneral_CFLAGS)
 AM_CXXFLAGS = $(AM_CFLAGS)
@@ -12,6 +12,11 @@ libpatchfinder_la_LIBADD = $(AM_LDFLAGS) ibootpatchfinder/libpatchfinder_ibootpa
 if WITH_KERNELPATCHFINDER
 libpatchfinder_la_LIBADD += kernelpatchfinder/libpatchfinder_kernelpatchfinder.la
 endif #WITH_KERNELPATCHFINDER
+
+if WITH_TXMPATCHFINDER
+libpatchfinder_la_LIBADD += txmpatchfinder/libpatchfinder_txmpatchfinder.la
+endif #WITH_TXMPATCHFINDER
+
 
 libpatchfinder_la_SOURCES =	patch.cpp \
 							StableHash.cpp \

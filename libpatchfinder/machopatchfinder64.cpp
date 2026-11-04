@@ -5,7 +5,6 @@
 //  Created by tihmstar on 28.09.19.
 //  Copyright © 2019 tihmstar. All rights reserved.
 //
-
 #include <libgeneral/macros.h>
 
 #include <stdio.h>
@@ -35,7 +34,7 @@ using namespace tihmstar::libinsn::arm64;
 
 #pragma mark macho external
 
-__attribute__((always_inline)) struct load_command *find_load_command64(struct mach_header_64 *mh, uint32_t lc){
+__attribute__((always_inline)) struct load_command *find_load_command64(const struct mach_header_64 *mh, uint32_t lc){
     struct load_command *lcmd = (struct load_command *)(mh + 1);
     for (uint32_t i=0; i<mh->ncmds; i++, lcmd = (struct load_command *)((uint8_t *)lcmd + lcmd->cmdsize)) {
         if (lcmd->cmd == lc)
@@ -46,11 +45,11 @@ __attribute__((always_inline)) struct load_command *find_load_command64(struct m
     return NULL;
 }
 
-__attribute__((always_inline)) struct symtab_command *find_symtab_command(struct mach_header_64 *mh){
+__attribute__((always_inline)) struct symtab_command *find_symtab_command(const struct mach_header_64 *mh){
     return (struct symtab_command *)find_load_command64(mh, LC_SYMTAB);
 }
 
-__attribute__((always_inline)) struct dysymtab_command *find_dysymtab_command(struct mach_header_64 *mh){
+__attribute__((always_inline)) struct dysymtab_command *find_dysymtab_command(const struct mach_header_64 *mh){
     return (struct dysymtab_command *)find_load_command64(mh, LC_DYSYMTAB);
 }
 
@@ -100,9 +99,11 @@ void machopatchfinder64::loadSegments(){
     std::vector<vsegment> segments;
     std::vector<vsegment> segments2;
     struct mach_header_64 *mh = (struct mach_header_64*)_buf;
+    _mh = mh;
     struct load_command *lcmd = (struct load_command *)(mh + 1);
     bool has_text_exec = false;
     bool hasEntrypoint = false;
+    bool didSetBase = false;
     for (uint32_t i=0; i<mh->ncmds; i++, lcmd = (struct load_command *)((uint8_t *)lcmd + lcmd->cmdsize)) {
         if (lcmd->cmd == LC_SEGMENT_64){
             struct segment_command_64* seg = (struct segment_command_64*)lcmd;
@@ -117,8 +118,9 @@ void machopatchfinder64::loadSegments(){
             bool isWeirdPrelinkText = (strcmp(seg->segname, "__PRELINK_TEXT") == 0 && seg->maxprot == (kVMPROTREAD | kVMPROTWRITE));
             if (strcmp(seg->segname, "__TEXT_EXEC") == 0) has_text_exec = true;
             segments.push_back({_buf+seg->fileoff,seg->filesize, (patchfinder64::loc_t)seg->vmaddr, (vmprot)(isWeirdPrelinkText ? (kVMPROTEXEC | kVMPROTREAD) : seg->maxprot), seg->segname});
-            if (!_base){
-                _base = (patchfinder64::loc_t)seg->vmaddr; //first segment is base. Is this correct??
+            if (!didSetBase){
+                didSetBase = true;
+                _base = (patchfinder64::loc_t)seg->vmaddr;
             }
         }
         if (lcmd->cmd == LC_UNIXTHREAD) {
@@ -137,6 +139,12 @@ void machopatchfinder64::loadSegments(){
                 hasEntrypoint = true;
             }
         }
+        
+        if (lcmd->cmd == LC_MAIN) {
+            struct entry_point_command *entry = (struct entry_point_command*)lcmd;
+            _entrypoint = entry->entryoff + _base;
+        }
+        
         if (lcmd->cmd == LC_FILESET_ENTRY) {
             struct fileset_entry_command *fe = (fileset_entry_command*)lcmd;
             struct mach_header_64 *header = (struct mach_header_64*)&_buf[fe->fileoff];
@@ -249,6 +257,7 @@ void machopatchfinder64::init(){
 
 machopatchfinder64::machopatchfinder64(const char *filename) :
     patchfinder64(true)
+, _mh(NULL)
 {
     struct stat fs = {0};
     int fd = 0;
@@ -306,6 +315,7 @@ machopatchfinder64::machopatchfinder64(const char *filename) :
 
 machopatchfinder64::machopatchfinder64(const void *buffer, size_t bufSize, bool takeOwnership) :
 patchfinder64(takeOwnership)
+, _mh(NULL)
 {
     _bufSize = bufSize;
     _buf = (uint8_t*)buffer;
@@ -315,6 +325,7 @@ patchfinder64(takeOwnership)
 machopatchfinder64::machopatchfinder64(machopatchfinder64 &&mv)
 : patchfinder64(std::move(mv)),
 __symtabs(mv.__symtabs)
+, _mh(mv._mh)
 {
     _bufSize = mv._bufSize;
     _buf = mv._buf;
@@ -362,4 +373,25 @@ patchfinder64::loc_t machopatchfinder64::bl_jump_stub_ptr_loc(patchfinder64::loc
         retcustomerror(bad_branch_destination, "branch destination not jump_stub_call");
     }
     return (patchfinder64::loc_t)iter().imm() + ldr().imm();
+}
+
+std::string machopatchfinder64::get_source_version_string(){
+    struct source_version_command *sv = (struct source_version_command *)find_load_command64(_mh, LC_SOURCE_VERSION);
+    uint64_t vers = sv->version;
+    std::string version;
+    uint32_t vm = (uint32_t)(vers>>(64-24));
+    vers <<=24;
+    if (vm) {
+        version = std::to_string(vm);
+    }
+    while (vers) {
+        uint16_t v = (vers>>(64-10)) & 0x3FF;
+        vers <<= 10;
+        if (version.size()) {
+            version += ".";
+        }else if (!v) continue;
+        version += std::to_string(v);
+    }
+    if (!version.size()) return "0";
+    return version;
 }

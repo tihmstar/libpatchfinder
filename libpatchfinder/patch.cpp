@@ -5,9 +5,9 @@
 //  Created by tihmstar on 09.03.18.
 //  Copyright © 2018 tihmstar. All rights reserved.
 //
+#include <libgeneral/macros.h>
 
 #include "../include/libpatchfinder/patch.hpp"
-#include <libgeneral/macros.h>
 
 #include <string.h>
 

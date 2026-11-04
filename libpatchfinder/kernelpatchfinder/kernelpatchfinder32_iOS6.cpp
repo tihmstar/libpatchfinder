@@ -4,6 +4,7 @@
 //
 //  Created by Elcomsoft R&D on 15.03.23.
 //
+#include <libgeneral/macros.h>
 
 #include "kernelpatchfinder32_iOS6.hpp"
 #include <libinsn/insn.hpp>

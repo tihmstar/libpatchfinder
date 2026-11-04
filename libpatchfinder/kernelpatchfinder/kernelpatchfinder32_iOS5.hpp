@@ -8,13 +8,13 @@
 #ifndef kernelpatchfinder32_iOS5_hpp
 #define kernelpatchfinder32_iOS5_hpp
 
-#include "kernelpatchfinder32_iOS3.hpp"
+#include "kernelpatchfinder32_iOS4.hpp"
 
 namespace tihmstar {
 namespace patchfinder {
-    class kernelpatchfinder32_iOS5 : public kernelpatchfinder32_iOS3{
+    class kernelpatchfinder32_iOS5 : public kernelpatchfinder32_iOS4{
     public:
-        using kernelpatchfinder32_iOS3::kernelpatchfinder32_iOS3;
+        using kernelpatchfinder32_iOS4::kernelpatchfinder32_iOS4;
         
         virtual std::vector<patch> get_allow_UID_key_patch() override;
         

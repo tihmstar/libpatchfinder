@@ -5,6 +5,7 @@
 //  Created by tihmstar on 07.04.21.
 //  Copyright © 2021 tihmstar. All rights reserved.
 //
+#include <libgeneral/macros.h>
 
 #include "ibootpatchfinder64_iOS7.hpp"
 #include <libinsn/insn.hpp>

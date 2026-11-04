@@ -4,9 +4,9 @@
 //
 //  Created by tihmstar on 01.10.21.
 //
+#include <libgeneral/macros.h>
 
 #include "ibootpatchfinder64_iOS15.hpp"
-#include <libgeneral/macros.h>
 #include "../all64.h"
 #include <string.h>
 #include <set>
@@ -15,6 +15,36 @@ using namespace std;
 using namespace tihmstar::patchfinder;
 using namespace tihmstar::libinsn;
 using namespace tihmstar::libinsn::arm64;
+
+ibootpatchfinder64_base::loc_t ibootpatchfinder64_iOS15::find_malloc(){
+    UNCACHELOC;
+    
+    auto iter = _vmem->getIter();
+    while (true) {
+        auto isn = ++iter;
+        if (isn == insn::movz && isn.subtype() == insn::st_immediate && isn.rd() == 0 && isn.imm() == 0x200) {
+            auto isn2 = ++iter;
+            if (isn2 == insn::movz && isn2.subtype() == insn::st_immediate && isn2.rd() == 1 && isn2.imm() == 0) {
+                auto isn3 = ++iter;
+                if (isn3 == insn::b && isn3.supertype() == libinsn::arm64::insn::sut_branch_imm) {
+                    loc_t pos = isn2;
+                    RETCACHELOC(pos);
+                }
+                if (isn3 == insn::movz && isn3.subtype() == insn::st_immediate && isn3.rd() == 2 && isn3.imm() == 0) {
+                    auto isn4 = ++iter;
+                    if (isn4 == insn::b && isn4.supertype() == libinsn::arm64::insn::sut_branch_imm) {
+                        loc_t pos = isn2;
+                        RETCACHELOC(pos);
+                    }
+                }
+            }
+            iter = isn;
+        }
+    }
+
+    reterror("Failed to find malloc function");
+}
+
 
 std::vector<patch> ibootpatchfinder64_iOS15::get_sigcheck_img4_patch(){
     UNCACHEPATCHES;
@@ -215,4 +245,148 @@ std::vector<patch> ibootpatchfinder64_iOS15::get_always_production_patch(){
         }
     }
     reterror("Failed to find patches");
+}
+
+std::vector<patch> ibootpatchfinder64_iOS15::get_debug_enabled_patch(){
+    UNCACHEPATCHES;
+    
+    loc_t debug_enabled = -1;
+    while (true) {
+        debug_enabled = findstr("debug-enabled", true, debug_enabled+1);
+        assure(debug_enabled);
+        if ((_vmem->deref(debug_enabled-1) & 0xFF) == 0) break;
+        //iOS 18 introduces "dev-unset-debug-enabled" which appears before the actual "debug-enabled". We need to skip that
+    }
+    debug("debug_enabled=0x%016llx\n",debug_enabled);
+    
+    loc_t xref = find_literal_ref(debug_enabled);
+    assure(xref);
+    debug("xref=0x%016llx\n",xref);
+    
+    vmem iter = _vmem->getIter(xref);
+    
+    while (++iter != insn::bl)
+        ;
+    while (++iter != insn::bl)
+        ;
+    
+    {
+        /*
+            Hello Firebloom?
+            iPhone11,2 iOS 15.1 iBSS
+            iPhone11,2 iOS 18.7.9 iBSS
+         */
+        auto iter2 = iter;
+        for (int i=0; i<5; i++) {
+            iter2 = iter().imm();
+            int isncnt = 0;
+            while (++iter2 != insn::ret) {
+                isncnt++;
+            }
+            if (isncnt < 5) {
+                /*
+                    This isn't a real function but some outline woodoo
+                 */
+                loc_t woodoo = iter;
+                debug("skipping outline woodoo function at 0x%llx",woodoo);
+                while (++iter != insn::bl)
+                    ;
+                continue;
+            }
+            goto found_real_func;
+        }
+        reterror("Failed to find a real function");
+        found_real_func:;
+    }
+    
+    pushINSN(insn::new_immediate_movz(iter, 1, 0, 0 ));
+    
+    RETCACHEPATCHES;
+}
+
+std::vector<patch> ibootpatchfinder64_iOS15::get_skip_set_bpr_patch(){
+    UNCACHEPATCHES;
+    
+    try {
+        /*
+            iOS 14 method seems to have worked find for older devices i guess?
+            It only started failing on A12 (as far as i have noticed)
+         */
+        return ibootpatchfinder64_iOS14::get_skip_set_bpr_patch();
+    } catch (...) {
+        debug("iOS 14 method failed, trying iOS 16 method");
+    }
+    
+    /*
+        Below this line is iOS 16 patchfinder copy and pasted
+     */
+    
+    
+    /*
+     In 16.1 20B5027f we're back to this again -_-"
+0x00000001800cf2e8         mov        x8, #0x30
+0x00000001800cf2ec         movk       x8, #0x102d, lsl #16
+0x00000001800cf2f0         movk       x8, #0x2, lsl #32
+0x00000001800cf2f4         ldr        w9, [x8]
+0x00000001800cf2f8         ret
+     
+0x00000001800cf120         mov        x0, lr
+0x00000001800cf124         bl         0x00000001800cf2e8
+0x00000001800cf128         mov        lr, x0
+0x00000001800cf12c         orr        w9, w9, #0x1
+0x00000001800cf130         b          call_to_store
+     */
+    
+    std::set<uint64_t> bpr_regs = {0x2102d0030/*t8010*/, 0x2352d0030/*t8015*/, 0x23d2d0030/*t8030,t8020,t8006*/, 0x23d2dc030/*t8110*/};
+    
+    vmem iter = _vmem->getIter();
+    try {
+        while (true) {
+        loop_start:
+            while (++iter != insn::movz || iter().subtype() != insn::st_immediate)
+                ;
+            vmem iter2 = iter;
+            uint8_t rd = iter().rd();
+            loc_t tgtval = iter2().imm();
+            
+            loc_t didBranchTo = 0;
+            
+            for (int i=0; i<4; i++) {
+                if (++iter2 != insn::movk || iter2().rd() != rd){
+                    if (iter2() == insn::bl) {
+                        iter2 = didBranchTo = iter2().imm();
+                        continue;
+                    }
+                    break;
+                }
+                tgtval += iter2().imm();
+            }
+            
+            if (bpr_regs.find(tgtval) == bpr_regs.end()) continue;
+
+            if (iter2() != insn::ldr || iter2().rn() != rd) continue; //this should be fatal!
+            uint8_t rt = iter2().rt();
+            
+            try{
+                loc_t callref = -4;
+                while ((callref = find_call_ref(iter,false,callref+4))) {
+                    debug("callref=0x%llx",callref);
+                    
+                    iter2 = callref;
+                    for (int i=0; i<4; i++) {
+                        if (++iter2 == insn::orr && iter2().rn() == rt && iter2().imm() == 1) {
+                            pushINSN(insn::new_register_mov(iter2, 0, iter2().rd(), iter2().rn()));
+                            goto loop_start;
+                        }
+                    }
+                }
+            }catch(...){
+                //
+            }
+        }
+    } catch (...) {
+        //
+    }
+    retassure(patches.size(), "Failed to find a single patch");
+    RETCACHEPATCHES;
 }

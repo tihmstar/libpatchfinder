@@ -88,8 +88,11 @@ namespace patchfinder {
         
         virtual std::vector<patch> get_harcode_bootargs_patch(std::string bootargs) override;
 
-        virtual std::vector<patch> get_harcode_boot_manifest_patch(const void *hash, size_t hashSize) override;
-
+        virtual std::vector<patch> get_allow_sep_boot_skip_stage1() override;
+        
+        virtual std::vector<patch> get_raw_sep_romcmd_patch() override;
+        
+        virtual std::vector<patch> get_noemf_patch() override;
         
 #pragma mark Util
         virtual loc_t find_rootvnode() override;

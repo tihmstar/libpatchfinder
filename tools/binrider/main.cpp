@@ -4,8 +4,8 @@
 //
 //  Created by tihmstar on 29.06.23.
 //
-
 #include <libgeneral/macros.h>
+
 #include <libpatchfinder/patchfinder32.hpp>
 #include <libpatchfinder/patchfinder64.hpp>
 #include <libpatchfinder/machopatchfinder32.hpp>
@@ -34,6 +34,8 @@ static struct option longopts[] = {
     { "fof" ,               required_argument, NULL,  0  },
     { "stringloc",          required_argument, NULL,  0  },
     { "stringloc2",         required_argument, NULL,  0  },
+    { "stringref",          required_argument, NULL,  0  },
+    { "stringref2",         required_argument, NULL,  0  },
     { "xref",               required_argument, NULL,  0  },
 
     /* prints */
@@ -60,6 +62,8 @@ void cmd_help(){
     printf("      --fof <address>\t\t\t\tPrint fileoffset of virtual address\n");
     printf("      --stringloc <string>\t\t\tPrint addr of null terminated string\n");
     printf("      --stringloc2 <string>\t\t\tPrint addr of not null terminated string\n");
+    printf("      --stringref <string>\t\t\tPrint xref of null terminated string\n");
+    printf("      --stringref2 <string>\t\t\tPrint xref of not null terminated string\n");
     printf("      --xref <address>\t\t\t\tPrint literal refs to address\n");
 
 
@@ -87,6 +91,7 @@ struct fstruct {
     std::vector<uint8_t> data;
     std::vector<uint64_t> refs;
     bool isString;
+    bool wantXref;
 };
 
 struct mstruct {
@@ -189,12 +194,14 @@ int main_r(int argc, const char * argv[]) {
                     });
                 }else if (curopt == "fof") {
                     fofs.refs.push_back(strtoll(optarg, NULL, 16));
-                }else if (curopt.starts_with("stringloc")) {
-                    bool isNullTerminated = (curopt == "stringloc");
+                }else if (curopt.starts_with("stringloc") || curopt.starts_with("stringref")) {
+                    bool isNullTerminated = !curopt.ends_with("2");
+                    bool wantXref = curopt.starts_with("stringref");
                     std::string str = optarg;
                     fstruct mLoc = {
                         .data = {str.begin(), str.end()},
                         .isString = true,
+                        .wantXref = wantXref,
                     };
                     if (isNullTerminated) {
                         mLoc.data.push_back('\0');
@@ -297,7 +304,42 @@ int main_r(int argc, const char * argv[]) {
                 break;
         }
     }
-    
+
+    {
+        //memloc
+        for (auto m : memLocs) {
+            if (m.isString) {
+                info("Searching for string '%s'",(char*)m.data.data());
+            }else{
+                reterror("TODO");
+            }
+            patchfinder::loc_t found = -1;
+            bool didFind = false;
+            do{
+                try {
+                    found = pf->memmem(m.data.data(), m.data.size(),found+1);
+                    if (m.wantXref) xrefs.refs.push_back(found);
+                    didFind = true;
+                } catch (...) {
+                    break;
+                }
+                if (didFind && found) {
+                    if (m.isString) {
+                        info("\tFound '%s' at 0x%08llx",(char*)m.data.data(),found);
+                    }else{
+                        reterror("TODO");
+                    }
+                }
+            } while (found);
+            if (!didFind) {
+                if (m.isString) {
+                    info("\tNo occurences found of '%s'",(char*)m.data.data());
+                }else{
+                    reterror("TODO");
+                }
+            }
+        }
+    }
 
     {
         //refs
@@ -326,41 +368,6 @@ int main_r(int argc, const char * argv[]) {
                 }
                 if (!didFind) {
                     info("\tNo refs found to 0x%08llx",tgt);
-                }
-            }
-        }
-    }
-    
-    {
-        //memloc
-        for (auto m : memLocs) {
-            if (m.isString) {
-                info("Searching for string '%s'",(char*)m.data.data());
-            }else{
-                reterror("TODO");
-            }
-            patchfinder::loc_t found = -1;
-            bool didFind = false;
-            do{
-                try {
-                    found = pf->memmem(m.data.data(), m.data.size(),found+1);
-                    didFind = true;
-                } catch (...) {
-                    break;
-                }
-                if (didFind && found) {
-                    if (m.isString) {
-                        info("\tFound '%s' at 0x%08llx",(char*)m.data.data(),found);
-                    }else{
-                        reterror("TODO");
-                    }
-                }
-            } while (found);
-            if (!didFind) {
-                if (m.isString) {
-                    info("\tNo occurences found of '%s'",(char*)m.data.data());
-                }else{
-                    reterror("TODO");
                 }
             }
         }

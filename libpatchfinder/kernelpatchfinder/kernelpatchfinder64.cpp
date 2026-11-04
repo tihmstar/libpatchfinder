@@ -5,6 +5,7 @@
 //  Created by tihmstar on 28.09.19.
 //  Copyright © 2019 tihmstar. All rights reserved.
 //
+#include <libgeneral/macros.h>
 
 #include "../../include/libpatchfinder/kernelpatchfinder/kernelpatchfinder64.hpp"
 #include "kernelpatchfinder64_base.hpp"
@@ -15,6 +16,9 @@
 #include "kernelpatchfinder64_iOS15.hpp"
 #include "kernelpatchfinder64_iOS16.hpp"
 #include "kernelpatchfinder64_iOS17.hpp"
+#include "kernelpatchfinder64_iOS18.hpp"
+#include "kernelpatchfinder64_iOS26.hpp"
+#include "kernelpatchfinder64_iOS27.hpp"
 
 using namespace std;
 using namespace tihmstar;
@@ -29,7 +33,16 @@ kernelpatchfinder64 *kernelpatchfinder64::make_kernelpatchfinder64(machopatchfin
     info("Kernel version: %s",version.c_str());
     uint32_t vers = atoi(version.c_str());
 
-    if (vers > 10000) {
+    if (vers > 13400) {
+        info("Detected iOS 27 kernel");
+        return new kernelpatchfinder64_iOS27(std::move(helper));
+    }else if (vers > 12300) {
+        info("Detected iOS 26 kernel");
+        return new kernelpatchfinder64_iOS26(std::move(helper));
+    }else if (vers > 11200) {
+        info("Detected iOS 18 kernel");
+        return new kernelpatchfinder64_iOS18(std::move(helper));
+    }else if (vers > 10000) {
         info("Detected iOS 17 kernel");
         return new kernelpatchfinder64_iOS17(std::move(helper));
     }else if (vers > 8700) {
@@ -57,6 +70,17 @@ kernelpatchfinder64 *kernelpatchfinder64::make_kernelpatchfinder64(machopatchfin
 
 kernelpatchfinder64::~kernelpatchfinder64(){
     //
+}
+
+uint32_t kernelpatchfinder64::get_cpid(){
+    loc_t release_uname_str = findstr("RELEASE_ARM64_", false);
+    debug("release_uname_str=0x%016llx",release_uname_str);
+    const char *release_uname_str_ptr = (const char*)_vmem->memoryForLoc(release_uname_str);
+    release_uname_str_ptr+=sizeof("RELEASE_ARM64_")-1;
+    while (*release_uname_str_ptr && isalpha(*release_uname_str_ptr)) release_uname_str_ptr++;
+    
+    uint32_t cpid = strtoul(release_uname_str_ptr, NULL, 16);
+    return cpid;
 }
 
 std::string kernelpatchfinder64::get_xnu_kernel_version_number_string(){

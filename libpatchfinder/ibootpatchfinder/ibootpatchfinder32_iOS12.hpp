@@ -17,6 +17,8 @@ namespace tihmstar {
             using ibootpatchfinder32_iOS11::ibootpatchfinder32_iOS11;
 
             virtual std::vector<patch> get_force_septype_local_patch() override;
+
+            virtual std::vector<patch> get_sigcheck_patch() override;
         };
     };
 };

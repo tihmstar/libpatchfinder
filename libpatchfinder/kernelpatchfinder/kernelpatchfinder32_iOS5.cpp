@@ -4,6 +4,7 @@
 //
 //  Created by erd on 06.07.23.
 //
+#include <libgeneral/macros.h>
 
 #include "kernelpatchfinder32_iOS5.hpp"
 #include <libinsn/insn.hpp>

@@ -5,17 +5,22 @@
 //  Created by tihmstar on 28.07.20.
 //  Copyright © 2020 tihmstar. All rights reserved.
 //
+#include <libgeneral/macros.h>
 
 #include "../../include/libpatchfinder/ibootpatchfinder/ibootpatchfinder64.hpp"
 #include "ibootpatchfinder64_base.hpp"
 #include "ibootpatchfinder64_iOS9.hpp"
 #include "ibootpatchfinder64_iOS10.hpp"
+#include "ibootpatchfinder64_iOS11.hpp"
 #include "ibootpatchfinder64_iOS12.hpp"
 #include "ibootpatchfinder64_iOS13.hpp"
 #include "ibootpatchfinder64_iOS14.hpp"
 #include "ibootpatchfinder64_iOS15.hpp"
 #include "ibootpatchfinder64_iOS16.hpp"
 #include "ibootpatchfinder64_iOS17.hpp"
+#include "ibootpatchfinder64_iOS18.hpp"
+#include "ibootpatchfinder64_iOS26.hpp"
+#include "ibootpatchfinder64_iOS27.hpp"
 #include <string.h>
 
 using namespace std;
@@ -23,11 +28,11 @@ using namespace tihmstar::patchfinder;
 using namespace tihmstar::libinsn;
 
 #define IBOOT_VERS_STR_OFFSET 0x280
+#define MBOOT_VERS_STR_OFFSET 0x300
 #define iBOOT_BASE_OFFSET 0x318
 #define iBOOT_14_BASE_OFFSET 0x300
 #define KERNELCACHE_PREP_STRING "__PAGEZERO"
 #define ENTERING_RECOVERY_CONSOLE "Entering recovery mode, starting command prompt"
-#define DEBUG_ENABLED_DTRE_VAR_STR "debug-enabled"
 #define DEFAULT_BOOTARGS_STR "rd=md0 nand-enable-reformat=1 -progress"
 #define DEFAULT_BOOTARGS_STR_13 "rd=md0 -progress -restore"
 #define CERT_STR "Apple Inc.1"
@@ -64,45 +69,85 @@ ibootpatchfinder64 *ibootpatchfinder64::make_ibootpatchfinder64(const char * fil
 
 ibootpatchfinder64 *ibootpatchfinder64::make_ibootpatchfinder64(const void *buffer, size_t bufSize, bool takeOwnership){
     uint8_t *buf = NULL;
-    uint32_t vers = 0;
+    uint32_t versiBoot = 0;
+    uint32_t versmBoot = 0;
 
     buf = (uint8_t*)buffer;
     assure(bufSize > 0x1000);
-    
-    assure(!strncmp((char*)&buf[IBOOT_VERS_STR_OFFSET], "iBoot", sizeof("iBoot")-1));
+    const char *versName = (char*)&buf[IBOOT_VERS_STR_OFFSET];
+    bool isMboot = false;
+
+    assure(!strncmp(versName, "iBoot", sizeof("iBoot")-1) || (isMboot = !strncmp(versName, "mBoot", sizeof("mBoot")-1)));
     retassure(*(uint32_t*)&buf[0] == 0x90000000
               || (((uint32_t*)buf)[0] == 0x14000001 && ((uint32_t*)buf)[4] == 0x90000000)
               || (((uint32_t*)buf)[0] == 0xD53C1102 && ((uint32_t*)buf)[3] == 0xD51C1102)
               , "invalid magic");
 
-    retassure(vers = atoi((char*)&buf[IBOOT_VERS_STR_OFFSET+6]), "No iBoot version found!\n");
-    debug("iBoot-%d inputted\n", vers);
+    if (isMboot) {
+        versmBoot = atoi(versName+6);
+    }else{
+        versiBoot = atoi(versName+6);
+    }
+    
+    if (!versiBoot && !versmBoot) {
+        versName = (char*)&buf[MBOOT_VERS_STR_OFFSET];
+        if (isMboot) {
+            versmBoot = atoi(versName+6);
+        }else{
+            versiBoot = atoi(versName+6);
+        }
+    }
+    retassure(versmBoot || versiBoot, "No iBoot version found!\n");
+    if (isMboot){
+        debug("mBoot-%d (%s) inputted\n", versmBoot, versName);
+    }else{
+        debug("iBoot-%d (%s) inputted\n", versiBoot, versName);
+    }
 
-    if (vers >= 10000) {
+    if (versiBoot >= 15300 || versmBoot >= 20400) {
+        /*
+            AppleTV11,1         mBoot-20457.3.23
+            AudioAccessory5,11  iBoot-15387
+         */
+        printf("iOS 27 iBoot detected!\n");
+        return new ibootpatchfinder64_iOS27(buf,bufSize,takeOwnership);
+    }else if (versiBoot >= 13800 || versmBoot >= 18000) {
+        /*
+            AppleTV11,1         mBoot-18000.103.2
+         */
+        printf("iOS 26 iBoot detected!\n");
+        return new ibootpatchfinder64_iOS26(buf,bufSize,takeOwnership);
+    }else if (versiBoot >= 11800) {
+        printf("iOS 18 iBoot detected!\n");
+        return new ibootpatchfinder64_iOS18(buf,bufSize,takeOwnership);
+    }else if (versiBoot >= 10000) {
         printf("iOS 17 iBoot detected!\n");
         return new ibootpatchfinder64_iOS17(buf,bufSize,takeOwnership);
-    }else if (vers >= 8400) {
+    }else if (versiBoot >= 8400) {
         printf("iOS 16 iBoot detected!\n");
         return new ibootpatchfinder64_iOS16(buf,bufSize,takeOwnership);
-    }else if (vers >= 7400) {
+    }else if (versiBoot >= 7400) {
         printf("iOS 15 iBoot detected!\n");
         return new ibootpatchfinder64_iOS15(buf,bufSize,takeOwnership);
-    }else if (vers >= 6603) {
+    }else if (versiBoot >= 6603) {
         printf("iOS 14 iBoot detected!\n");
         return new ibootpatchfinder64_iOS14(buf,bufSize,takeOwnership);
-    }else if (vers >= 5540) {
+    }else if (versiBoot >= 5540) {
         printf("iOS 13 iBoot detected!\n");
         return new ibootpatchfinder64_iOS13(buf,bufSize,takeOwnership);
-    }else if (vers >= 4510) {
+    }else if (versiBoot >= 4510) {
         printf("iOS 12 iBoot detected!\n");
         return new ibootpatchfinder64_iOS12(buf,bufSize,takeOwnership);
-    }else if (vers >= 3300) {
+    }else if (versiBoot >= 4000) {
+        printf("iOS 11 iBoot detected!\n");
+        return new ibootpatchfinder64_iOS11(buf,bufSize,takeOwnership);
+    }else if (versiBoot >= 3300) {
         printf("iOS 10 iBoot detected!\n");
         return new ibootpatchfinder64_iOS10(buf,bufSize,takeOwnership);
-    }else if (vers >= 2800) {
+    }else if (versiBoot >= 2800) {
         printf("iOS 9 iBoot detected!\n");
         return new ibootpatchfinder64_iOS9(buf,bufSize,takeOwnership);
-    }else if (vers >= 1940) {
+    }else if (versiBoot >= 1940) {
         printf("iOS 7 iBoot detected!\n");
         return new ibootpatchfinder64_iOS7(buf,bufSize,takeOwnership);
     }
@@ -129,7 +174,14 @@ ibootpatchfinder64::loc_t ibootpatchfinder64::findnops(uint16_t nopCnt, bool use
         }
     }
     
-    return patchfinder64::findnops(nopCnt,useNops,nopOpcode);
+    if (nopOpcode) {
+        try {
+            return patchfinder64::findnops(nopCnt,useNops,nopOpcode);
+        } catch (...) {
+            //
+        }
+    }
+    return patchfinder64::findnops(nopCnt,useNops,0x00000000);
 }
 
 ibootpatchfinder::loc64_t ibootpatchfinder64::find_base(){

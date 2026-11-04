@@ -5,6 +5,7 @@
 //  Created by tihmstar on 20.01.21.
 //  Copyright © 2021 tihmstar. All rights reserved.
 //
+#include <libgeneral/macros.h>
 
 #include "kernelpatchfinder64_base.hpp"
 #include <libinsn/insn.hpp>
@@ -948,8 +949,10 @@ std::vector<patch> kernelpatchfinder64_base::get_allow_UID_key_patch(){
         }
         uint8_t cmpreg = iter().rn();
         uint64_t val = iter().imm();
-//        loc_t candidate = iter;
-//        debug("candidate=0x%016llx val=0x%x",candidate,val);
+#ifdef XCODE
+        loc_t candidate = iter;
+        debug("candidate=0x%016llx val=0x%x",candidate,val);
+#endif
         vmem iter2 = iter;
 
         for (int i=0; i<8; i++) {
@@ -977,7 +980,7 @@ std::vector<patch> kernelpatchfinder64_base::get_allow_UID_key_patch(){
         }
     }
     
-    reterror("todo");
+    reterror("Failed to find patches");
     RETCACHEPATCHES;
 }
 
@@ -1045,35 +1048,34 @@ std::vector<patch> kernelpatchfinder64_base::get_ramdisk_detection_patch(){
 
 std::vector<patch> kernelpatchfinder64_base::get_read_bpr_patch(){
     UNCACHEPATCHES;
-    loc_t ml_io_map = find_ml_io_map();
-    debug("ml_io_map=0x%016llx",ml_io_map);
     
     loc_t kernel_map = find_kernel_map();
     debug("kernel_map=0x%016llx",kernel_map);
 
+    loc_t ml_io_map = find_ml_io_map();
+    debug("ml_io_map=0x%016llx",ml_io_map);
+    
     loc_t kmem_free = find_kmem_free();
     debug("kmem_free=0x%016llx",kmem_free);
     
-    loc_t release_uname_str = findstr("RELEASE_ARM64_", false);
-    debug("release_uname_str=0x%016llx",release_uname_str);
-    const char *release_uname_str_ptr = (const char*)_vmem->memoryForLoc(release_uname_str);
-    release_uname_str_ptr+=sizeof("RELEASE_ARM64_")-1;
-    while (*release_uname_str_ptr && isalpha(*release_uname_str_ptr)) release_uname_str_ptr++;
-    
     loc_t bpr_addr = 0;
-    int cpid = atoi(release_uname_str_ptr);
-    debug("cpid=0x%d",cpid);
+    int cpid = get_cpid();
     switch (cpid) {
-        case 8010:
-        case 8011:
+        case 0x8010:
+        case 0x8011:
             bpr_addr = 0x2102d0030;
             break;
-        case 8015:
+        case 0x8015:
             bpr_addr = 0x2352d0030;
+            break;
+        case 0x8006:
+        case 0x8020:
+        case 0x8030:
+            bpr_addr = 0x23d2d0030;
             break;
             
         default:
-            reterror("unimplemented CPID=%d",cpid);
+            reterror("unimplemented CPID=0x%08x",cpid);
     }
 
     debug("bpr_addr=0x%016llx",bpr_addr);
@@ -1167,76 +1169,245 @@ std::vector<patch> kernelpatchfinder64_base::get_harcode_bootargs_patch(std::str
     return patches;
 }
 
-std::vector<patch> kernelpatchfinder64_base::get_harcode_boot_manifest_patch(const void *hash, size_t hashSize){
+std::vector<patch> kernelpatchfinder64_base::get_allow_sep_boot_skip_stage1(){
     UNCACHEPATCHES;
-    size_t realhashSize = hashSize;
-    while (realhashSize & 3) realhashSize++;
     
-    loc_t entrypoint = find_entry();
-    debug("entry=0x%16llx",entrypoint);
+    auto iter = _vmem->getIter();
     
-    vmem iter = _vmem->getIter(entrypoint);
+    do{
+        loc_t str = findstr("\"SEP Boot Failure: status check 1 failed - 0x%x", false);
+        debug("str=0x%llx",str);
+        if (!str) break;
+        
+        loc_t ref = find_literal_ref(str);
+        debug("ref=0x%llx",ref);
+        retassure(ref, "ref to str");
+        iter = ref;
+        for (int i=0; i<10; i++) {
+            auto isn = --iter;
+            if (isn.supertype() == insn::sut_branch_imm){
+                if (isn == insn::cbz) {
+                    pushINSN(insn::new_immediate_b(isn, isn.imm()));
+                }else{
+                    reterror("TODO implement!");
+                }
+                break;
+            }
+        }
+        error("Failed to find patch2");
+        break;
+        foundpatch:;
+    }while (0);
+
+    loc_t str = findstr("\"SEP Boot Failure: unexpected status 1:", false);
+    debug("str=0x%llx",str);
+    retassure(str, "Failed to find str");
     
-    loc_t hookpos = iter().imm();
-    debug("hookpos=0x%16llx",hookpos);
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%llx",ref);
+    retassure(ref, "ref to str");
     
+    iter = ref;
     
-    offset_t cmdlineOffset = find_boot_args_commandline_offset();
-    offset_t deviceTreePOffset = (cmdlineOffset - sizeof(uint32_t) - sizeof(uint64_t)) & ~3;
-    offset_t virtBaseOffset = 0x08;
-    offset_t physBaseOffset = 0x10;
-    
-    debug("deviceTreePOffset=0x%016llx",deviceTreePOffset);
-    
-    uint32_t shellcode_insn_cnt = 25; //commitment
-    loc_t shellcode = findnops(shellcode_insn_cnt + realhashSize/4);
-    debug("shellcode=0x%016llx",shellcode);
-    uint32_t loopdst = 9;
-    uint32_t loop2dst = 19;
-#define cPC (shellcode+(insnNum++)*4)
-    int insnNum = 0;
-    pushINSN(insn::new_immediate_ldr_unsigned(cPC, deviceTreePOffset, 0, 5));
-    pushINSN(insn::new_immediate_ldr_unsigned(cPC, virtBaseOffset, 0, 6));
-    pushINSN(insn::new_register_add(cPC, 0, 5, 6, 5, true));
-    pushINSN(insn::new_immediate_ldr_unsigned(cPC, physBaseOffset, 0, 6));
-    pushINSN(insn::new_register_add(cPC, 0, 5, 6, 5, false));
-    //load "boot-man" 0x6e61 6d2d 746f 6f62
-    pushINSN(insn::new_immediate_movz(cPC, 0x6f62, 6, 0));
-    pushINSN(insn::new_immediate_movk(cPC, 0x746f, 6, 16));
-    
-    //    pushINSN(insn::new_immediate_movk(cPC, 0x6d2d, 6, 32));
-    //    pushINSN(insn::new_immediate_movk(cPC, 0x6e61, 6, 48));
-    pushINSN(insn::new_immediate_movz(cPC, 0x6d2d, 4, 0));
-    pushINSN(insn::new_immediate_movk(cPC, 0x6e61, 4, 16));
-    
-    assure(loopdst == insnNum);
-    
-    pushINSN(insn::new_immediate_ldr_unsigned(cPC, 0, 5, 7, true));
-    pushINSN(insn::new_immediate_ldr_unsigned(cPC, 4, 5, 8, true));
-    pushINSN(insn::new_immediate_add(cPC, 4, 5, 5));
-    pushINSN(insn::new_register_cmp(cPC, 0, 6, 7, -1));
-    pushINSN(insn::new_immediate_bcond(cPC, shellcode+loopdst*4, insn::NE));
-    pushINSN(insn::new_register_cmp(cPC, 0, 4, 8, -1));
-    pushINSN(insn::new_immediate_bcond(cPC, shellcode+loopdst*4, insn::NE));
-    pushINSN(insn::new_immediate_add(cPC, 32, 5, 5));
-    
-    pushINSN(insn::new_general_adr(cPC, shellcode+shellcode_insn_cnt*4, 6));
-    pushINSN(insn::new_immediate_movz(cPC, 0x30, 7, 0));
-    assure(loop2dst == insnNum);
-    pushINSN(insn::new_immediate_subs(cPC, 4, 7, 7));
-    pushINSN(insn::new_register_ldr(cPC, 6, 7, 8, true));
-    pushINSN(insn::new_register_str(cPC, 5, 7, 8, true));
-    pushINSN(insn::new_immediate_bcond(cPC, shellcode+loop2dst*4, libinsn::arm64::insn::NE));
+    loc_t bref = 0;
     {
-        uint32_t opcode = (uint32_t)deref(hookpos);
-        patches.push_back({cPC,&opcode,sizeof(opcode)});
+        for (int i=0; i<10; i++) {
+            try {
+                bref = find_branch_ref(iter, -0x100);
+                goto didfindbref;
+            } catch (...) {
+                --iter;
+            }
+        }
+        reterror("Failed to find bref!");
+    didfindbref:;
     }
-    pushINSN(insn::new_immediate_b(cPC, hookpos+4));
-    assure(insnNum == shellcode_insn_cnt);
-    patches.push_back({cPC,hash,hashSize});
-    pushINSN(insn::new_immediate_b(hookpos, shellcode));
-#undef cPC
+    debug("bref=0x%llx",bref);
+    iter = bref;
+    loc_t refBBStart = iter().imm();
+    debug("refBBStart=0x%llx",refBBStart);
+
     
+    retassure(--iter == insn::cmp, "unexpected insn");
+    
+    uint8_t cmpreg = iter().rn();
+    debug("cmpreg=%d",cmpreg);
+
+    retassure((--iter).supertype() == insn::sut_memory && iter().subtype() == insn::st_immediate, "unexpected non mem insn");
+    retassure(iter().rt() == cmpreg, "unexpected layout");
+    uint8_t reg = iter().rn();
+    uint64_t imm = (uint64_t)iter().imm();
+    debug("reg=%d",reg);
+    debug("imm=0x%llx",imm);
+
+    bool foundRet = false;
+    while (true) {
+        if (++iter == insn::ret) {
+            if (foundRet) {
+                /*
+                    Sometimes there is ret in the middle of the function, but if we encounter it twice we know we failed!
+                 */
+                reterror("Failed to find patch");
+            }
+            foundRet = true;
+        }
+        if (iter().supertype() == insn::sut_memory && iter().subtype() == insn::st_immediate){
+            if (iter().rn() == reg && iter().imm() == imm) {
+                uint8_t cur_cmpreg = iter().rt();
+                retassure(++iter == insn::cmp && iter().rn() == cur_cmpreg, "finder failed");
+                
+                loc_t dst = --iter;
+                debug("dst=0x%llx",dst);
+                
+                pushINSN(insn::new_immediate_b(refBBStart, dst));
+                RETCACHEPATCHES;
+            }
+        }
+    }
+    reterror("Failed to find patch");
+}
+
+std::vector<patch> kernelpatchfinder64_base::get_raw_sep_romcmd_patch(){
+    UNCACHEPATCHES;
+    
+    /*
+        Unrestrict messages sent to mailbox
+     */
+    loc_t str = findstr("postMailbox %p failed", false);
+    retassure(str, "Failed to find str");
+    while ((uint8_t)_vmem->deref(--str))
+        ;
+    str++;
+    debug("str=0x%llx",str);
+
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%llx",ref);
+    retassure(ref, "ref to str");
+ 
+    auto iter = _vmem->getIter(ref);
+    while (--iter != insn::bfxil)
+        ;
+    pushINSN(insn::new_general_nop(iter));
+    
+    /*
+        Modify what userspace receives
+     */
+    loc_t str2 = findstr("AppleSEPBooter::romCommand", false);
+    retassure(str2, "Failed to find str2");
+    while ((uint8_t)_vmem->deref(--str2))
+        ;
+    str2++;
+    debug("str2=0x%llx",str2);
+
+    loc_t ref2 = find_literal_ref(str2);
+    debug("ref2=0x%llx",ref2);
+    retassure(ref2, "ref2 to str2");
+
+    loc_t romcommand = find_bof(ref2);
+    debug("romcommand=0x%llx",romcommand);
+    iter = romcommand;
+    while (++iter != insn::mov || iter().subtype() != insn::st_register || iter().rm() != 0)
+        ;
+    uint8_t thisreg = iter().rd();
+    debug("thisreg=%d",thisreg);
+    
+    while (++iter != insn::strb || iter().rn() != thisreg)
+        ;
+    uint32_t waitFlagOffset = iter().imm();
+    debug("waitFlagOffset=0x%x",waitFlagOffset);
+    
+    while (++iter != insn::ldrh || iter().rn() != thisreg || iter().imm() < waitFlagOffset)
+        ;
+    uint32_t oldLoadOffset = (uint32_t)iter().imm();
+    debug("oldLoadOffset=0x%x",oldLoadOffset);
+    
+    uint32_t newLoadOffset = (oldLoadOffset & ~7)+8;
+    debug("newLoadOffset=0x%x",newLoadOffset);
+
+    pushINSN(insn::new_immediate_ldr_unsigned(iter, newLoadOffset, iter().rn(), iter().rt()));
+
+    /*
+        Store real mailbox output to object and don't forward it to the orig handler, unless we're dealing with a panic
+     */
+    loc_t str3 = findstr("AppleSEPBooter::_bootAction", false);
+    retassure(str3, "Failed to find str3");
+    while ((uint8_t)_vmem->deref(--str3))
+        ;
+    str3++;
+    debug("str3=0x%llx",str3);
+
+    loc_t ref3 = find_literal_ref(str3);
+    debug("ref3=0x%llx",ref3);
+    retassure(ref3, "ref3 to ref3");
+
+    loc_t bootaction = find_bof(ref3);
+    debug("bootaction=0x%llx",bootaction);
+    iter = bootaction;
+    
+    uint8_t thisreg2 = -1;
+    uint8_t rspValReg = -1;
+
+    while (++iter != insn::tst || iter().imm() != 0xff){
+        auto isn = iter();
+        retassure(isn != insn::ret, "reached eof");
+        if (isn == insn::mov && isn.subtype() == insn::st_register && isn.rm() == 0) {
+            thisreg2 = isn.rd();
+        }else if (isn == insn::ldr && isn.subtype() == insn::st_immediate && isn.imm() == 0 && isn.rn() == 2) {
+            rspValReg = isn.rt();
+        }
+    }
+    retassure(thisreg2 != -1 && rspValReg != -1, "failed to find regs");
+    debug("thisreg2=%d",thisreg2);
+    debug("rspValReg=%d",rspValReg);
+
+    loc_t tstloc = iter;
+    debug("tstloc=0x%llx",tstloc);
+    
+    pushINSN(insn::new_immediate_ands(iter, 0xff0000, iter().rn(), iter().rd(), true)); //check for "panic" insted of rom endpoint
+    retassure(++iter == insn::bcond && iter().condition() == insn::cond::EQ, "unexpected insn");
+
+    loc_t isromloc = iter().imm();
+    debug("isromloc=0x%llx",isromloc);
+    
+    loc_t patchloc = iter;
+    debug("patchloc=0x%llx",patchloc);
+    
+    while (++iter != insn::ret)
+        ;
+    
+    while (--iter != insn::strh || iter().subtype() != insn::st_immediate || iter().imm() != oldLoadOffset)
+        retassure(iter != bootaction, "reached bof");
+    ++iter;
+    loc_t funcoutloc = iter;
+    debug("funcoutloc=0x%llx",funcoutloc);
+
+    pushINSN(insn::new_immediate_str_unsigned(patchloc+4*0, newLoadOffset, thisreg2, rspValReg));
+    pushINSN(insn::new_immediate_bcond(patchloc+4*1, isromloc, insn::cond::EQ));
+    pushINSN(insn::new_immediate_strb_unsigned(patchloc+4*2, waitFlagOffset, thisreg2, -1));
+    pushINSN(insn::new_immediate_b(patchloc+4*3, funcoutloc));
+    
+    RETCACHEPATCHES;
+}
+
+std::vector<patch> kernelpatchfinder64_base::get_noemf_patch(){
+    UNCACHEPATCHES;
+    /*
+        iPhone7,2 iOS 12.5.7
+     */
+    patchfinder64::loc_t str = findstr("_loadPartitionKeys",true);
+    debug("str=0x%llx",str);
+    retassure(str, "Failed to find str");
+    
+    patchfinder64::loc_t ref = find_literal_ref(str);
+    debug("ref=0x%llx",str);
+    retassure(ref, "ref to ref");
+
+    loc_t bof = find_bof(ref);
+    debug("bof=0x%llx",bof);
+    
+    pushINSN(insn::new_immediate_movz(bof, 1, 0, 0));
+    pushINSN(insn::new_general_ret(bof+4));
+
     RETCACHEPATCHES;
 }
 
@@ -1289,49 +1460,191 @@ patchfinder64::loc_t kernelpatchfinder64_base::find_ml_io_map(){
     } catch (...) {
         //
     }
-    debug("Failed to find sym _ml_io_map, trying fallback method...");
+    uint32_t cpid = get_cpid();
+    try{
+        /*
+         Method 1
+         */
+        debug("Failed to find sym _ml_io_map, trying fallback method...");
+        
+        loc_t str = findstr("no-dockfifo-uart",true);
+        debug("str=0x%016llx",str);
+        
+        loc_t ref = find_literal_ref(str);
+        debug("ref=0x%016llx",ref);
+        
+        vmem iter = _vmem->getIter(ref);
+        
+        {
+            for (int i=0; i<100; i++) {
+                if (--iter == insn::bl) goto foundfunc;
+            }
+            reterror("Failed to find func in range");
+        foundfunc:
+            ;
+        }
+        loc_t func = iter().imm();
+        debug("func=0x%016llx",func);
+        
+        loc_t ml_io_map = -4;
+        
+        while (true) {
+            ml_io_map = find_branch_ref(func,0,0,ml_io_map+4);
+            debug("ref candidate=0x%016llx",ml_io_map);
+            iter = ml_io_map;
+            if (iter() != insn::b) continue;
+            bool hasW2 = false;
+            bool hasW3 = false;
+            if (cpid == 0x8006) {
+                /*
+                 Watch4,1 WatchOS 5.0 ml_io_map doesn't have x3 at all
+                 */
+                hasW3 |= true;
+            }
+            for (int i=0; i<2 && !(hasW2 && hasW3); i++) {
+                if (--iter != insn::movz && (iter() != insn::orr || iter().rn() != 0x1f /*wzr*/)) goto nextloop;
+                hasW3 |= (iter().rd() == 3 && iter().imm() == 3);
+                hasW2 |= (iter().rd() == 2 && iter().imm() == 7);
+            }
+            if (hasW2 && hasW3) {
+                loc_t retval = iter;
+                RETCACHELOC(retval);
+            }
+        nextloop:
+            continue;
+        }
+        reterror("Failed to find _ml_io_map");
+    } catch (...) {
+        //
+    }
     
-    loc_t str = findstr("no-dockfifo-uart",true);
-    debug("str=0x%016llx",str);
-    
-    loc_t ref = find_literal_ref(str);
-    debug("ref=0x%016llx",ref);
-
-    vmem iter = _vmem->getIter(ref);
+    try{
+        /*
+         Method 2
+         */
+        debug("Failed to find sym _ml_io_map, trying fallback method...");
+        
+        loc_t str = findstr("map aperture_phys_addr", false);
+        debug("str=0x%016llx",str);
+        
+        loc_t ref = find_literal_ref(str);
+        debug("ref=0x%016llx",ref);
+        
+        loc_t bof = find_bof(ref);
+        debug("bof=0x%016llx",bof);
+        
+        vmem iter = _vmem->getIter(bof);
+        
+        loc_t func = 0;
+        {
+            while (true) {
+                while (++iter != insn::bl) {
+                    retassure(iter() != insn::ret, "EOF");
+                }
+                auto iter2 = iter;
+                bool hasW2 = false;
+                bool hasW3 = false;
+                if (cpid == 0x8006) {
+                    /*
+                     Watch4,1 WatchOS 5.0 ml_io_map doesn't have x3 at all
+                     */
+                    hasW3 |= true;
+                }
+                for (int i=0; i<4; i++) {
+                    if (--iter2 != insn::movz && (iter2() != insn::orr || iter2().rn() != 0x1f /*wzr*/)) break;
+                    hasW3 |= (iter2().rd() == 3 && iter2().imm() == 3);
+                    hasW2 |= (iter2().rd() == 2 && iter2().imm() == 7);
+                }
+                if (hasW2 && hasW3) {
+                    func = iter().imm();
+                    debug("func=0x%016llx",func);
+                    break;
+                }
+            }
+        }
+        
+        loc_t ml_io_map = -4;
+        
+        while (true) {
+            ml_io_map = find_branch_ref(func,0,0,ml_io_map+4);
+            debug("ref candidate=0x%016llx",ml_io_map);
+            iter = ml_io_map;
+            if (iter() != insn::b) continue;
+            bool hasW2 = false;
+            bool hasW3 = false;
+            for (int i=0; i<3; i++) {
+                if (--iter != insn::movz && (iter() != insn::orr || iter().rn() != 0x1f /*wzr*/)) goto nextloop2;
+                hasW3 |= (iter().rd() == 3 && iter().imm() == 3);
+                hasW2 |= (iter().rd() == 2 && iter().imm() == 7);
+            }
+            if (hasW2 && hasW3) {
+                loc_t retval = iter;
+                RETCACHELOC(retval);
+            }
+        nextloop2:
+            continue;
+        }
+        reterror("Failed to find _ml_io_map");
+    } catch (...) {
+        //
+    }
     
     {
-        for (int i=0; i<100; i++) {
-            if (--iter == insn::bl) goto foundfunc;
+        /*
+         Method 3
+         */
+        debug("Failed to find sym _ml_io_map, trying fallback method...");
+        
+        loc_t str = findstr("\"unable to ml_io_map coresight regions\"",true);
+        debug("str=0x%016llx",str);
+        
+        loc_t ref = find_literal_ref(str);
+        debug("ref=0x%016llx",ref);
+        
+        vmem iter = _vmem->getIter(ref);
+        
+        while (++iter != insn::bl)
+            ;
+        {
+            for (int i=0; i<20; i++) {
+                if (++iter == insn::bl) goto foundfunc2;
+            }
+            reterror("Failed to find func in range");
+        foundfunc2:
+            ;
         }
-        reterror("Failed to find func in range");
-    foundfunc:
-        ;
+        loc_t func = iter().imm();
+        debug("func=0x%016llx",func);
+        
+        loc_t ml_io_map = -4;
+        
+        while (true) {
+            ml_io_map = find_branch_ref(func,0,0,ml_io_map+4);
+            debug("ref candidate=0x%016llx",ml_io_map);
+            iter = ml_io_map;
+            if (iter() != insn::b) continue;
+            bool hasW2 = false;
+            bool hasW3 = false;
+            if (cpid == 0x8006) {
+                /*
+                 Watch4,1 WatchOS 5.0 ml_io_map doesn't have x3 at all
+                 */
+                hasW3 |= true;
+            }
+            for (int i=0; i<2 && !(hasW2 && hasW3); i++) {
+                if (--iter != insn::movz && (iter() != insn::orr || iter().rn() != 0x1f /*wzr*/)) goto nextloop3;
+                hasW3 |= (iter().rd() == 3 && iter().imm() == 3);
+                hasW2 |= (iter().rd() == 2 && iter().imm() == 7);
+            }
+            if (hasW2 && hasW3) {
+                loc_t retval = iter;
+                RETCACHELOC(retval);
+            }
+        nextloop3:
+            continue;
+        }
+        reterror("Failed to find _ml_io_map");
     }
-    loc_t func = iter().imm();
-    debug("func=0x%016llx",func);
-
-    loc_t ml_io_map = -4;
-    
-    while (true) {
-        ml_io_map = find_branch_ref(func,0,0,ml_io_map+4);
-        debug("ref candidate=0x%016llx",ml_io_map);
-        iter = ml_io_map;
-        if (iter() != insn::b) continue;
-        bool hasW2 = false;
-        bool hasW3 = false;
-        for (int i=0; i<2; i++) {
-            if (--iter != insn::movz && (iter() != insn::orr || iter().rn() != 0x1f /*wzr*/)) goto nextloop;
-            hasW3 |= (iter().rd() == 3 && iter().imm() == 3);
-            hasW2 |= (iter().rd() == 2 && iter().imm() == 7);
-        }
-        if (hasW2 && hasW3) {
-            loc_t retval = iter;
-            RETCACHELOC(retval);
-        }
-    nextloop:
-        continue;
-    }
-    reterror("Failed to find _ml_io_map");
 }
 
 patchfinder64::loc_t kernelpatchfinder64_base::find_kernel_map(){
@@ -1535,8 +1848,15 @@ std::vector<patch> kernelpatchfinder64_base::get_read_bpr_patch_with_params(int 
     patches.push_back({nops+sizeof(readbpr)-1+4*6,&bpr_reg_addr,sizeof(bpr_reg_addr)});
     
     //hello linkerinfo in pointers
-    uint64_t funcptr = deref(table) & 0xffffffff00000000;
-    funcptr |= (nops & 0xffffffff);
+    uint64_t funcptr = deref(table);
+    if ((funcptr & (1LLU<<63)) && ((funcptr>>36) != 0xfffffff)) {
+        /* PACed pointers (Watch4,1) */
+        funcptr = funcptr & 0xffffffff00000000;
+        funcptr |= (nops - _base) & 0xffffffff;
+    }else{
+        funcptr = funcptr & 0xffffffff00000000;
+        funcptr |= (nops & 0xffffffff);
+    }
     patches.push_back({table,&funcptr,sizeof(funcptr)});
 
     RETCACHEPATCHES;

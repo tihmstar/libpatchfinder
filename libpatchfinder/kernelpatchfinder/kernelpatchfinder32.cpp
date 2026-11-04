@@ -4,10 +4,12 @@
 //
 //  Created by tihmstar on 09.07.21.
 //
+#include <libgeneral/macros.h>
 
 #include "../../include/libpatchfinder/kernelpatchfinder/kernelpatchfinder32.hpp"
 #include "kernelpatchfinder32_base.hpp"
 #include "kernelpatchfinder32_iOS3.hpp"
+#include "kernelpatchfinder32_iOS4.hpp"
 #include "kernelpatchfinder32_iOS5.hpp"
 #include "kernelpatchfinder32_iOS6.hpp"
 #include "kernelpatchfinder32_iOS9.hpp"
@@ -38,6 +40,9 @@ kernelpatchfinder32 *kernelpatchfinder32::make_kernelpatchfinder32(machopatchfin
     } else if (vers > 1800) {
         info("Detected iOS 5 kernel");
         return new kernelpatchfinder32_iOS5(std::move(helper));
+    } else if (vers > 1504) { //root:xnu-1504.51.1
+        info("Detected iOS 4 kernel");
+        return new kernelpatchfinder32_iOS4(std::move(helper));
     } else if (vers > 1300) {
         info("Detected iOS 3 kernel");
         return new kernelpatchfinder32_iOS3(std::move(helper));
@@ -52,6 +57,17 @@ kernelpatchfinder32::~kernelpatchfinder32(){
 
 std::vector<patch> kernelpatchfinder32::get_replace_string_patch(std::string needle, std::string replacement){
     return patchfinder32::get_replace_string_patch(needle, replacement);
+}
+
+uint32_t kernelpatchfinder32::get_cpid(){
+    loc_t release_uname_str = findstr("RELEASE_ARM_", false);
+    debug("release_uname_str=0x%08x",release_uname_str);
+    const char *release_uname_str_ptr = (const char*)memoryForLoc(release_uname_str);
+    release_uname_str_ptr+=sizeof("RELEASE_ARM_")-1;
+    while (*release_uname_str_ptr && isalpha(*release_uname_str_ptr)) release_uname_str_ptr++;
+    
+    uint32_t cpid = strtoul(release_uname_str_ptr, NULL, 16);
+    return cpid;
 }
 
 std::string kernelpatchfinder32::get_xnu_kernel_version_number_string(){

@@ -15,8 +15,12 @@ namespace patchfinder {
     class kernelpatchfinder64_iOS17 : public kernelpatchfinder64_iOS16{
     public:
         using kernelpatchfinder64_iOS16::kernelpatchfinder64_iOS16;
-        
+                        
         virtual std::vector<patch> get_codesignature_patches() override;
+
+        virtual std::vector<patch> get_no_nonce_entanglement_patch() override;
+        
+        virtual std::vector<patch> get_mount_patch() override;
     };
 }
 }

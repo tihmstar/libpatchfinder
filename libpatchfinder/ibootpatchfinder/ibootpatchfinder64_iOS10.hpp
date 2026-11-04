@@ -23,6 +23,8 @@ namespace tihmstar {
             virtual std::vector<patch> get_skip_set_bpr_patch() override;
             
             virtual std::vector<patch> get_sigcheck_img4_patch() override;
+            
+            virtual std::vector<patch> get_tz0_lock_patch() override;
         };
     };
 };

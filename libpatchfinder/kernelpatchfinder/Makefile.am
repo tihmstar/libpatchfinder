@@ -23,7 +23,10 @@ libpatchfinder_kernelpatchfinder64_la_SOURCES =	kernelpatchfinder64.cpp \
                                                 kernelpatchfinder64_iOS13.cpp \
                                                 kernelpatchfinder64_iOS15.cpp \
                                                 kernelpatchfinder64_iOS16.cpp \
-                                                kernelpatchfinder64_iOS17.cpp
+                                                kernelpatchfinder64_iOS17.cpp \
+                                                kernelpatchfinder64_iOS18.cpp \
+                                                kernelpatchfinder64_iOS26.cpp \
+                                                kernelpatchfinder64_iOS27.cpp
 
 noinst_LTLIBRARIES += libpatchfinder_kernelpatchfinder32.la
 libpatchfinder_kernelpatchfinder_la_LIBADD += libpatchfinder_kernelpatchfinder32.la
@@ -33,6 +36,7 @@ libpatchfinder_kernelpatchfinder32_la_LIBADD = $(AM_LDFLAGS)
 libpatchfinder_kernelpatchfinder32_la_SOURCES =	kernelpatchfinder32.cpp \
                                                 kernelpatchfinder32_base.cpp \
                                                 kernelpatchfinder32_iOS3.cpp \
+                                                kernelpatchfinder32_iOS4.cpp \
                                                 kernelpatchfinder32_iOS5.cpp \
                                                 kernelpatchfinder32_iOS6.cpp \
                                                 kernelpatchfinder32_iOS8.cpp \

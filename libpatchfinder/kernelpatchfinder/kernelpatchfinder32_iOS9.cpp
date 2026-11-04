@@ -4,6 +4,7 @@
 //
 //  Created by tihmstar on 26.07.21.
 //
+#include <libgeneral/macros.h>
 
 #include "kernelpatchfinder32_iOS9.hpp"
 #include <libinsn/insn.hpp>

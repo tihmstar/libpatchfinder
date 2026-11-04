@@ -31,6 +31,8 @@ namespace tihmstar {
             
             virtual bool has_kernel_load() override;
             virtual bool has_recovery_console() override;
+            
+            virtual loc_t find_malloc() override;
 
             /*
                 Make iBoot think we're in production mode, even if we demoted
@@ -39,6 +41,11 @@ namespace tihmstar {
 
             /*
                 disable IM4M value validation (BNCH, ECID ...)
+             */
+            virtual std::vector<patch> get_sigcheck_patch() override;
+            
+            /*
+                IMG4 disable IM4M value validation (BNCH, ECID ...)
              */
             virtual std::vector<patch> get_sigcheck_img4_patch() override;
             
@@ -66,6 +73,11 @@ namespace tihmstar {
              replace command with: "memcpy <dst> <src> <size>"
              */
             virtual std::vector<patch> replace_cmd_with_memcpy(const char *cmd_handler_str) override;
+
+            /*
+             replace command with: "ra1ra1n <src> <size>"
+             */
+            virtual std::vector<patch> replace_cmd_with_ra1nra1n(const char *cmd_handler_str) override;
 
             /*
                 
@@ -108,7 +120,12 @@ namespace tihmstar {
             /*
                 Ignore force_dfu in iBoot
              */
-            virtual std::vector<patch> get_no_force_dfu_patch() override;                        
+            virtual std::vector<patch> get_no_force_dfu_patch() override;          
+            
+            /*
+                set boot-manifest-hash
+             */
+            virtual std::vector<patch> set_boot_manifest_hash(const void *hash, size_t hashSize) override;
         };
     };
 };

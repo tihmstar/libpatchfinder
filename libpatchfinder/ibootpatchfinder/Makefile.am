@@ -19,12 +19,16 @@ libpatchfinder_ibootpatchfinder64_la_SOURCES =	ibootpatchfinder64.cpp \
 												ibootpatchfinder64_iOS7.cpp \
 												ibootpatchfinder64_iOS9.cpp \
 												ibootpatchfinder64_iOS10.cpp \
+												ibootpatchfinder64_iOS11.cpp \
 												ibootpatchfinder64_iOS12.cpp \
 												ibootpatchfinder64_iOS13.cpp \
 												ibootpatchfinder64_iOS14.cpp \
 												ibootpatchfinder64_iOS15.cpp \
 												ibootpatchfinder64_iOS16.cpp \
-												ibootpatchfinder64_iOS17.cpp
+												ibootpatchfinder64_iOS17.cpp \
+												ibootpatchfinder64_iOS18.cpp \
+												ibootpatchfinder64_iOS26.cpp \
+												ibootpatchfinder64_iOS27.cpp
 
 noinst_LTLIBRARIES += libpatchfinder_ibootpatchfinder32.la
 libpatchfinder_ibootpatchfinder_la_LIBADD += libpatchfinder_ibootpatchfinder32.la
@@ -33,6 +37,7 @@ libpatchfinder_ibootpatchfinder32_la_CXXFLAGS = $(AM_CXXFLAGS)
 libpatchfinder_ibootpatchfinder32_la_LIBADD = $(AM_LDFLAGS)
 libpatchfinder_ibootpatchfinder32_la_SOURCES =	ibootpatchfinder32.cpp \
 												ibootpatchfinder32_base.cpp \
+												ibootpatchfinder32_iOS3.cpp \
 												ibootpatchfinder32_iOS4.cpp \
 												ibootpatchfinder32_iOS5.cpp \
 												ibootpatchfinder32_iOS8.cpp \

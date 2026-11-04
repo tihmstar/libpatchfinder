@@ -4,10 +4,10 @@
 //
 //  Created by tihmstar on 21.03.22.
 //
+#include <libgeneral/macros.h>
 
 #include "../../include/libpatchfinder/OFexception.hpp"
 #include "kernelpatchfinder64_iOS15.hpp"
-#include <libgeneral/macros.h>
 #include "../all64.h"
 #include "sbops64.h"
 
@@ -46,51 +46,84 @@ patchfinder64::loc_t kernelpatchfinder64_iOS15::find_kernel_map(){
     } catch (...) {
         //
     }
-    debug("Failed to find sym _kernel_map, trying iOS 15.4 method...");
+    try {
+        debug("Failed to find sym _kernel_map, trying iOS 15.4 method...");
+        loc_t str = findstr("io_telemetry_limit",true);
+        debug("str=0x%016llx",str);
+        
+        loc_t ref = find_literal_ref(str);
+        debug("ref=0x%016llx",ref);
+        
+        vmem iter = _vmem->getIter(ref);
+        while (++iter != insn::ret);
+
+        loc_t funcend = iter;
+        debug("funcend=0x%016llx",funcend);
+
+        while (--iter != insn::bl);
+        loc_t vm_map_deallocate = iter;
+        debug("vm_map_deallocate=0x%016llx",vm_map_deallocate);
+
+        loc_t kernel_map = 0;
+        uint8_t reg = 0;
+        
+        switch ((++iter).type()) {
+            case insn::adr:
+                kernel_map = iter().imm();
+                break;
+            case insn::adrp:
+                kernel_map = iter().imm();
+                reg = iter().rd();
+                while ((++iter).pc() < funcend) {
+                    if (iter() == insn::ldr && iter().rn() == reg) {
+                        kernel_map += iter().imm();
+                        goto end;
+                    }else{
+                        //check if reg gets overwritten
+                        try {if (iter().rd() == reg) break;} catch (...) {}
+                        try {if (iter().rn() == reg) break;} catch (...) {}
+                    }
+                }
+                reterror("Failed to read loc");
+                break;
+
+            default:
+                reterror("unexpected insn. we expect adrp or adr");
+        }
+    end:
+        RETCACHELOC(kernel_map);
+    } catch (...) {
+        //
+    }
+
+    debug("Failed to find sym _kernel_map, trying iOS 17 method...");
     
-    loc_t str = findstr("io_telemetry_limit",true);
+    loc_t str = findstr("userspace panic:",false);
     debug("str=0x%016llx",str);
     
     loc_t ref = find_literal_ref(str);
     debug("ref=0x%016llx",ref);
-    
-    vmem iter = _vmem->getIter(ref);
-    while (++iter != insn::ret);
 
-    loc_t funcend = iter;
-    debug("funcend=0x%016llx",funcend);
+    loc_t bof = find_bof(ref);
+    debug("bof=0x%016llx",bof);
 
-    while (--iter != insn::bl);
-    loc_t vm_map_deallocate = iter;
-    debug("vm_map_deallocate=0x%016llx",vm_map_deallocate);
-
-    loc_t kernel_map = 0;
-    uint8_t reg = 0;
-    
-    switch ((++iter).type()) {
-        case insn::adr:
-            kernel_map = iter().imm();
-            break;
-        case insn::adrp:
-            kernel_map = iter().imm();
-            reg = iter().rd();
-            while ((++iter).pc() < funcend) {
-                if (iter() == insn::ldr && iter().rn() == reg) {
-                    kernel_map += iter().imm();
-                    goto end;
-                }else{
-                    //check if reg gets overwritten
-                    try {if (iter().rd() == reg) break;} catch (...) {}
-                    try {if (iter().rn() == reg) break;} catch (...) {}
-                }
-            }
-            reterror("Failed to read loc");
-            break;
-
-        default:
-            reterror("unexpected insn. we expect adrp or adr");
+    vmem iter = _vmem->getIter(bof);
+    while (true) {
+        while (++iter != insn::bl){
+            retassure(iter() != insn::ret, "reached EOF");
+        }
+        /*
+            AppleTV11,1 iOS 16.5
+         */
+        if (find_register_value(iter, 4) == 1) break;
+        /*
+            AppleTV11,1 iOS 15.4
+         */
+        if (find_register_value(iter, 5) == 1) break;
     }
-end:
+    
+    loc_t kernel_map = find_register_value(iter, 0);
+
     RETCACHELOC(kernel_map);
 }
 
@@ -246,40 +279,92 @@ patchfinder64::loc_t kernelpatchfinder64_iOS15::find_kmem_free(){
     } catch (...) {
         //
     }
-    debug("Failed to find_kmem_free using old method, trying fallback method...");
-    
-    loc_t str = 0;
-    str = findstr("Bad compare and swap in diagnose",false);
-    debug("str=0x%016llx",str);
-    
-    loc_t ref = find_literal_ref(str);
-    debug("ref=0x%016llx",ref);
-    
-    loc_t bof = find_bof(ref);
-    debug("bof=0x%016llx",bof);
-
-    vmem iter = _vmem->getIter(ref);
-    
     loc_t kmem_free = 0;
     
-    while (true) {
-        while (--iter != insn::bl)
-            ;
-        retassure(iter > bof, "reached bof");
-        kmem_free = iter().imm();
-        vmem iter2 = _vmem->getIter(kmem_free-4);
-        for (int i=0; i<10; i++) {
-            auto insn = ++iter2;
-            if (insn == insn::cbz || insn == insn::cbnz) {
-                if (insn.rt() == 2) {
-                    goto didfind;
+    try {
+        debug("Failed to find_kmem_free using old method, trying fallback method...");
+        
+        loc_t str = 0;
+        str = findstr("Bad compare and swap in diagnose",false);
+        debug("str=0x%016llx",str);
+        
+        loc_t ref = find_literal_ref(str);
+        debug("ref=0x%016llx",ref);
+        
+        loc_t bof = find_bof(ref);
+        debug("bof=0x%016llx",bof);
+
+        vmem iter = _vmem->getIter(ref);
+                
+        while (true) {
+            while (--iter != insn::bl)
+                ;
+            retassure(iter > bof, "reached bof");
+            kmem_free = iter().imm();
+            vmem iter2 = _vmem->getIter(kmem_free-4);
+            for (int i=0; i<10; i++) {
+                auto insn = ++iter2;
+                if (insn == insn::cbz || insn == insn::cbnz) {
+                    if (insn.rt() == 2) {
+                        goto didfind;
+                    }
+                }else if (insn != insn::stp && insn != insn::add){
+                    break;
                 }
-            }else if (insn != insn::stp && insn != insn::add){
-                break;
+            }
+            kmem_free = 0;
+        }
+    } catch (...) {
+        //
+    }
+
+    {
+        /*
+            A12 Strategy
+            iPhone11,2 iOS 18.7.9
+         */
+        debug("Failed to find_kmem_free using old method, trying iOS 17 method...");
+
+        loc_t kernel_map = find_kernel_map();
+        
+        loc_t str = 0;
+        str = findstr("\"pageout offset not aligned to page size, node",false);
+        debug("str=0x%016llx",str);
+        
+        loc_t ref = find_literal_ref(str);
+        debug("ref=0x%016llx",ref);
+        
+        loc_t bof = find_bof(ref);
+        debug("bof=0x%016llx",bof);
+
+        vmem iter = _vmem->getIter(ref);
+        
+        while (!kmem_free) {
+            while (--iter != insn::bl)
+                ;
+            retassure(iter > bof, "reached bof");
+            auto iter2 = iter;
+            loc_t x0 = 0;
+            loc_t x0_unmod = 0;
+            for (int i=0; i<5; i++){
+                if (--iter2 == insn::ldr && iter2().rt() == 0 && iter2().rn() != 0x1f){
+                    x0_unmod = find_register_value(iter2, iter2().rn());
+                    x0_unmod += iter2().imm();
+                    try {
+                        x0 = _vmem->deref(x0_unmod);
+                        x0 = (x0 & 0xFFFFFFFF) + _base;
+                    } catch (...) {
+                        x0 = 0;
+                    }
+                    break;
+                }
+            }
+            if (x0 == kernel_map || x0_unmod == kernel_map){
+                kmem_free = iter().imm();
             }
         }
-        kmem_free = 0;
     }
+   
 didfind:
     assure(kmem_free);
     RETCACHELOC(kmem_free);
@@ -411,6 +496,7 @@ std::vector<patch> kernelpatchfinder64_iOS15::get_always_get_task_allow_patch(){
     
     loc_t ref = find_literal_ref(str);
     debug("ref=0x%016llx",ref);
+    assure(ref);
 
     loc_t bof = find_bof(ref);
     debug("bof=0x%016llx",bof);
@@ -1056,5 +1142,138 @@ std::vector<patch> kernelpatchfinder64_iOS15::get_kcall_syscall_patch(){
     funcptr |= ((nops-_base) & 0xffffffff);
     patches.push_back({table,&funcptr,sizeof(funcptr)});
     
+    RETCACHEPATCHES;
+}
+
+#pragma mark Patch finders
+std::vector<patch> kernelpatchfinder64_iOS15::get_force_boot_ramdisk_patch(){
+    UNCACHEPATCHES;
+
+    {
+        //no rootfs auth patch
+        loc_t str = findstr("rootvp not authenticated after mounting", false);
+        debug("str=0x%16llx",str);
+
+        loc_t ref = find_literal_ref(str);
+        debug("ref=0x%16llx",ref);
+
+        vmem iter = _vmem->getIter(ref);
+        
+        while (--iter != insn::cbnz)
+            ;
+        
+        loc_t btgt = iter+1;
+        debug("btgt=0x%16llx",btgt);
+        
+        for (int i=0; i<10; i++) {
+            while (--iter != insn::bl)
+                ;
+            loc_t x1val = find_register_value(iter, 1,iter.pc()-0x20);
+            loc_t x0val = find_register_value(iter, 0,iter.pc()-0x20);
+            try {
+                if (x1val && strcmp((const char*)_vmem->memoryForLoc(x1val), "rd") == 0) goto found_patch;
+            } catch (...) {
+                //
+            }
+            try {
+                if (x0val && strcmp((const char*)_vmem->memoryForLoc(x0val), "rd") == 0) goto found_patch;
+            } catch (...) {
+                //
+            }
+        }
+        reterror("Failed to find function");
+    found_patch:
+        pushINSN(insn::new_immediate_b(iter, btgt));
+    }
+    
+    {
+        //IOFindBSDRoot patch
+        loc_t str = findstr("!BSD\n", true);
+        debug("str=0x%16llx",str);
+
+        loc_t ref = find_literal_ref(str);
+        debug("ref=0x%16llx",ref);
+        
+        vmem iter = _vmem->getIter(ref);
+
+
+        while (true) {
+            while (++iter != insn::bl)
+                ;
+            {
+                loc_t x1val = find_register_value(iter, 1,iter.pc()-0x20);
+                loc_t x0val = find_register_value(iter, 0,iter.pc()-0x20);
+                try {
+                    if (x1val && strcmp((const char*)_vmem->memoryForLoc(x1val), "rd") == 0) goto found_patch2;
+                } catch (...) {
+                    //
+                }
+                try {
+                    if (x0val && strcmp((const char*)_vmem->memoryForLoc(x0val), "rd") == 0) goto found_patch2;
+                } catch (...) {
+                    //
+                }
+                continue;
+                found_patch2:;
+            }
+            
+            ++iter;
+            loc_t found_patch2 = iter;
+            debug("found_patch2=0x%16llx",found_patch2);
+            retassure(iter() == insn::cbnz, "unexpected insn");
+            loc_t bdst = iter().imm();
+            loc_t shellcodeBegin = iter;
+            debug("shellcodeBegin=0x%16llx",shellcodeBegin);
+            while (++iter != insn::mov || iter().rd() != 1)
+                ;
+            ++iter;
+            loc_t shellcodeEnd = iter;
+            debug("shellcodeEnd=0x%16llx",shellcodeEnd);
+            retassure((shellcodeEnd-shellcodeBegin)/4 >= 3, "not enough room for shellcode");
+            pushINSN(insn::new_immediate_movz(shellcodeBegin+0x00, 0x646d, 0, 0));
+            pushINSN(insn::new_immediate_movk(shellcodeBegin+0x04, 0x30, 0, 16));
+            pushINSN(insn::new_immediate_str_unsigned(shellcodeBegin+0x08, 0, 25, 0));
+            pushINSN(insn::new_immediate_b(shellcodeBegin+0x0c, bdst));
+            break;
+        }
+    }
+    RETCACHEPATCHES;
+}
+
+std::vector<patch> kernelpatchfinder64_iOS15::get_apfs_skip_authenticate_root_hash_patch(){
+    UNCACHEPATCHES;
+    
+    loc_t str = findstr("\"could not authenticate personalized root hash!", false);
+    debug("str=0x%016llx",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+    
+    loc_t str2 = findstr("successfully validated on-disk root hash", false);
+    assure(str2);
+    while (_vmem->deref(--str2) & 0xFF)
+        ;
+    ++str2;
+    debug("str2=0x%016llx",str2);
+    
+    loc_t ref2 = find_literal_ref(str2);
+    debug("ref2=0x%016llx",ref2);
+    
+    auto iter = _vmem->getIter(ref);
+    while (++iter != insn::bl)
+        ;
+    
+    loc_t bad = iter;
+    debug("bad=0x%016llx",bad);
+
+    iter = ref2;
+    while (++iter != insn::bl)
+        ;
+    
+    loc_t good = iter;
+    debug("good=0x%016llx",good);
+
+    pushINSN(insn::new_immediate_b(bad, good));
+
     RETCACHEPATCHES;
 }

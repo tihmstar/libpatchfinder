@@ -4,6 +4,7 @@
 //
 //  Created by erd on 16.10.23.
 //
+#include <libgeneral/macros.h>
 
 #include "ibootpatchfinder32_iOS8.hpp"
 #include "../../include/libpatchfinder/OFexception.hpp"

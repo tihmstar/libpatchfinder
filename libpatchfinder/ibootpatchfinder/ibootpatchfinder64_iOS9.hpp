@@ -17,9 +17,13 @@ namespace tihmstar {
         public:
             using ibootpatchfinder64_iOS7::ibootpatchfinder64_iOS7;
             
+            virtual loc_t find_malloc() override;
+            
             virtual std::vector<patch> get_sigcheck_img4_patch() override;
             
             virtual loc_t find_iBoot_logstr(uint64_t loghex, int skip = 0, uint64_t shortdec = 0) override;
+            
+            virtual std::vector<patch> get_ra1nra1n_patch() override;
         };
     };
 };

@@ -4,7 +4,6 @@
 //
 //  Created by erd on 10.07.23.
 //
-
 #include <libgeneral/macros.h>
 
 #include "ibootpatchfinder32_iOS4.hpp"

@@ -53,12 +53,18 @@ namespace tihmstar {
              */
             virtual std::vector<patch> set_root_ticket_hash(const void *hash, size_t hashSize);
 
+            /*
+                set boot-manifest-hash
+             */
+            virtual std::vector<patch> set_boot_manifest_hash(const void *hash, size_t hashSize);
             
             /*
                make kernel boot with these bootargs
              */
             virtual std::vector<patch> get_boot_arg_patch(const char *bootargs);
-            
+
+            virtual std::vector<patch> get_honor_nvram_boot_arg_patch();
+
             /*
                 //
              */
@@ -78,6 +84,11 @@ namespace tihmstar {
              replace command with: "memcpy <dst> <src> <size>"
              */
             virtual std::vector<patch> replace_cmd_with_memcpy(const char *cmd_handler_str);
+
+            /*
+             replace command with: "ra1nra1n <src> <size>"
+             */
+            virtual std::vector<patch> replace_cmd_with_ra1nra1n(const char *cmd_handler_str);
 
             /*
                 
@@ -117,8 +128,11 @@ namespace tihmstar {
 
 
             virtual loc64_t find_iBoot_logstr(uint64_t loghex, int skip = 0, uint64_t shortdec = 0);
-            
-            
+
+            virtual loc64_t find_malloc();
+
+            virtual loc64_t find_env_get();
+
             virtual uint32_t get_el1_pagesize();
             
             /*
@@ -166,6 +180,11 @@ namespace tihmstar {
                 Ignore force_dfu in iBoot
              */
             virtual std::vector<patch> get_no_force_dfu_patch();
+            
+            /*
+                Don't make iBoot print a list of all bdev images
+             */
+            virtual std::vector<patch> get_no_img3_dumplist_patch();
         };
     };
 };

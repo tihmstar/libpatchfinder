@@ -4,9 +4,9 @@
 //
 //  Created by erd on 30.08.23.
 //
+#include <libgeneral/macros.h>
 
 #include "ibootpatchfinder32_iOS9.hpp"
-#include <libgeneral/macros.h>
 
 #include "../../include/libpatchfinder/OFexception.hpp"
 #include "../all32.h"

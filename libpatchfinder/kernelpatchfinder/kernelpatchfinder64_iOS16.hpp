@@ -66,6 +66,7 @@ namespace patchfinder {
         virtual loc_t find_pmap_remove_options() override;
         virtual loc_t find_ppl_bootstrap_dispatch() override;
         virtual loc_t find_ppl_handler_table() override;
+        virtual loc_t find_query_trustcache() override;
 
 #pragma mark Patch finders
         virtual std::vector<patch> get_trustcache_true_patch() override;
@@ -83,6 +84,10 @@ namespace patchfinder {
         virtual std::vector<patch> get_sandbox_patch() override;
         
         virtual std::vector<patch> get_task_conversion_eval_patch() override;
+
+        virtual std::vector<patch> get_allow_UID_key_patch() override;
+
+        virtual std::vector<patch> get_sep_is_obliterating_patch() override;
     };
 }
 }

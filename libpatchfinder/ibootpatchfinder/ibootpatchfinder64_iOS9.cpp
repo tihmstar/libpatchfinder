@@ -5,6 +5,7 @@
 //  Created by tihmstar on 15.02.21.
 //  Copyright © 2021 tihmstar. All rights reserved.
 //
+#include <libgeneral/macros.h>
 
 #include "ibootpatchfinder64_iOS9.hpp"
 #include <libinsn/insn.hpp>
@@ -15,6 +16,58 @@ using namespace tihmstar::patchfinder;
 using namespace tihmstar::libinsn;
 using namespace arm64;
 
+ibootpatchfinder64_base::loc_t ibootpatchfinder64_iOS9::find_malloc(){
+    UNCACHELOC;
+    
+    try {
+        loc_t res = ibootpatchfinder64_iOS7::find_malloc();
+        RETCACHELOC(res);
+    } catch (...) {
+        //
+    }
+    
+    loc_t handler_str_loc = findstr("setenv", true);
+    debug("handler_str_loc=0x%016llx\n",handler_str_loc);
+
+    loc_t tableref = memmem(&handler_str_loc, sizeof(handler_str_loc));
+    debug("tableref=0x%016llx\n",tableref);
+    
+    loc_t cmd_setenv = _vmem->deref(tableref+8);
+    debug("cmd_setenv=0x%016llx\n",cmd_setenv);
+    
+    auto iter = _vmem->getIter(cmd_setenv);
+    
+    loc_t do_setenv = cmd_setenv;
+
+    if (iter() != insn::stp){
+        while (++iter != insn::b)
+            ;
+        do_setenv = iter().imm();
+    }
+    
+    debug("do_setenv=0x%016llx\n",do_setenv);
+    loc_t funcend2 = 0;
+    while (++iter != insn::ret)
+        ;
+    while (++iter != insn::ret)
+        ;
+    funcend2 = iter;
+
+    iter = do_setenv;
+    
+    while (iter < funcend2) {
+        while (++iter != insn::bl)
+            ;
+        loc_t ref_malloc = iter();
+        uint64_t x0 = find_register_value(iter, 0);
+        if (x0 == 0x200){
+            debug("ref_malloc=0x%016llx",ref_malloc);
+            RETCACHELOC(iter().imm());
+        }
+    }
+    
+    reterror("Failed to find malloc function");
+}
 
 std::vector<patch> ibootpatchfinder64_iOS9::get_sigcheck_img4_patch(){
     std::vector<patch> patches;
@@ -125,4 +178,29 @@ patchfinder64::loc_t ibootpatchfinder64_iOS9::find_iBoot_logstr(uint64_t loghex,
     }
     
     return 0;
+}
+
+std::vector<patch> ibootpatchfinder64_iOS9::get_ra1nra1n_patch(){
+    UNCACHEPATCHES;
+
+    addPatches(ibootpatchfinder64_iOS7::get_ra1nra1n_patch());
+    
+    /*
+        disable dc zva in trampoline (i.e. don't clear iBoot)
+     */
+    loc_t findloc = memmem("\x12\x00\x80\xd2", 4);
+    debug("findloc=0x%016llx",findloc);
+
+    auto iter = _vmem->getIter(findloc);
+    int dcinsns = 0;
+    while (--iter != insn::nop) {
+        uint32_t opcpde = iter().opcode();
+        if (opcpde == 0xD50B7420 /*dc zva x0*/) {
+            pushINSN(insn::new_general_nop(iter));
+            dcinsns++;
+        }
+    }
+    retassure(dcinsns, "Failed to find DC instructions");
+    
+    RETCACHEPATCHES;
 }

@@ -4,6 +4,7 @@
 //
 //  Created by tihmstar on 21.12.21.
 //
+#include <libgeneral/macros.h>
 
 #include "ibootpatchfinder32_iOS12.hpp"
 #include "../../include/libpatchfinder/OFexception.hpp"
@@ -55,4 +56,11 @@ std::vector<patch> ibootpatchfinder32_iOS12::get_force_septype_local_patch(){
     }
      
     return patches;
+}
+
+std::vector<patch> ibootpatchfinder32_iOS12::get_sigcheck_patch(){
+    /*
+        There is no img3 device past iOS 10
+     */
+    return get_sigcheck_img4_patch();
 }

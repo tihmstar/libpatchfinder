@@ -58,6 +58,11 @@ namespace patchfinder {
         virtual std::vector<patch> get_kernelbase_syscall_patch() override;
         
         virtual std::vector<patch> get_kcall_syscall_patch() override;
+        
+#pragma mark Patch finders
+        virtual std::vector<patch> get_force_boot_ramdisk_patch() override;
+        
+        virtual std::vector<patch> get_apfs_skip_authenticate_root_hash_patch() override;        
     };
 }
 }

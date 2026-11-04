@@ -4,9 +4,9 @@
 //
 //  Created by erd on 29.06.23.
 //
+#include <libgeneral/macros.h>
 
 #include "../include/libpatchfinder/patchfinder.hpp"
-#include <libgeneral/macros.h>
 
 using namespace tihmstar::patchfinder;
 

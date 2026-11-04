@@ -17,6 +17,12 @@ namespace patchfinder {
         using kernelpatchfinder32_base::kernelpatchfinder32_base;
         
         virtual std::vector<patch> get_codesignature_patches() override;
+        virtual std::vector<patch> get_amfi_validateCodeDirectoryHashInDaemon_patch() override;
+        
+        /*
+            calls to AppleImage3NORAccessUserClient doesn't check img3 signature anymore
+         */
+        virtual std::vector<patch> get_AppleImage3NORAccess_sigcheck_patch() override;
     };
 }
 }

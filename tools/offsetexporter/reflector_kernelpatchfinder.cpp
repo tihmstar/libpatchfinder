@@ -4,6 +4,7 @@
 //
 //  Created by tihmstar on 24.07.23.
 //
+#include <libgeneral/macros.h>
 
 #include "reflector_kernelpatchfinder.hpp"
 #include <algorithm>

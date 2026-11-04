@@ -18,3 +18,7 @@ nobase_dist_include_HEADERS +=	libpatchfinder/ibootpatchfinder/ibootpatchfinder6
 nobase_dist_include_HEADERS +=	libpatchfinder/kernelpatchfinder/kernelpatchfinder.hpp
 nobase_dist_include_HEADERS +=	libpatchfinder/kernelpatchfinder/kernelpatchfinder32.hpp
 nobase_dist_include_HEADERS +=	libpatchfinder/kernelpatchfinder/kernelpatchfinder64.hpp
+
+#txmpatchfinder
+nobase_dist_include_HEADERS +=	libpatchfinder/txmpatchfinder/txmpatchfinder.hpp
+nobase_dist_include_HEADERS +=	libpatchfinder/txmpatchfinder/txmpatchfinder64.hpp

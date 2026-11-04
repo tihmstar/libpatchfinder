@@ -5,6 +5,7 @@
 //  Created by tihmstar on 13.01.21.
 //  Copyright © 2021 tihmstar. All rights reserved.
 //
+#include <libgeneral/macros.h>
 
 #include "ibootpatchfinder64_iOS13.hpp"
 #include <libinsn/insn.hpp>
@@ -19,6 +20,7 @@ std::vector<patch> ibootpatchfinder64_iOS13::get_force_septype_local_patch(){
     std::vector<patch> patches;
 
     loc_t rsepref = find_literal_ref('rsep');
+    assure(rsepref);
     debug("rsepref=0x%016llx",rsepref);
     
     loc_t bof = find_bof(rsepref);
@@ -119,6 +121,68 @@ std::vector<patch> ibootpatchfinder64_iOS13::replace_cmd_with_memcpy(const char 
 #undef cPC
     
     patches.push_back({scratchbuf,"memcpy",sizeof("memcpy")}); //overwrite name
+    patches.push_back({tableref,&scratchbuf,8}); //overwrite pointer to name
+    patches.push_back({tableref+8,&shellcode,8}); //overwrite function pointer
+    
+    return patches;
+}
+
+std::vector<patch> ibootpatchfinder64_iOS13::replace_cmd_with_ra1nra1n(const char *cmd_handler_str){
+    std::vector<patch> patches;
+    retassure(cmd_handler_str, "unexpected NULL cmd_handler_str");
+    
+    loc_t handler_str_loc = findstr(cmd_handler_str, true);
+    debug("handler_str_loc=0x%016llx\n",handler_str_loc);
+
+    loc_t tableref = memmem(&handler_str_loc, sizeof(handler_str_loc));
+    debug("tableref=0x%016llx\n",tableref);
+
+    loc_t scratchbuf = 0;
+    if (!scratchbuf) try {scratchbuf = _vmem->memstr("failed to execute upgrade command from new");} catch (...) {}
+    if (!scratchbuf) try {scratchbuf = _vmem->memstr("Enabling early boot tracing");} catch (...) {}
+    retassure(scratchbuf, "Failed to find scratchbuf for string");
+    debug("scratchbuf=0x%016llx\n",scratchbuf);
+    
+    uint32_t shellcode_insn_cnt = 17; //commitment
+    loc_t shellcode = findnops(shellcode_insn_cnt);
+    debug("shellcode=0x%016llx\n",shellcode);
+    
+    loc_t malloc = find_malloc();
+    debug("malloc=0x%016llx\n",malloc);
+    
+    int insnRet = 16; //commitment
+    int insnLoopRef = 11; //commitment
+
+    
+#define cPC (shellcode+(insnNum++)*4)
+    int insnNum = 0;
+
+    pushINSN(insn::new_immediate_cmp(cPC, 3, 0));
+    pushINSN(insn::new_immediate_bcond(cPC, shellcode+insnRet*4, insn::cond::NE));
+    /*
+        iPhone 5s iOS 12 still uses 0x30+0x28*x formula
+     */
+    pushINSN(insn::new_immediate_sub(cPC, 0x10, 31, 31));
+    pushINSN(insn::new_general_stp_offset(cPC, 0, 1, 30, 31));
+    pushINSN(insn::new_immediate_ldr_unsigned(cPC, 0x28+0x20*1, 1, 0));
+    pushINSN(insn::new_immediate_movz(cPC, 0, 1, 0));
+    pushINSN(insn::new_immediate_bl(cPC, malloc));
+    pushINSN(insn::new_general_ldp_offset(cPC, 0, 1, 30, 31));
+    pushINSN(insn::new_immediate_add(cPC, 0x10, 31, 31));
+    pushINSN(insn::new_immediate_ldr_unsigned(cPC, 0x28+0x20*1, 1, 2));
+    pushINSN(insn::new_immediate_ldr_unsigned(cPC, 0x28+0x20*0, 1, 1));
+    assure(insnLoopRef == insnNum); //memcpy loop
+    pushINSN(insn::new_immediate_subs(cPC, 1, 2, 2));
+    pushINSN(insn::new_register_ldrb(cPC, 2, 1, 3));
+    pushINSN(insn::new_register_strb(cPC, 2, 0, 3));
+    pushINSN(insn::new_immediate_bcond(cPC, shellcode+insnLoopRef*4, insn::cond::NE));
+    pushINSN(insn::new_register_mov(cPC, 0, 18, 0));
+    assure(insnNum == insnRet);
+    pushINSN(insn::new_general_ret(cPC));
+    assure(insnNum == shellcode_insn_cnt);
+#undef cPC
+    
+    patches.push_back({scratchbuf,"ra1nra1n",sizeof("ra1nra1n")}); //overwrite name
     patches.push_back({tableref,&scratchbuf,8}); //overwrite pointer to name
     patches.push_back({tableref+8,&shellcode,8}); //overwrite function pointer
     
@@ -418,79 +482,6 @@ std::vector<patch> ibootpatchfinder64_iOS13::get_rw_and_x_mappings_patch_el1(){
         patches.push_back({pins,&opcode,sizeof(opcode)});
     }
     
-    
-    return patches;
-}
-
-std::vector<patch> ibootpatchfinder64_iOS13::get_ra1nra1n_patch(){
-    std::vector<patch> patches;
-    
-    /*
-     uint32_t* tramp = find_next_insn(boot_image, 0x80000, 0xd2800012, 0xFFFFFFFF);
-     if (tramp) {
-         for (int i = 0; i < 5; i++) {
-             tramp[i] = tramp_hook[i];
-         }
-     }
-     
-     patch ->
-     
-     mov x8, x29
-     mov x9, x29
-     mov x27, #0x800000000
-     movk x27, #0x1800, lsl#16
-     mov x29, x27
-     
-     */
-    
-
-    loc_t findloc = memmem("\x12\x00\x80\xd2", 4);
-    debug("findloc=0x%016llx\n",findloc);
-
-    auto iter = _vmem->getIter(findloc);
-    while (++iter != insn::mov && iter().rd() != 30){
-        retassure(iter() != insn::ret, "got unexpected ret!");
-    }
-    uint8_t srcreg = iter().rm();
-    
-    findloc-=4;
-    pushINSN(insn::new_register_mov(findloc+=4, 0, 8, srcreg));
-    pushINSN(insn::new_register_mov(findloc+=4, 0, 9, srcreg));
-    pushINSN(insn::new_immediate_movz(findloc+=4, 0x8, 27, 32));
-    pushINSN(insn::new_immediate_movk(findloc+=4, 0x1800, 27, 16));
-    pushINSN(insn::new_register_mov(findloc+=4, 0, 29, 27));
-
-    
-    loc_t findloc2 = memmem("\x23\x74\x0b\xd5", 4);
-    debug("findloc2=0x%016llx\n",findloc2);
-
-    loc_t bzero = find_bof(findloc2);
-    debug("bzero=0x%016llx\n",bzero);
-    
-    uint32_t shellcode_insn_cnt = 10; //commitment
-    loc_t shellcode = findnops((shellcode_insn_cnt/2)+1, true, 0x00000000);
-    debug("shellcode=0x%016llx",shellcode);
-    
-    pushINSN(insn::new_immediate_b(bzero, shellcode));
-    
-#define cPC (shellcode+(insnNum++)*4)
-    int insnNum = 0;
-    uint32_t shellend = 8;
-
-    pushINSN(insn::new_immediate_movz(cPC, 0x8, 3, 32));
-    pushINSN(insn::new_immediate_movk(cPC, 0x1800, 3, 16));
-    pushINSN(insn::new_register_cmp(cPC, 0, 0, 3, -1));
-    pushINSN(insn::new_immediate_bcond(cPC, shellcode+shellend*4, insn::HI));
-    pushINSN(insn::new_register_add(cPC, 0, 1, 0, 2));
-    pushINSN(insn::new_register_cmp(cPC, 0, 2, 3, -1));
-    pushINSN(insn::new_immediate_bcond(cPC, shellcode+shellend*4, insn::CC));
-    pushINSN(insn::new_general_br(cPC, 30));
-    assure(shellend == insnNum);
-    uint32_t backUpProloge = (uint32_t)deref(bzero);
-    patches.push_back({shellcode+insnNum*4, &backUpProloge, 4});insnNum++;
-    pushINSN(insn::new_immediate_b(cPC, (int64_t)bzero+4));
-    assure(insnNum == shellcode_insn_cnt);
-#undef cPC
     
     return patches;
 }

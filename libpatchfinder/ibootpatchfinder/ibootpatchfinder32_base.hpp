@@ -31,6 +31,8 @@ namespace tihmstar {
             virtual bool has_kernel_load() override;
             virtual bool has_recovery_console() override;
             
+            virtual loc64_t find_env_get() override;
+
             /*
                 patch a wtf image to enter pwndfu
              */
@@ -50,6 +52,8 @@ namespace tihmstar {
                make kernel boot with these bootargs
              */
             virtual std::vector<patch> get_boot_arg_patch(const char *bootargs) override;
+
+            virtual std::vector<patch> get_honor_nvram_boot_arg_patch() override;
 
             /*
                 //
