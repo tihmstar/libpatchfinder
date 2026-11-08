@@ -75,7 +75,7 @@ int main(int argc, const char * argv[]) {
 //    addpatch(ibpf->get_debug_enabled_patch());
 //    addpatch(ibpf->get_replace_string_patch("recovery mode", "ra1nsn0w mode"));
 //    addpatch(ibpf->get_cmd_handler_callfunc_patch("devicetree"));
-//    addpatch(ibpf->get_tz0_lock_patch());
+    addpatch(ibpf->get_tz0_lock_patch());
 //    addpatch(ibpf->get_skip_set_bpr_patch());
 //    addpatch(ibpf->replace_cmd_with_memcpy("reboot"));
 //    addpatch(ibpf->get_force_septype_local_patch());
@@ -102,7 +102,7 @@ int main(int argc, const char * argv[]) {
 //    addpatch(kpf->get_sandbox_patch());
 //    addpatch(kpf->get_no_nonce_entanglement_patch());
 //    addpatch(kpf->get_force_NAND_writeable_patch());
-    addpatch(kpf->get_read_bpr_patch());
+//    addpatch(kpf->get_read_bpr_patch());
 //    addpatch(kpf->get_trustcache_true_patch());
 //    addpatch(kpf->get_allow_sep_boot_skip_stage1());
 //    addpatch(kpf->get_kernelbase_syscall_patch());
