@@ -74,9 +74,11 @@ std::vector<patch> ibootpatchfinder32_iOS5::set_root_ticket_hash(const void *has
     }
     
     assure(iter().rn() == reg);
-    assure(iter().insnsize() == 4);
-    
-    pushINSN(thumb::new_T3_register_mov(iter().pc(), iter().rt(), iter().rn()));
+    if (iter().insnsize() == 4) {
+        pushINSN(thumb::new_T3_register_mov(iter().pc(), iter().rt(), iter().rn()));
+    }else{
+        pushINSN(thumb::new_T2_register_mov(iter().pc(), iter().rt(), iter().rn()));
+    }
 
     while (++iter != arm32::bl) {
         uint8_t rd = -1;

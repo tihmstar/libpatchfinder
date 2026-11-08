@@ -62,10 +62,10 @@ int main(int argc, const char * argv[]) {
 
 //    addpatch(ibpf->get_sigcheck_patch());
 //    addpatch(ibpf->get_sigcheck_img4_patch());
-//    {
-//        const char hash[]="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-//        addpatch(ibpf->set_root_ticket_hash(hash,0x14));
-//    }
+    {
+        const char hash[]="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+        addpatch(ibpf->set_root_ticket_hash(hash,0x14));
+    }
 //    {
 //        const char hash[]="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 //        addpatch(ibpf->set_boot_manifest_hash(hash,0x14));
@@ -75,7 +75,7 @@ int main(int argc, const char * argv[]) {
 //    addpatch(ibpf->get_debug_enabled_patch());
 //    addpatch(ibpf->get_replace_string_patch("recovery mode", "ra1nsn0w mode"));
 //    addpatch(ibpf->get_cmd_handler_callfunc_patch("devicetree"));
-    addpatch(ibpf->get_tz0_lock_patch());
+//    addpatch(ibpf->get_tz0_lock_patch());
 //    addpatch(ibpf->get_skip_set_bpr_patch());
 //    addpatch(ibpf->replace_cmd_with_memcpy("reboot"));
 //    addpatch(ibpf->get_force_septype_local_patch());
