@@ -956,6 +956,36 @@ std::vector<patch> ibootpatchfinder64_base::get_tz0_lock_patch(){
         //will fail eventually. this is fine
     }
     
+    if (!patches.size()){
+        vmem iter = _vmem->getIter();
+        
+        for (uint64_t lockval : {0x200000910 /*A7 lock*/, 0x200000490 /*A8 lock*/, 0x200000492 /*A8 lock (WTF iOS 10.0.1??)*/}) {
+            if (loc_t lock_ref = find_literal_ref(lockval)){
+                debug("lock_ref=0x%016llx",lock_ref);
+                iter = lock_ref;
+                uint8_t reg_ref = iter().rd();
+                debug("reg_ref=%d",reg_ref);
+                for (int i=0; i<2; i++) {
+                    /*
+                     Skip locking both, tz0 and tz1
+                     */
+                    while (++iter != insn::str || iter().rn() != reg_ref)
+                        ;
+                    
+                    loc_t strtgt = iter;
+                    debug("strtgt=0x%016llx",strtgt);
+                    uint8_t reg_strval = iter().rt();
+                    debug("reg_strval=%d",reg_strval);
+                    pushINSN(insn::new_general_nop(iter));
+                    if (++iter == insn::bl)
+                        ++iter;
+                    retassure(iter() == insn::ldr && iter().rn() == reg_ref, "unexpected insn");
+                    pushINSN(insn::new_register_mov(iter, 0, iter().rt(), reg_strval));
+                }
+            }
+        }
+    }
+    
     retassure(patches.size(), "Failed to find patches");
     RETCACHEPATCHES;
 }
