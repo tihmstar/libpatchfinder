@@ -186,3 +186,56 @@ std::vector<patch> kernelpatchfinder32_iOS11::get_allow_UID_key_patch(){
     
     RETCACHEPATCHES;
 }
+
+std::vector<patch> kernelpatchfinder32_iOS11::get_always_get_task_allow_patch(){
+    /*
+        WatchOS 8
+     */
+    UNCACHEPATCHES;
+
+    loc_t str = findstr("mac_vnode_check_signature: MAC hook", false);
+    debug("str=0x%08x",str);
+    
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%08x",ref);
+
+    loc_t bof = find_bof(ref);
+    debug("bof=0x%08x",bof);
+    
+    uint8_t spImm = 0;
+    
+    auto iter = _vmemThumb->getIter(bof);
+    
+    while (++iter != arm32::strd || (iter().rt() != 3 && iter().rt2() != 3))
+        ;
+    spImm = iter().imm();
+    if (iter().rt2() == 3){
+        spImm += 4;
+    }
+    
+    debug("spImm=0x%x",spImm);
+
+    while (++iter != arm32::add || iter().rd() != 13 || iter().rn() != 13) //add sp, sp, xxx
+        ;
+    loc_t eof = iter;
+    debug("eof=0x%08x",eof);
+    
+    loc_t str2 = findstr("mac_vnode_check_signature: MAC hook returned no error", false);
+    debug("str2=0x%08x",str2);
+    
+    loc_t ref2 = find_literal_ref(str2);
+    debug("ref2=0x%08x",ref2);
+
+    retassure(ref2 - eof < 0x200, "assumption failed");
+    
+    pushINSN(arm32::thumb::new_T2_immediate_b(eof, ref2));
+    pushINSN(arm32::thumb::new_T2_immediate_ldr(ref2, spImm, 5));
+    pushINSN(arm32::thumb::new_T1_immediate_ldr(ref2+2, 0, 5, 4));
+    {uint32_t opcode = 0x6480F044; patches.push_back({ref2+4,&opcode,4});} //orr r4, #0x4000000
+    {uint32_t opcode = 0x404F044; patches.push_back({ref2+8,&opcode,4});} //orr r4, #0x4
+    pushINSN(arm32::thumb::new_T1_immediate_str(ref2+0xc, 0, 5, 4));
+    {uint32_t opcode = iter().opcode(); patches.push_back({ref2+0xe,&opcode,iter().insnsize()});} //orig add sp
+    pushINSN(arm32::thumb::new_T2_immediate_b(ref2+ 0xe +iter().insnsize(), iter.pc()+iter().insnsize()));
+
+    RETCACHEPATCHES;
+};

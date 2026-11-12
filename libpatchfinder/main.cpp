@@ -62,10 +62,10 @@ int main(int argc, const char * argv[]) {
 
 //    addpatch(ibpf->get_sigcheck_patch());
 //    addpatch(ibpf->get_sigcheck_img4_patch());
-    {
-        const char hash[]="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-        addpatch(ibpf->set_root_ticket_hash(hash,0x14));
-    }
+//    {
+//        const char hash[]="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+//        addpatch(ibpf->set_root_ticket_hash(hash,0x14));
+//    }
 //    {
 //        const char hash[]="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 //        addpatch(ibpf->set_boot_manifest_hash(hash,0x14));
@@ -99,7 +99,7 @@ int main(int argc, const char * argv[]) {
 //    addpatch(kpf->get_codesignature_patches());
 //    addpatch(kpf->get_trustcache_true_patch());
 //    addpatch(kpf->get_mount_patch());
-//    addpatch(kpf->get_sandbox_patch());
+//    addpatch(kpf->get_proc_enforce_disable_patch());
 //    addpatch(kpf->get_no_nonce_entanglement_patch());
 //    addpatch(kpf->get_force_NAND_writeable_patch());
 //    addpatch(kpf->get_read_bpr_patch());
@@ -112,11 +112,12 @@ int main(int argc, const char * argv[]) {
 //    addpatch(kpf->get_force_boot_ramdisk_patch());
 //    addpatch(kpf->get_apfs_skip_authenticate_root_hash_patch());
 //    addpatch(kpf->get_harcode_bootargs_patch("-v serial=3"));
-//    addpatch(kpf->get_always_get_task_allow_patch());
+    addpatch(kpf->get_always_get_task_allow_patch());
 //    addpatch(kpf->get_tfp_anyone_allow_patch());
 //    addpatch(kpf->get_vm_fault_internal_patch());
 //    addpatch(kpf->get_i_can_has_debugger_patch());
 //    addpatch(kpf->get_raw_sep_romcmd_patch());
+//    addpatch(kpf->get_tfp0_patch());
 
 
     

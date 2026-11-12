@@ -223,6 +223,12 @@ namespace tihmstar {
             virtual std::vector<patch> get_sep_is_obliterating_patch();
 
             virtual std::vector<patch> get_no_nonce_entanglement_patch();
+
+            virtual std::vector<patch> get_lwvm_rw_patch();
+
+            virtual std::vector<patch> get_sandbox_label_update_execve_patch();
+
+            virtual std::vector<patch> get_proc_enforce_disable_patch();
         };
     };
 };

@@ -65,6 +65,16 @@ namespace patchfinder {
         virtual std::vector<patch> get_ramdisk_detection_patch() override;
         
         virtual std::vector<patch> get_force_boot_ramdisk_patch() override;
+        
+        virtual std::vector<patch> get_lwvm_rw_patch() override;
+
+        virtual std::vector<patch> get_sandbox_label_update_execve_patch() override;
+        
+        virtual std::vector<patch> get_insert_setuid_patch() override;
+        
+        virtual std::vector<patch> get_proc_enforce_disable_patch() override;
+
+        virtual std::vector<patch> get_generic_kernelpatches() override;
 
 #pragma mark Util
         virtual loc64_t find_rootvnode() override;

@@ -24,6 +24,8 @@ namespace patchfinder {
         virtual std::vector<patch> get_mount_patch() override;
         
         virtual std::vector<patch> get_allow_UID_key_patch() override;
+
+        virtual std::vector<patch> get_always_get_task_allow_patch() override;
     };
 }
 }

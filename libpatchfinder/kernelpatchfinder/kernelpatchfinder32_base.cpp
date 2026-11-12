@@ -1018,53 +1018,42 @@ std::vector<patch> kernelpatchfinder32_base::get_noemf_patch(){
 
 std::vector<patch> kernelpatchfinder32_base::get_always_get_task_allow_patch(){
     /*
-        WatchOS 8
+        iPhone5,2 iOS 10.3.4
      */
     UNCACHEPATCHES;
 
-    loc_t str = findstr("mac_vnode_check_signature: MAC hook", false);
+    loc_t str = findstr("AMFI: hook..execve() killing pid %u: %s", false);
     debug("str=0x%08x",str);
     
     loc_t ref = find_literal_ref(str);
     debug("ref=0x%08x",ref);
 
-    loc_t bof = find_bof(ref);
-    debug("bof=0x%08x",bof);
-    
-    uint8_t spImm = 0;
-    
-    auto iter = _vmemThumb->getIter(bof);
-    
-    while (++iter != arm32::strd || (iter().rt() != 3 && iter().rt2() != 3))
+    auto iter = _vmemThumb->getIter(ref);
+    while (++iter != arm32::pop)
         ;
-    spImm = iter().imm();
-    if (iter().rt2() == 3){
-        spImm += 4;
-    }
-    
-    debug("spImm=0x%x",spImm);
 
-    while (++iter != arm32::add || iter().rd() != 13 || iter().rn() != 13) //add sp, sp, xxx
-        ;
     loc_t eof = iter;
     debug("eof=0x%08x",eof);
-    
-    loc_t str2 = findstr("mac_vnode_check_signature: MAC hook returned no error", false);
-    debug("str2=0x%08x",str2);
-    
-    loc_t ref2 = find_literal_ref(str2);
-    debug("ref2=0x%08x",ref2);
 
-    retassure(ref2 - eof < 0x200, "assumption failed");
+    while (--iter != arm32::ldr || iter().rt() != 0)
+        ;
+
+    loc_t tgt = iter;
+    debug("tgt=0x%08x",tgt);
     
-    pushINSN(arm32::thumb::new_T2_immediate_b(eof, ref2));
-    pushINSN(arm32::thumb::new_T2_immediate_ldr(ref2, spImm, 5));
-    pushINSN(arm32::thumb::new_T1_immediate_ldr(ref2+2, 0, 5, 4));
-    {uint32_t opcode = 0x6480F044; patches.push_back({ref2+4,&opcode,4});} //orr r4, #0x4000000
-    {uint32_t opcode = 0x404F044; patches.push_back({ref2+8,&opcode,4});} //orr r4, #0x4
-    pushINSN(arm32::thumb::new_T1_immediate_str(ref2+0xc, 0, 5, 4));
-    {uint32_t opcode = iter().opcode(); patches.push_back({ref2+0xe,&opcode,iter().insnsize()});} //orig add sp
-    pushINSN(arm32::thumb::new_T2_immediate_b(ref2+ 0xe +iter().insnsize(), iter.pc()+iter().insnsize()));
+    while (++iter != arm32::str || iter().rt() != 0)
+        ;
+
+    loc_t tgt_end = iter;
+    debug("tgt_end=0x%08x",tgt_end);
+
+    retassure((tgt_end-tgt) >= 10 , "not enough space for shellcode");
+    char patch[] ="\x20\xF4\x00\x70\x00\xBF\x40\xF0\x0F\x00";
+    patches.push_back({
+        tgt,
+        patch,
+        10
+    });
 
     RETCACHEPATCHES;
 };
@@ -1180,6 +1169,174 @@ std::vector<patch> kernelpatchfinder32_base::get_force_boot_ramdisk_patch(){
         char shellcode[] = "\x46\xF2\x6D\x40\x40\xF4\x40\x10\x08\x60\x00\xBF";
         patches.push_back({(loc_t)tgt,&shellcode,sizeof(shellcode)-1});
     }
+    RETCACHEPATCHES;
+}
+
+std::vector<patch> kernelpatchfinder32_base::get_lwvm_rw_patch(){
+    UNCACHEPATCHES;
+    /*
+        iPhone5,2 iOS 10.3.4
+     */
+    loc_t PE_i_can_has_kernel_configuration = find_sym("_PE_i_can_has_kernel_configuration");
+    debug("PE_i_can_has_kernel_configuration=0x%08x",PE_i_can_has_kernel_configuration);
+
+    loc_t str = findstr("_mapForIO", true);
+    debug("str=0x%08x",str);
+
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%08x",ref);
+
+    loc_t bof = find_bof(ref);
+    debug("bof=0x%08x",bof);
+
+    auto iter = _vmemThumb->getIter(bof);
+        
+    while (true){
+        while (++iter != arm32::bl)
+            ;
+        retassure(iter() != arm32::pop, "EOF");
+        try {
+            loc_t dst = bl_jump_stub_ptr_loc(iter);
+            if ((_vmemThumb->deref(dst)>>1) == (PE_i_can_has_kernel_configuration>>1)) break;
+        } catch (...) {
+            //
+        }
+    }
+
+    loc_t call_stub_stub_PE_i_can_has_kernel_configuration = iter;
+    debug("call_stub_stub_PE_i_can_has_kernel_configuration=0x%08x",call_stub_stub_PE_i_can_has_kernel_configuration);
+
+    while (++iter != arm32::b)
+        ;
+
+    loc_t baddst = iter().imm();
+    debug("baddst=0x%08x",baddst);
+    if (iter().insnsize() == 2) {
+        pushINSN(thumb::new_T1_general_nop(iter));
+    }else{
+        pushINSN(thumb::new_T1_general_nop(iter.pc()));
+        pushINSN(thumb::new_T1_general_nop(iter.pc()+2));
+    }
+    
+    iter = baddst;
+    --iter;
+    pushINSN(thumb::new_T2_immediate_b(iter, iter().imm()));
+    RETCACHEPATCHES;
+}
+
+std::vector<patch> kernelpatchfinder32_base::get_sandbox_label_update_execve_patch(){
+    UNCACHEPATCHES;
+    /*
+        iPhone5,2 iOS 10.3.4
+     */
+    loc_t str = findstr("process-exec denied while updating label", true);
+    debug("str=0x%08x",str);
+
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%08x",ref);
+
+    auto iter = _vmemThumb->getIter(ref);
+
+    while (--iter != arm32::bl)
+        ;
+    while (--iter != arm32::bl)
+        ;
+    while (--iter != arm32::bl)
+        ;
+
+    while ((--iter).supertype() != arm32::sut_branch_imm)
+        ;
+    
+    ++iter;
+    loc_t tgtblock = iter;
+    debug("tgtblock=0x%08x",tgtblock);
+    
+    loc_t bref = find_branch_ref(tgtblock, -0x400);
+    debug("bref=0x%08x",bref);
+    
+    iter = bref;
+    if (iter().insnsize() == 2) {
+        pushINSN(thumb::new_T1_general_nop(iter));
+    }else{
+        pushINSN(thumb::new_T1_general_nop(iter.pc()));
+        pushINSN(thumb::new_T1_general_nop(iter.pc()+2));
+    }
+
+    RETCACHEPATCHES;
+}
+
+std::vector<patch> kernelpatchfinder32_base::get_insert_setuid_patch(){
+    UNCACHEPATCHES;
+    /*
+        iPhone5,2 iOS 10.3.4
+     */
+    loc_t str = findstr("\"mount_common(): mount of %s filesystem failed with %d, but vnode list is not empty.\"", true);
+    debug("str=0x%08x",str);
+
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%08x",ref);
+
+    auto iter = _vmemThumb->getIter(ref);
+    
+    while ((--iter).supertype() != arm32::sut_branch_imm)
+        ;
+    ++iter;
+    
+    loc_t block = iter;
+    debug("block=0x%08x",block);
+    
+    loc_t bref = find_branch_ref(block, -0x900);
+    debug("bref=0x%08x",bref);
+
+    for (int i=0; i<2; i++) {
+        while (--iter != arm32::orr || iter().subtype() != arm32::st_immediate || iter().imm() != 8 || iter().rn() != 0)
+            ;
+        loc_t tgt = iter;
+        debug("tgt=0x%08x",tgt);
+        pushINSN(thumb::new_T3_register_mov(iter, iter().rd(), iter().rn()));
+    }
+    
+    RETCACHEPATCHES;
+}
+
+std::vector<patch> kernelpatchfinder32_base::get_proc_enforce_disable_patch(){
+    UNCACHEPATCHES;
+    /*
+     iPhone5,2 iOS 10.3.4
+     */
+    loc_t str = findstr("Enforce MAC policy on process operations", true);
+    debug("str=0x%08x",str);
+    
+    loc_t ref = memmem(&str, 4);
+    debug("ref=0x%08x",ref);
+    
+    loc_t dst = _vmemThumb->deref(ref-4*5);
+    debug("dst=0x%08x",dst);
+
+    {
+        uint32_t nullval = 0;
+        patches.push_back(patch{dst,&nullval,sizeof(nullval)});
+    }
+    RETCACHEPATCHES;
+}
+
+std::vector<patch> kernelpatchfinder32_base::get_generic_kernelpatches(){
+    UNCACHEPATCHES;
+    /*
+        iPhone5,2 iOS 10.3.4
+        This is literally h3lix
+     */
+    addPatches(get_insert_setuid_patch());
+    addPatches(get_lwvm_rw_patch());
+    addPatches(get_mount_patch());
+    addPatches(get_insert_setuid_patch());
+    addPatches(get_proc_enforce_disable_patch());
+    addPatches(get_codesignature_patches());
+    addPatches(get_always_get_task_allow_patch());
+    addPatches(get_sandbox_label_update_execve_patch());
+    addPatches(get_MarijuanARM_patch());
+    addPatches(get_sandbox_patch());
+    
     RETCACHEPATCHES;
 }
 

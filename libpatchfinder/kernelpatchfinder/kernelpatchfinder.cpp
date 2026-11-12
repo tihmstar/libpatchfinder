@@ -437,3 +437,15 @@ std::vector<patch> kernelpatchfinder::get_sep_is_obliterating_patch(){
 std::vector<patch> kernelpatchfinder::get_no_nonce_entanglement_patch(){
     FAIL_UNIMPLEMENTED;
 }
+
+std::vector<patch> kernelpatchfinder::get_lwvm_rw_patch(){
+    FAIL_UNIMPLEMENTED;
+}
+
+std::vector<patch> kernelpatchfinder::get_sandbox_label_update_execve_patch(){
+    FAIL_UNIMPLEMENTED;
+}
+
+std::vector<patch> kernelpatchfinder::get_proc_enforce_disable_patch(){
+    FAIL_UNIMPLEMENTED;
+}
