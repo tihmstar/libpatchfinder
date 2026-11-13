@@ -180,9 +180,6 @@ std::vector<patch> kernelpatchfinder32_iOS3::get_AppleImage3NORAccess_sigcheck_p
     pushINSN(thumb::new_T1_immediate_movs(img3_val_compare, 0, 0));
     pushINSN(thumb::new_T1_general_bx(img3_val_compare+2, 14));
 
-    
-    auto aa = _vmemThumb->getIter(0xc05e954e);
-    
     /*
         find a function which references all 3, SHSH, DATA, illb
      */
