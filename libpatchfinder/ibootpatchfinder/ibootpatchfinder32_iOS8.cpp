@@ -16,59 +16,56 @@ using namespace tihmstar::patchfinder;
 using namespace tihmstar::libinsn;
 using namespace tihmstar::libinsn::arm32;
 
+#define DEFAULT_BOOTARGS_STR "rd=md0 nand-enable-reformat=1 -progress"
 
-
-std::vector<patch> ibootpatchfinder32_iOS8::set_root_ticket_hash(const void *hash, size_t hashSize){
+std::vector<patch> ibootpatchfinder32_iOS8::get_honor_nvram_boot_arg_patch(){
     UNCACHEPATCHES;
+    /*
+     iPhone5,2 iOS 10.3.4
+     */
+    loc_t default_boot_args_str_loc = findstr(DEFAULT_BOOTARGS_STR, false);
+    debug("default_boot_args_str_loc=0x%08x",default_boot_args_str_loc);
     
-    loc_t str = (loc_t)findstr("root-ticket-hash", true);
-    debug("str=0x%08x",str);
-    assure(str);
+    loc_t default_boot_args_data_xref = memmem(&default_boot_args_str_loc, sizeof(default_boot_args_str_loc));
+    debug("default_boot_args_data_xref=0x%08x",default_boot_args_data_xref);
     
-    loc_t ref = find_literal_ref_thumb(str);
-    debug("ref=0x%08x",ref);
-    assure(ref);
+    loc_t default_boot_args_xref = find_literal_ref_thumb(default_boot_args_str_loc);
+    debug("default_boot_args_xref=0x%08x",default_boot_args_xref);
     
-    vmem_thumb iter = _vmemThumb->getIter(ref);
-    while (++iter != arm32::bl)
+    loc_t env_get = find_env_get();
+    debug("env_get=0x%08x",env_get);
+    
+    vmem_thumb iter = _vmemThumb->getIter(default_boot_args_xref);
+    while ((--iter).supertype() != arm32::sut_branch_imm || iter() == arm32::bl)
         ;
-    while (++iter != arm32::bl)
-        ;
-    
-    loc_t ticket_get_hash_func = iter().imm();
-    debug("ticket_get_hash_func=0x%08x",ticket_get_hash_func);
-    
-    loc_t nopspace = (loc_t)findnops(hashSize/4, true, 0x00000000);
-    debug("nopspace=0x%08x",nopspace);
-    
-    patches.push_back({nopspace,hash,hashSize});
-    
-    iter = ticket_get_hash_func;
-    while (++iter != arm32::ldr)
-        ;
-    assure(iter().subtype() == st_literal);
-    loc_t ldrloc = iter;
-    loc_t imm = iter().imm();
-    debug("ldrloc=0x%08x",ldrloc);
-    debug("imm=0x%08x",imm);
-    
-    patches.push_back({imm,&nopspace,sizeof(uint32_t)});
+    loc_t bstart = iter;
+    debug("bstart=0x%08x",bstart);
 
-    if (ldrloc & 0b11) {
-        pushINSN(thumb::new_T1_general_nop(ldrloc));
-        ldrloc+=2;
-    }
-    pushINSN(thumb::new_T1_literal_ldr(ldrloc, imm, 1));
-    iter = ldrloc;
+    iter = default_boot_args_xref;
+    while ((++iter).supertype() != arm32::sut_branch_imm || iter() == arm32::bl)
+        ;
     
-    while (++iter != arm32::blx) {
-        pushINSN(thumb::new_T1_general_nop(iter));
-        assure(iter.pc() < imm);
-    }
-    patches.pop_back();
+    loc_t bend = iter().imm();
+    debug("bend=0x%08x",bend);
 
-    --iter;
-    pushINSN(thumb::new_T1_immediate_movs(iter, 0x14, 2));
+    iter = bstart;
+    iter = iter().imm();
+    uint8_t tgtreg = iter().rt();
+    debug("tgtreg=%d",tgtreg);
     
+    loc_t cur = bstart;
+    pushINSN(thumb::new_T1_literal_ldr(cur, default_boot_args_data_xref, 0)); cur +=2;
+    pushINSN(thumb::new_T1_immediate_bl(cur, env_get)); cur +=4;
+    pushINSN(thumb::new_T2_register_mov(cur, tgtreg, 0)); cur +=2;
+    while (cur < bend) {
+        pushINSN(thumb::new_T1_general_nop(cur)); cur+=2;
+    }
+
+    {
+        //old bootargs are not the "boot-args" string arg for getenv
+        char argstr[] = "boot-args";
+        patches.push_back({default_boot_args_str_loc, argstr, sizeof(argstr)});
+    }
+
     RETCACHEPATCHES;
 }

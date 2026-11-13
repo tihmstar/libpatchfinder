@@ -8,13 +8,13 @@
 #ifndef ibootpatchfinder32_iOS9_hpp
 #define ibootpatchfinder32_iOS9_hpp
 
-#include "ibootpatchfinder32_iOS5.hpp"
+#include "ibootpatchfinder32_iOS8.hpp"
 
 namespace tihmstar {
     namespace patchfinder {
-        class ibootpatchfinder32_iOS9 : public ibootpatchfinder32_iOS5{
+        class ibootpatchfinder32_iOS9 : public ibootpatchfinder32_iOS8{
         public:
-            using ibootpatchfinder32_iOS5::ibootpatchfinder32_iOS5;
+            using ibootpatchfinder32_iOS8::ibootpatchfinder32_iOS8;
 
             /*
                 disable IMG4 signature validation

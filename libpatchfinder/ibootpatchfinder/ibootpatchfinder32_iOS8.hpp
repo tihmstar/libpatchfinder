@@ -16,11 +16,7 @@ namespace tihmstar {
         public:
             using ibootpatchfinder32_iOS5::ibootpatchfinder32_iOS5;
             
-            /*
-                set root-ticket-hash
-             */
-            virtual std::vector<patch> set_root_ticket_hash(const void *hash, size_t hashSize) override;
-
+            virtual std::vector<patch> get_honor_nvram_boot_arg_patch() override;
         };
     };
 };

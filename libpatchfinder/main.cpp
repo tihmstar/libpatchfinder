@@ -82,7 +82,7 @@ int main(int argc, const char * argv[]) {
 //    addpatch(ibpf->get_always_sepfw_booted_patch());
 //    addpatch(ibpf->get_atv4k_enable_uart_patch());
 //    addpatch(ibpf->get_boot_arg_patch("-v serial=3"));
-//    addpatch(ibpf->get_honor_nvram_boot_arg_patch());
+    addpatch(ibpf->get_honor_nvram_boot_arg_patch());
 //    addpatch(ibpf->get_wtf_pwndfu_patch());
 //    addpatch(ibpf->get_sep_load_raw_patch());
 //    addpatch(ibpf->replace_cmd_with_ra1nra1n("reboot"));
@@ -94,7 +94,7 @@ int main(int argc, const char * argv[]) {
 //    auto asd = ibpf->find_iBoot_logstr(0x8d3ff3cd3759614,0);
 //    debug("asd=0x%016llx",asd);
     
-    addpatch(kpf->get_AppleImage3NORAccess_sigcheck_patch());
+//    addpatch(kpf->get_AppleImage3NORAccess_sigcheck_patch());
 //    addpatch(kpf->get_noemf_patch());
 //    addpatch(kpf->get_codesignature_patches());
 //    addpatch(kpf->get_trustcache_true_patch());
