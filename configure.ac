@@ -33,8 +33,8 @@ case $host_os in
 esac
 
 
-CXXFLAGS+=" -std=c++20 -O3"
-CFLAGS+=" -std=c11"
+CXXFLAGS+=" -fPIC -std=c++20 -O3"
+CFLAGS+=" -fPIC -std=c11"
 CXXFLAGS+=" -D EXPECTIONNAME=OFexception"
 CXXFLAGS+=" -D__LP64__" # Needed for correct usage of mach-o headers
 
