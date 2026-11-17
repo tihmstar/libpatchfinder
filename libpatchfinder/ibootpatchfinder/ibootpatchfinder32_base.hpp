@@ -31,6 +31,11 @@ namespace tihmstar {
             virtual bool has_kernel_load() override;
             virtual bool has_recovery_console() override;
             
+            /*
+                get platform-name string
+             */
+            virtual std::string get_platform_name() override;
+
             virtual loc64_t find_env_get() override;
 
             /*

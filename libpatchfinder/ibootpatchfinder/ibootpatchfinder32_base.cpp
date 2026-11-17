@@ -64,13 +64,13 @@ void ibootpatchfinder32_base::init(){
     _vmemArm = new vmem_arm({{_buf,_bufSize,_base, (vmprot)(kVMPROTREAD | kVMPROTWRITE | kVMPROTEXEC)}});
 
     if (!strncmp((char*)&_buf[IBOOT_VERS_STR_OFFSET], "iBoot", sizeof("iBoot")-1)){
-        retassure(_vers = atoi((char*)&_buf[IBOOT_VERS_STR_OFFSET+6]), "No iBoot version found!\n");
+        retassure(_vers = atoi((char*)&_buf[IBOOT_VERS_STR_OFFSET+6]), "No iBoot version found!");
     }else{
         //iOS 1 iBoot??
         loc_t ibootstrloc = (loc_t)memmem("iBoot-", sizeof("iBoot-")-1);
-        retassure(ibootstrloc, "No iBoot version found!\n");
+        retassure(ibootstrloc, "No iBoot version found!");
         const char *ibootstr = (char*)memoryForLoc(ibootstrloc);
-        retassure(_vers = atoi(ibootstr+6), "No iBoot version found!\n");
+        retassure(_vers = atoi(ibootstr+6), "No iBoot version found!");
     }
     debug("iBoot-%d inputted", _vers);
 }
@@ -94,6 +94,33 @@ bool ibootpatchfinder32_base::has_recovery_console(){
     } catch (...) {
         return 0;
     }
+}
+
+std::string ibootpatchfinder32_base::get_platform_name(){
+    /*
+        iPhone5,2 iOS 9.3.5
+     */
+    loc_t str = findstr("platform-name", true);
+    debug("str=0x%016llx",str);
+
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx",ref);
+
+    auto iter = _vmemThumb->getIter(ref);
+    while (++iter != arm32::bl)
+        ;
+    while (++iter != arm32::bl)
+        ;
+
+    loc_t pos = iter;
+    debug("pos=0x%016llx",pos);
+
+    loc_t tgt = find_register_value(iter, 1, pos - 0x10);
+    debug("tgt=0x%016llx",tgt);
+
+    std::string ret = (char*)memoryForLoc(tgt);
+    debug("platform='%s'",ret.c_str());
+    return ret;
 }
 
 ibootpatchfinder32_base::loc64_t ibootpatchfinder32_base::find_env_get(){
@@ -489,7 +516,7 @@ std::vector<patch> ibootpatchfinder32_base::get_boot_arg_patch(const char *boota
         patches.push_back({default_boot_args_data_xref, &default_boot_args_str_loc, sizeof(default_boot_args_str_loc)});
     }
     
-    debug("Applying custom boot-args \"%s\"\n", bootargs);
+    debug("Applying custom boot-args \"%s\"", bootargs);
     patches.push_back({default_boot_args_str_loc, bootargs, strlen(bootargs)+1});
     
     {

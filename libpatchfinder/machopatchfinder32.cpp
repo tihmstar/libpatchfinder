@@ -40,7 +40,7 @@ using namespace tihmstar::libinsn::arm32;
 
 #pragma mark macho external
 
-__attribute__((always_inline)) struct load_command *find_load_command32(struct mach_header *mh, uint32_t lc){
+__attribute__((always_inline)) struct load_command *find_load_command32(const struct mach_header *mh, uint32_t lc){
     struct load_command *lcmd = (struct load_command *)(mh + 1);
     for (uint32_t i=0; i<mh->ncmds; i++, lcmd = (struct load_command *)((uint8_t *)lcmd + lcmd->cmdsize)) {
         if (lcmd->cmd == lc)
@@ -50,11 +50,11 @@ __attribute__((always_inline)) struct load_command *find_load_command32(struct m
     retcustomerror(load_command_not_found, lc);
 }
 
-__attribute__((always_inline)) struct symtab_command *find_symtab_command(struct mach_header *mh){
+__attribute__((always_inline)) struct symtab_command *find_symtab_command(const struct mach_header *mh){
     return (struct symtab_command *)find_load_command32(mh, LC_SYMTAB);
 }
 
-__attribute__((always_inline)) struct dysymtab_command *find_dysymtab_command(struct mach_header *mh){
+__attribute__((always_inline)) struct dysymtab_command *find_dysymtab_command(const struct mach_header *mh){
     return (struct dysymtab_command *)find_load_command32(mh, LC_DYSYMTAB);
 }
 
@@ -65,6 +65,38 @@ __attribute__((always_inline)) struct section *find_section(struct segment_comma
             return sect;
     }
     reterror("Failed to find section %s", sectname);
+}
+
+__attribute__((always_inline)) struct section *find_stub_section(const struct mach_header *mh){
+    struct load_command *lcmd = (struct load_command *)(mh + 1);
+    for (uint32_t i=0; i<mh->ncmds; i++, lcmd = (struct load_command *)((uint8_t *)lcmd + lcmd->cmdsize)) {
+        if (lcmd->cmd == LC_SEGMENT){
+            const struct segment_command *seg = (const struct segment_command *)lcmd;
+            struct section *sect = (struct section *)(seg + 1);
+            for (uint32_t j=0; j<seg->nsects; j++, sect++) {
+                if ((sect->flags & SECTION_TYPE) == S_SYMBOL_STUBS) {
+                    return sect;
+                }
+            }
+        }
+    }
+    reterror("Failed to find stub section");
+}
+
+__attribute__((always_inline)) struct section *find_lazy_sym_section(const struct mach_header *mh){
+    struct load_command *lcmd = (struct load_command *)(mh + 1);
+    for (uint32_t i=0; i<mh->ncmds; i++, lcmd = (struct load_command *)((uint8_t *)lcmd + lcmd->cmdsize)) {
+        if (lcmd->cmd == LC_SEGMENT){
+            const struct segment_command *seg = (const struct segment_command *)lcmd;
+            struct section *sect = (struct section *)(seg + 1);
+            for (uint32_t j=0; j<seg->nsects; j++, sect++) {
+                if ((sect->flags & SECTION_TYPE) == S_NON_LAZY_SYMBOL_POINTERS) {
+                    return sect;
+                }
+            }
+        }
+    }
+    reterror("Failed to find lazy sym section");
 }
 
 #pragma mark macho local
@@ -85,6 +117,7 @@ __attribute__((always_inline)) const struct symtab_command *machopatchfinder32::
 void machopatchfinder32::loadSegments(){
     std::vector<vsegment> segments;
     struct mach_header *mh = (struct mach_header*)_buf;
+    _mh = mh;
     struct load_command *lcmd = (struct load_command *)(mh + 1);
     bool has_text_exec = false;
     bool didSetBase = false;
@@ -217,6 +250,7 @@ void machopatchfinder32::init(){
 
 machopatchfinder32::machopatchfinder32(const char *filename) :
     patchfinder32(true),
+    _mh(NULL),
     __symtab(NULL)
 {
     struct stat fs = {0};
@@ -292,6 +326,7 @@ machopatchfinder32::machopatchfinder32(const char *filename) :
 
 machopatchfinder32::machopatchfinder32(const void *buffer, size_t bufSize, bool takeOwnership) :
 patchfinder32(takeOwnership),
+_mh(NULL),
 __symtab(NULL)
 {
     _bufSize = bufSize;
@@ -301,6 +336,7 @@ __symtab(NULL)
 
 machopatchfinder32::machopatchfinder32(machopatchfinder32 &&mv)
 : patchfinder32(std::move(mv)),
+_mh(mv._mh),
 __symtab(mv.__symtab)
 {
     _bufSize = mv._bufSize;
@@ -317,6 +353,60 @@ patchfinder32::loc_t machopatchfinder32::find_sym(const char *sym){
             return (loc_t)entry->n_value;
 
     retcustomerror(symbol_not_found,sym);
+}
+
+patchfinder32::loc_t machopatchfinder32::find_sym_stub(const char *sym){
+    const uint8_t *psymtab = _buf + getSymtab()->symoff;
+    const uint8_t *pstrtab = _buf + getSymtab()->stroff;
+
+    struct nlist *entry = (struct nlist *)psymtab;
+    for (uint32_t i = 0; i < getSymtab()->nsyms; i++, entry++){
+        char *stab_sym = (char*)(pstrtab + entry->n_un.n_strx);
+        if (!strcmp(sym, stab_sym)){
+            struct dysymtab_command *dst = find_dysymtab_command(_mh);
+            const section *stubs_sec = find_stub_section(_mh);
+            const uint32_t *indirect_syms = (const uint32_t *)(_buf + dst->indirectsymoff);
+            
+            uint32_t indirect_start = stubs_sec->reserved1;
+            uint32_t stub_size = stubs_sec->reserved2;
+            uint64_t num_stubs = stubs_sec->size / stub_size;
+
+            for (uint32_t k = 0; k < num_stubs; k++) {
+                uint32_t entry = indirect_syms[indirect_start + k];
+                uint32_t clean_idx = entry & ~(INDIRECT_SYMBOL_LOCAL | INDIRECT_SYMBOL_ABS);
+                if (clean_idx == i) {
+                    return stubs_sec->addr + (k * stub_size);
+                }
+            }
+        }
+    }
+    retcustomerror(symbol_not_found,sym);
+}
+
+patchfinder32::loc_t machopatchfinder32::find_lazy_sym_loc(const char *sym){
+    const uint8_t *psymtab = _buf + getSymtab()->symoff;
+    const uint8_t *pstrtab = _buf + getSymtab()->stroff;
+
+    struct nlist *entry = (struct nlist *)psymtab;
+    for (uint32_t i = 0; i < getSymtab()->nsyms; i++, entry++){
+        char *stab_sym = (char*)(pstrtab + entry->n_un.n_strx);
+        if (!strcmp(sym, stab_sym)){
+            struct dysymtab_command *dst = find_dysymtab_command(_mh);
+            const section *lazy_sym_sec = find_lazy_sym_section(_mh);
+            const uint32_t *indirect_syms = (const uint32_t *)(_buf + dst->indirectsymoff);
+            
+            uint32_t indirect_start = lazy_sym_sec->reserved1;
+            uint64_t num_ptrs = lazy_sym_sec->size / 4;
+
+            for (uint32_t k = 0; k < num_ptrs; k++) {
+                uint32_t entry = indirect_syms[indirect_start + k];
+                uint32_t clean_idx = entry & ~(INDIRECT_SYMBOL_LOCAL | INDIRECT_SYMBOL_ABS);
+                if (clean_idx == i) {
+                    return lazy_sym_sec->addr + (k * 4);
+                }
+            }
+        }
+    }    retcustomerror(symbol_not_found,sym);
 }
 
 std::string machopatchfinder32::sym_for_addr(loc_t addr){
