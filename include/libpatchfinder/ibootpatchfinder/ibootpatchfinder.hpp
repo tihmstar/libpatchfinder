@@ -33,6 +33,12 @@ namespace tihmstar {
             virtual bool has_kernel_load();
             virtual bool has_recovery_console();
             
+            /*
+                get platform-name string
+             */
+            virtual std::string get_platform_name();
+
+            
             virtual std::vector<patch> get_wtf_pwndfu_patch();
 
                

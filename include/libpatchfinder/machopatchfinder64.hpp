@@ -34,6 +34,8 @@ namespace tihmstar {
             
             bool haveSymbols() { return __symtabs.size();};
             loc_t find_sym(const char *sym);
+            loc_t find_sym_stub(const char *sym);
+            loc_t find_lazy_sym_loc(const char *sym);
             std::string sym_for_addr(loc_t addr);
             loc_t bl_jump_stub_ptr_loc(loc_t bl_insn);
             

@@ -63,6 +63,39 @@ __attribute__((always_inline)) struct section_64 *find_section(struct segment_co
     return NULL;
 }
 
+
+__attribute__((always_inline)) struct section_64 *find_stub_section(const struct mach_header_64 *mh){
+    struct load_command *lcmd = (struct load_command *)(mh + 1);
+    for (uint32_t i=0; i<mh->ncmds; i++, lcmd = (struct load_command *)((uint8_t *)lcmd + lcmd->cmdsize)) {
+        if (lcmd->cmd == LC_SEGMENT_64){
+            const struct segment_command_64 *seg = (const struct segment_command_64 *)lcmd;
+            struct section_64 *sect = (struct section_64 *)(seg + 1);
+            for (uint32_t j=0; j<seg->nsects; j++, sect++) {
+                if ((sect->flags & SECTION_TYPE) == S_SYMBOL_STUBS) {
+                    return sect;
+                }
+            }
+        }
+    }
+    reterror("Failed to find stub section");
+}
+
+__attribute__((always_inline)) struct section_64 *find_lazy_sym_section(const struct mach_header_64 *mh){
+    struct load_command *lcmd = (struct load_command *)(mh + 1);
+    for (uint32_t i=0; i<mh->ncmds; i++, lcmd = (struct load_command *)((uint8_t *)lcmd + lcmd->cmdsize)) {
+        if (lcmd->cmd == LC_SEGMENT_64){
+            const struct segment_command_64 *seg = (const struct segment_command_64 *)lcmd;
+            struct section_64 *sect = (struct section_64 *)(seg + 1);
+            for (uint32_t j=0; j<seg->nsects; j++, sect++) {
+                if ((sect->flags & SECTION_TYPE) == S_NON_LAZY_SYMBOL_POINTERS) {
+                    return sect;
+                }
+            }
+        }
+    }
+    reterror("Failed to find lazy sym section");
+}
+
 #pragma mark macho local
 
 __attribute__((always_inline)) const std::vector<std::pair<const struct symtab_command *,uint8_t *>> &machopatchfinder64::getSymtabs(){
@@ -345,6 +378,65 @@ patchfinder64::loc_t machopatchfinder64::find_sym(const char *sym){
         }
     }
     
+    retcustomerror(symbol_not_found,sym);
+}
+
+patchfinder64::loc_t machopatchfinder64::find_sym_stub(const char *sym){
+    for (auto symtab : getSymtabs()){
+        const uint8_t *psymtab = _buf + symtab.first->symoff;
+        const uint8_t *pstrtab = _buf + symtab.first->stroff;
+        
+        struct nlist_64 *entry = (struct nlist_64 *)psymtab;
+        for (uint32_t i = 0; i < symtab.first->nsyms; i++, entry++){
+            char *stab_sym = (char*)(pstrtab + entry->n_un.n_strx);
+            if (!strcmp(sym, stab_sym)){
+                struct dysymtab_command *dst = find_dysymtab_command(_mh);
+                const section_64 *stubs_sec = find_stub_section(_mh);
+                const uint32_t *indirect_syms = (const uint32_t *)(_buf + dst->indirectsymoff);
+                
+                uint32_t indirect_start = stubs_sec->reserved1;
+                uint32_t stub_size = stubs_sec->reserved2;
+                uint64_t num_stubs = stubs_sec->size / stub_size;
+
+                for (uint64_t k = 0; k < num_stubs; k++) {
+                    uint32_t entry = indirect_syms[indirect_start + k];
+                    uint32_t clean_idx = entry & ~(INDIRECT_SYMBOL_LOCAL | INDIRECT_SYMBOL_ABS);
+                    if (clean_idx == i) {
+                        return stubs_sec->addr + (k * stub_size);
+                    }
+                }
+            }
+        }
+    }
+    retcustomerror(symbol_not_found,sym);
+}
+
+patchfinder64::loc_t machopatchfinder64::find_lazy_sym_loc(const char *sym){
+    for (auto symtab : getSymtabs()){
+        const uint8_t *psymtab = _buf + symtab.first->symoff;
+        const uint8_t *pstrtab = _buf + symtab.first->stroff;
+        
+        struct nlist_64 *entry = (struct nlist_64 *)psymtab;
+        for (uint32_t i = 0; i < symtab.first->nsyms; i++, entry++){
+            char *stab_sym = (char*)(pstrtab + entry->n_un.n_strx);
+            if (!strcmp(sym, stab_sym)){
+                struct dysymtab_command *dst = find_dysymtab_command(_mh);
+                const section_64 *lazy_sym_sec = find_lazy_sym_section(_mh);
+                const uint32_t *indirect_syms = (const uint32_t *)(_buf + dst->indirectsymoff);
+                
+                uint32_t indirect_start = lazy_sym_sec->reserved1;
+                uint64_t num_ptrs = lazy_sym_sec->size / 8;
+
+                for (uint64_t k = 0; k < num_ptrs; k++) {
+                    uint32_t entry = indirect_syms[indirect_start + k];
+                    uint32_t clean_idx = entry & ~(INDIRECT_SYMBOL_LOCAL | INDIRECT_SYMBOL_ABS);
+                    if (clean_idx == i) {
+                        return lazy_sym_sec->addr + (k * 8);
+                    }
+                }
+            }
+        }
+    }
     retcustomerror(symbol_not_found,sym);
 }
 

@@ -113,6 +113,30 @@ ibootpatchfinder64_base::loc_t ibootpatchfinder64_base::find_malloc(){
     return find_bof(ref);
 }
 
+std::string ibootpatchfinder64_base::get_platform_name(){
+    /*
+        iPhone8,2 iOS 9.0
+     */
+    loc_t str = findstr("platform-name", true);
+    debug("str=0x%016llx\n",str);
+
+    loc_t ref = find_literal_ref(str);
+    debug("ref=0x%016llx\n",ref);
+    
+    auto iter = _vmem->getIter(ref);
+    while (++iter != insn::bl)
+        ;
+    while (++iter != insn::bl)
+        ;
+
+    loc_t tgt = find_register_value(iter, 1);
+    debug("tgt=0x%016llx\n",tgt);
+
+    std::string ret = (char*)memoryForLoc(tgt);
+    debug("platform='%s'\n",ret.c_str());
+    return ret;
+}
+
 std::vector<patch> ibootpatchfinder64_base::get_always_production_patch(){
     std::vector<patch> patches;
     for (uint64_t demoteReg : {(uint64_t)0x3F500000UL,(uint64_t)0x481BC000UL,(uint64_t)0x20E02A000UL,(uint64_t)0x2102BC000UL}) {

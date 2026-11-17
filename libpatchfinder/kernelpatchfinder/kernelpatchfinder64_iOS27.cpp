@@ -47,9 +47,16 @@ patchfinder64::loc_t kernelpatchfinder64_iOS27::findnops(uint16_t nopCnt, bool u
 patchfinder64::loc_t kernelpatchfinder64_iOS27::find_query_trustcache(){
     UNCACHELOC;
     try {
-        return find_sym("_query_trust_cache");
+        return find_sym("_query_trust_cache_with_length");
     } catch (...) {
-        //
+        try {
+            /*
+                This is wrong, isn't it?
+             */
+            return find_sym("_query_trust_cache");
+        } catch (...) {
+            //
+        }
     }
     /*
         A12 PPL stuff

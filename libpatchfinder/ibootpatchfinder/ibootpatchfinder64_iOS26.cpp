@@ -41,7 +41,7 @@ std::vector<patch> ibootpatchfinder64_iOS26::get_force_septype_local_patch(){
             bool is_finyfunc = false;
             auto iter2 = _vmem->getIter(iter().imm());
             for (int i=0; i<5; i++) {
-                if (++iter2 ==insn::ret) {
+                if (++iter2 ==insn::ret || iter2() == insn::b) {
                     is_finyfunc = true;
                     break;
                 }
@@ -60,6 +60,14 @@ std::vector<patch> ibootpatchfinder64_iOS26::get_force_septype_local_patch(){
                  */
                 env_get_uint_x3_arg = find_register_value(iter, 3);
             }else{
+                if (find_register_value(iter2, 1) == 0) {
+                    /*
+                        AppleTV6,2 has no firebloom
+                     */
+                    env_get_uint = iter().imm();
+                    debug("env_get_uint=0x%016llx",env_get_uint);
+                    break;
+                }
                 env_get_uint_x3_arg = find_register_value(iter2, 3, iter().imm());
             }
             if (!env_get_uint_x3_arg) continue;

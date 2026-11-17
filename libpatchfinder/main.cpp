@@ -82,13 +82,13 @@ int main(int argc, const char * argv[]) {
 //    addpatch(ibpf->get_always_sepfw_booted_patch());
 //    addpatch(ibpf->get_atv4k_enable_uart_patch());
 //    addpatch(ibpf->get_boot_arg_patch("-v serial=3"));
-    addpatch(ibpf->get_honor_nvram_boot_arg_patch());
+//    addpatch(ibpf->get_honor_nvram_boot_arg_patch());
 //    addpatch(ibpf->get_wtf_pwndfu_patch());
 //    addpatch(ibpf->get_sep_load_raw_patch());
 //    addpatch(ibpf->replace_cmd_with_ra1nra1n("reboot"));
 //    addpatch(ibpf->get_ra1nra1n_patch());
 //    addpatch(ibpf->get_no_img3_dumplist_patch());
-
+    ibpf->get_platform_name();
 
     
 //    auto asd = ibpf->find_iBoot_logstr(0x8d3ff3cd3759614,0);

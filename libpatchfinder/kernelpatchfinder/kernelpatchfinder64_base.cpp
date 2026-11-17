@@ -969,10 +969,46 @@ std::vector<patch> kernelpatchfinder64_base::get_allow_UID_key_patch(){
                         debug("cmp1=0x%016llx",cmp);
                         debug("cmp2=0x%016llx",cmp2);
                         debug("cmp3=0x%016llx",cmp3);
-
-                        pushINSN(insn::new_immediate_cmp(iter, 0xff, iter().rn()));
-                        pushINSN(insn::new_immediate_cmp(iter2, 0xff, iter2().rn()));
-                        pushINSN(insn::new_immediate_cmp(iter3, 0xff, iter3().rn()));
+                        
+                        {
+                            /*
+                                iPhone8,2 iOS 9.0
+                             */
+                            loc_t locs[3] = {
+                                cmp,
+                                cmp2,
+                                cmp3
+                            };
+                            for (int k = 0; k<ARRAYOF(locs); k++) {
+                                iter = locs[k];
+                                bool doSkip = false;
+                                switch (get_cpid()) {
+                                    case 0x8000:
+                                    case 0x8001:
+                                    case 0x8003:
+                                        /*
+                                            On iOS 9.0 iPhone8,2 unlocking GID key makes AES call hang forever. So don't unlock it
+                                         */
+                                        if (iter().imm() == 0x3E8) doSkip = true;
+                                        break;
+                                        
+                                    default:
+                                        break;
+                                }
+                                if (doSkip) continue;
+                                if (++iter == insn::bcond) {
+                                    if (iter().condition() == insn::cond::EQ) {
+                                        pushINSN(insn::new_general_nop(iter));
+                                    }else{
+                                        pushINSN(insn::new_immediate_b(iter, iter().imm()));
+                                    }
+                                }else{
+                                    //old style patch (fallback)
+                                    --iter;
+                                    pushINSN(insn::new_immediate_cmp(iter, 0xff, iter().rn()));
+                                }
+                            }
+                        }
                         return patches;
                     }
                 }

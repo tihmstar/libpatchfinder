@@ -33,6 +33,10 @@ bool ibootpatchfinder::has_recovery_console(){
     FAIL_UNIMPLEMENTED;
 }
 
+std::string ibootpatchfinder::get_platform_name(){
+    FAIL_UNIMPLEMENTED;
+}
+
 std::vector<patch> ibootpatchfinder::get_wtf_pwndfu_patch(){
     FAIL_UNIMPLEMENTED;
 }

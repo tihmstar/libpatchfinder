@@ -33,6 +33,11 @@ namespace tihmstar {
             virtual bool has_recovery_console() override;
             
             virtual loc_t find_malloc() override;
+            
+            /*
+                get platform-name string
+             */
+            virtual std::string get_platform_name() override;
 
             /*
                 Make iBoot think we're in production mode, even if we demoted

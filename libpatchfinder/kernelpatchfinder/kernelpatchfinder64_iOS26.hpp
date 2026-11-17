@@ -17,6 +17,8 @@ namespace patchfinder {
         using kernelpatchfinder64_iOS18::kernelpatchfinder64_iOS18;
         
         virtual std::vector<patch> get_force_boot_ramdisk_patch() override;
+
+        virtual std::vector<patch> get_codesignature_patches() override;
     };
 }
 }
