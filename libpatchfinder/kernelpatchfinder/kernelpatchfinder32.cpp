@@ -13,6 +13,7 @@
 #include "kernelpatchfinder32_iOS5.hpp"
 #include "kernelpatchfinder32_iOS6.hpp"
 #include "kernelpatchfinder32_iOS9.hpp"
+#include "kernelpatchfinder32_iOS10.hpp"
 #include "kernelpatchfinder32_iOS11.hpp"
 
 using namespace std;
@@ -31,6 +32,9 @@ kernelpatchfinder32 *kernelpatchfinder32::make_kernelpatchfinder32(machopatchfin
     if (vers > 4000) {
         info("Detected iOS 11 kernel");
         return new kernelpatchfinder32_iOS11(std::move(helper));
+    } else if (vers > 3700) {
+        info("Detected iOS 10 kernel");
+        return new kernelpatchfinder32_iOS10(std::move(helper));
     } else if (vers > 3200) {
         info("Detected iOS 9 kernel");
         return new kernelpatchfinder32_iOS9(std::move(helper));

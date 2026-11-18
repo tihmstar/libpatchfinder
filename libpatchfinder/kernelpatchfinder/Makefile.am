@@ -41,6 +41,7 @@ libpatchfinder_kernelpatchfinder32_la_SOURCES =	kernelpatchfinder32.cpp \
                                                 kernelpatchfinder32_iOS6.cpp \
                                                 kernelpatchfinder32_iOS8.cpp \
                                                 kernelpatchfinder32_iOS9.cpp \
+                                                kernelpatchfinder32_iOS10.cpp \
                                                 kernelpatchfinder32_iOS11.cpp
 
 endif #WITH_KERNELPATCHFINDER

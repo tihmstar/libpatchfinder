@@ -8,13 +8,13 @@
 #ifndef kernelpatchfinder32_iOS11_hpp
 #define kernelpatchfinder32_iOS11_hpp
 
-#include "kernelpatchfinder32_iOS9.hpp"
+#include "kernelpatchfinder32_iOS10.hpp"
 
 namespace tihmstar {
 namespace patchfinder {
-    class kernelpatchfinder32_iOS11 : public kernelpatchfinder32_iOS9{
+    class kernelpatchfinder32_iOS11 : public kernelpatchfinder32_iOS10{
     public:
-        using kernelpatchfinder32_iOS9::kernelpatchfinder32_iOS9;
+        using kernelpatchfinder32_iOS10::kernelpatchfinder32_iOS10;
         
         /*
             Provides a set patches to disable codesignature checks

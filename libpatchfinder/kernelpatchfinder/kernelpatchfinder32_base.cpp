@@ -1175,7 +1175,7 @@ std::vector<patch> kernelpatchfinder32_base::get_force_boot_ramdisk_patch(){
 std::vector<patch> kernelpatchfinder32_base::get_lwvm_rw_patch(){
     UNCACHEPATCHES;
     /*
-        iPhone5,2 iOS 10.3.4
+        iPhone5,2 iOS 9.3.5
      */
     loc_t PE_i_can_has_kernel_configuration = find_sym("_PE_i_can_has_kernel_configuration");
     debug("PE_i_can_has_kernel_configuration=0x%08x",PE_i_can_has_kernel_configuration);
@@ -1206,7 +1206,7 @@ std::vector<patch> kernelpatchfinder32_base::get_lwvm_rw_patch(){
     loc_t call_stub_stub_PE_i_can_has_kernel_configuration = iter;
     debug("call_stub_stub_PE_i_can_has_kernel_configuration=0x%08x",call_stub_stub_PE_i_can_has_kernel_configuration);
 
-    while (++iter != arm32::b)
+    while (++iter != arm32::b && iter() != arm32::bcond)
         ;
 
     loc_t baddst = iter().imm();
@@ -1218,9 +1218,19 @@ std::vector<patch> kernelpatchfinder32_base::get_lwvm_rw_patch(){
         pushINSN(thumb::new_T1_general_nop(iter.pc()+2));
     }
     
-    iter = baddst;
-    --iter;
-    pushINSN(thumb::new_T2_immediate_b(iter, iter().imm()));
+    int foundCnt = 0;
+    while ((++iter).pc() < baddst && foundCnt < 2) {
+        if (iter().supertype() == arm32::sut_branch_imm && iter().imm() == baddst){
+            if (iter().insnsize() == 2) {
+                pushINSN(thumb::new_T1_general_nop(iter));
+            }else{
+                pushINSN(thumb::new_T1_general_nop(iter.pc()));
+                pushINSN(thumb::new_T1_general_nop(iter.pc()+2));
+            }
+            foundCnt++;
+        }
+    }
+
     RETCACHEPATCHES;
 }
 
@@ -1323,17 +1333,12 @@ std::vector<patch> kernelpatchfinder32_base::get_proc_enforce_disable_patch(){
 std::vector<patch> kernelpatchfinder32_base::get_generic_kernelpatches(){
     UNCACHEPATCHES;
     /*
-        iPhone5,2 iOS 10.3.4
-        This is literally h3lix
+        iPhone5,2 iOS 9.3.5
      */
-    addPatches(get_insert_setuid_patch());
     addPatches(get_lwvm_rw_patch());
     addPatches(get_mount_patch());
-    addPatches(get_insert_setuid_patch());
-    addPatches(get_proc_enforce_disable_patch());
     addPatches(get_codesignature_patches());
     addPatches(get_always_get_task_allow_patch());
-    addPatches(get_sandbox_label_update_execve_patch());
     addPatches(get_MarijuanARM_patch());
     addPatches(get_sandbox_patch());
     
