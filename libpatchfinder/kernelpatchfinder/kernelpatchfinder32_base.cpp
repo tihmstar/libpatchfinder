@@ -1044,17 +1044,27 @@ std::vector<patch> kernelpatchfinder32_base::get_always_get_task_allow_patch(){
     while (++iter != arm32::str || iter().rt() != 0)
         ;
 
-    loc_t tgt_end = iter;
+    loc_t tgt_end = ++iter;
     debug("tgt_end=0x%08x",tgt_end);
 
-    retassure((tgt_end-tgt) >= 10 , "not enough space for shellcode");
-    char patch[] ="\x20\xF4\x00\x70\x00\xBF\x40\xF0\x0F\x00";
-    patches.push_back({
-        tgt,
-        patch,
-        10
-    });
+    retassure((tgt_end-tgt) >= 18 , "not enough space for shellcode");
 
+    loc_t shellcode = tgt;
+    debug("shellcode=0x%08x",shellcode);
+#define cPC (shellcode+(insnNum)*2)
+#define pushINSNCPC(_pinsn) do {auto _pinsnn = _pinsn; pushINSN(_pinsnn); insnNum += (_pinsnn.insnsize()>>1);} while (0);
+
+    int insnNum = 0;
+    iter = tgt;
+    pushINSNCPC(thumb::new_T1_register_mov(cPC, 1, iter().rn()));
+    pushINSNCPC(thumb::new_T1_immediate_ldr(cPC, 0, 1, 0));
+    {uint32_t opcode = 0x7000F420; patches.push_back({cPC,&opcode,4}); insnNum+=2;} //bic r0, r0, #0x200
+    {uint32_t opcode = 0xFF040; patches.push_back({cPC,&opcode,4}); insnNum+=2;} //orr r0, r0, #0xf
+    {uint32_t opcode = 0x6080F040; patches.push_back({cPC,&opcode,4}); insnNum+=2;} //orr r0, r0, #0x4000000
+    pushINSNCPC(thumb::new_T1_immediate_str(cPC, 0, 1, 0));
+
+#undef pushINSNCPC
+#undef cPC
     RETCACHEPATCHES;
 };
 

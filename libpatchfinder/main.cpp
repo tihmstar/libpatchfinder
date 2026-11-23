@@ -112,13 +112,13 @@ int main(int argc, const char * argv[]) {
 //    addpatch(kpf->get_force_boot_ramdisk_patch());
 //    addpatch(kpf->get_apfs_skip_authenticate_root_hash_patch());
 //    addpatch(kpf->get_harcode_bootargs_patch("-v serial=3"));
-//    addpatch(kpf->get_always_get_task_allow_patch());
+    addpatch(kpf->get_always_get_task_allow_patch());
 //    addpatch(kpf->get_tfp_anyone_allow_patch());
 //    addpatch(kpf->get_vm_fault_internal_patch());
 //    addpatch(kpf->get_i_can_has_debugger_patch());
 //    addpatch(kpf->get_raw_sep_romcmd_patch());
 //    addpatch(kpf->get_tfp0_patch());
-    addpatch(kpf->get_generic_kernelpatches());
+//    addpatch(kpf->get_generic_kernelpatches());
 
 
     
